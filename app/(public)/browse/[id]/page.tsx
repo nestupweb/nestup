@@ -95,7 +95,7 @@ export default async function ListingDetailPage({
           <h2 className={sectionHeading}>Who lives here</h2>
           {owner ? (
             <div className="mt-4 space-y-5">
-              {[owner, ...residents].map((p, idx) => (
+              {[owner, ...residents].map((p) => (
                 <div key={p.user_id} className="flex items-center gap-4">
                   {p.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -105,10 +105,7 @@ export default async function ListingDetailPage({
                   )}
                   <div>
                     <p className="text-base font-medium">{p.full_name}, {p.age}</p>
-                    <p className="mt-0.5 text-sm text-muted">
-                      {p.occupation}
-                      {idx === 0 ? <span className="text-accent"> · Lists this room</span> : null}
-                    </p>
+                    <p className="mt-0.5 text-sm text-muted">{p.occupation}</p>
                   </div>
                 </div>
               ))}
