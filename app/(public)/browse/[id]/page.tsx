@@ -39,7 +39,9 @@ export default async function ListingDetailPage({
       <ListingGallery photos={listing.photo_urls} title={listing.title} />
 
       <div className="mt-6 flex items-baseline justify-between gap-3">
-        <h1 className="font-serif text-3xl font-semibold sm:text-4xl">{listing.title}</h1>
+        <h1 className="font-serif text-3xl font-semibold sm:text-4xl">
+          {listing.city}{listing.neighborhood ? `, ${listing.neighborhood}` : ""}
+        </h1>
         <p className="whitespace-nowrap font-serif text-2xl font-semibold sm:text-3xl">
           ₪{listing.rent.toLocaleString()}<span className="text-sm font-normal text-muted"> /mo</span>
         </p>
@@ -54,13 +56,6 @@ export default async function ListingDetailPage({
           <p className={sectionBody}>
             {propertyTypeLabel(listing.property_type)} · {listing.rooms} room{listing.rooms === 1 ? "" : "s"}
             {listing.size_sqm ? ` · ${listing.size_sqm} m²` : ""}
-          </p>
-        </section>
-
-        <section className="border-t border-hairline pt-7">
-          <h2 className={sectionHeading}>Location</h2>
-          <p className={sectionBody}>
-            {listing.city}{listing.neighborhood ? `, ${listing.neighborhood}` : ""}
           </p>
         </section>
 
