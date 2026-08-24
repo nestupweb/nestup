@@ -17,7 +17,6 @@ out/
 # env & secrets
 .env
 .env*.local
-.env*
 
 # tooling
 .superpowers/
