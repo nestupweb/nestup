@@ -4,6 +4,7 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 
 ## For later code tasks
 
+- **Saved rooms (browse heart button):** persisted per-browser in localStorage only (`nestup:saved-listings`, `components/listings/SaveButton.tsx`). Promote to a server-side `saved_listings` table (+ RLS, + a "Saved" view) so favorites follow the account across devices.
 - **Task 16 (swipe deck):** `components/ui/ScoreTag.tsx` — "Add interests to see social match" hint is a `title` on a non-focusable span (keyboard/SR-unreachable, shadows outer title). Use `aria-label` or visually-hidden text when building the deck. Also: import `ListingWithOwner` from `@/lib/types` rather than defining inline.
 - **Storage backstop:** `lib/storage.ts` trusts client `file.type`. Set `allowed_mime_types` on `avatars` / `listing-photos` buckets server-side (small migration).
 - **Auth polish (from Task 9 quality review, all Minor):**

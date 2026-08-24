@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FEATURES, propertyTypeLabel } from "@/lib/constants";
@@ -34,9 +35,16 @@ export default async function ListingDetailPage({
     <main className="px-5 pb-16">
       <div className="flex gap-2 overflow-x-auto">
         {listing.photo_urls.length > 0 ? (
-          listing.photo_urls.map((url) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={url} src={url} alt={listing.title} className="h-64 w-auto rounded-2xl object-cover" />
+          listing.photo_urls.map((url, i) => (
+            <div key={url} className="relative h-64 w-80 shrink-0 overflow-hidden rounded-2xl">
+              <Image
+                src={url}
+                alt={`${listing.title} — photo ${i + 1}`}
+                fill
+                sizes="320px"
+                className="object-cover"
+              />
+            </div>
           ))
         ) : (
           <div className="h-64 w-full rounded-2xl bg-hairline" />
