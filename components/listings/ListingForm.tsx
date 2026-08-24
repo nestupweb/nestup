@@ -16,7 +16,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
   );
 
   return (
-    <form action={formAction} className="px-5 pb-10">
+    <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
       <h1 className="font-serif text-3xl font-semibold">
         {listing ? "Your listing" : "List your room"}
       </h1>
@@ -35,7 +35,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
       <label className={label}>Description
         <textarea name="description" maxLength={2000} rows={4} defaultValue={listing?.description ?? ""} className={input} />
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <label className={label}>City
           <select name="city" required defaultValue={listing?.city ?? "Tel Aviv"} className={input}>
             {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -99,7 +99,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
       {state.saved ? <p role="status" className="mt-4 text-sm text-accent">Saved.</p> : null}
 
       <button type="submit" disabled={pending}
-        className="mt-6 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-contrast disabled:opacity-60">
+        className="mt-6 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-contrast disabled:opacity-60 sm:w-auto sm:px-10">
         {pending ? "Saving…" : listing ? "Save changes" : "Publish listing"}
       </button>
     </form>

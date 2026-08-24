@@ -23,7 +23,7 @@ export function AuthForm({
 
   if (state.sent) {
     return (
-      <div className="mx-auto mt-24 w-full max-w-sm px-6 text-center">
+      <div className="mx-auto mt-24 w-full max-w-md px-4 text-center sm:px-6">
         <h1 className="font-serif text-3xl font-semibold">Check your inbox</h1>
         <p className="mt-3 text-sm text-muted">
           We sent you a confirmation link. Click it to activate your account, then log in.
@@ -36,7 +36,7 @@ export function AuthForm({
   }
 
   return (
-    <form action={formAction} className="mx-auto mt-16 w-full max-w-sm px-6">
+    <form action={formAction} className="mx-auto mt-16 w-full max-w-md px-4 sm:mt-24 sm:px-6">
       <h1 className="font-serif text-3xl font-semibold">
         {mode === "login" ? "Welcome back" : "Create your account"}
       </h1>

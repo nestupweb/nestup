@@ -25,7 +25,7 @@ export function ProfileForm({
   );
 
   return (
-    <form action={formAction} className="px-5 pb-10">
+    <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <h1 className="font-serif text-3xl font-semibold">
         {onboarding ? "Tell us about you" : "Your profile"}
@@ -112,7 +112,7 @@ export function ProfileForm({
       {state.error ? <p role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
 
       <button type="submit" disabled={pending}
-        className="mt-8 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-contrast disabled:opacity-60">
+        className="mt-8 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-contrast disabled:opacity-60 sm:w-auto sm:px-10">
         {pending ? "Saving…" : "Save profile"}
       </button>
     </form>

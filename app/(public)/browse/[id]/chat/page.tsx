@@ -85,7 +85,7 @@ export default async function ListingChatPage({
   const messages = (messageData as Message[] | null) ?? [];
 
   return (
-    <main className="px-5 pb-16">
+    <main className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
       <Link href={`/browse/${listing.id}`} className="text-sm text-muted hover:text-ink">
         ← Back to listing
       </Link>
@@ -117,7 +117,7 @@ export default async function ListingChatPage({
           messages.map((m) => {
             const mine = m.sender_id === user.id;
             return (
-              <div key={m.id} className={`max-w-[80%] ${mine ? "self-end" : "self-start"}`}>
+              <div key={m.id} className={`max-w-[75%] ${mine ? "self-end" : "self-start"}`}>
                 <div
                   className={
                     mine
@@ -125,7 +125,7 @@ export default async function ListingChatPage({
                       : "rounded-2xl rounded-bl-md border border-hairline bg-surface px-4 py-2.5 text-sm"
                   }
                 >
-                  <p className="whitespace-pre-line">{m.content}</p>
+                  <p className="whitespace-pre-line break-words">{m.content}</p>
                 </div>
                 <p className={`mt-1 text-xs text-muted ${mine ? "text-right" : ""}`}>
                   {new Date(m.created_at).toLocaleString("en-GB", {
