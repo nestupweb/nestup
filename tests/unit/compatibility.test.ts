@@ -92,6 +92,14 @@ describe("socialScore", () => {
     const b = profile({ interests: ["Art", "Tech", "Gaming", "Music"] });
     expect(socialScore(a, b)).toBe(socialScore(b, a));
   });
+  test("duplicate interests cannot inflate the score", () => {
+    const spam = profile({ interests: ["Music", "Music", "Cooking"] });
+    const other = profile({ interests: ["Music", "Art", "Tech", "Gaming"] });
+    expect(socialScore(spam, other)).toBe(50); // dedups to {Music,Cooking}: 1 shared / min(2,4)
+    const doubled = profile({ interests: ["Music", "Music"] });
+    const single = profile({ interests: ["Music"] });
+    expect(socialScore(doubled, single)).toBe(100); // never 200
+  });
 });
 
 describe("labels and sorting", () => {

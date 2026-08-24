@@ -5,22 +5,28 @@ export type Perspective = "seeker" | "lister";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const GUEST_ORDER: Record<GuestsFreq, number> = { rare: 0, sometimes: 1, often: 2 };
 
+// Convention: when a seeker hasn't set a preference, award ~60% of the
+// component's weight rather than 0 — absence of a preference is not the
+// same as a mismatch, so it should neither help nor tank the score.
 function budgetPoints(seeker: Profile, listing: Listing): number {
-  if (seeker.budget_max === 0) return 15; // no budget set: neutral
+  if (seeker.budget_max === 0) return 15; // no budget set: neutral, = 60% of the 25pt weight
   if (listing.rent <= seeker.budget_max) return 25;
-  if (listing.rent <= seeker.budget_max * 1.1) return 12;
+  if (listing.rent <= seeker.budget_max * 1.1) return 12; // up to 10% over budget: partial credit
   return 0;
 }
 
+// Neutral (no preferred cities) = 12, i.e. 60% of the 20pt weight — same
+// 60%-neutral convention as budgetPoints/moveInPoints.
 function cityPoints(seeker: Profile, listing: Listing): number {
   if (seeker.preferred_cities.length === 0) return 12; // no preference: neutral
   return seeker.preferred_cities.includes(listing.city) ? 20 : 0;
 }
 
 function moveInPoints(seeker: Profile, listing: Listing): number {
-  if (!seeker.earliest_move_in) return 9; // no date set: neutral
+  if (!seeker.earliest_move_in) return 9; // no date set: neutral, = 60% of the 15pt weight
   const diffDays =
     Math.abs(Date.parse(listing.available_from) - Date.parse(seeker.earliest_move_in)) / DAY_MS;
+  // within two weeks ≈ ideal; within a month and a half ≈ workable
   if (diffDays <= 14) return 15;
   if (diffDays <= 45) return 8;
   return 0;
@@ -85,9 +91,10 @@ export function lifestyleScore(
 /** Social compatibility 0–100 from shared interests; null when either side has none. */
 export function socialScore(a: Profile, b: Profile): number | null {
   if (a.interests.length === 0 || b.interests.length === 0) return null;
+  const setA = new Set(a.interests);
   const setB = new Set(b.interests);
-  const shared = a.interests.filter((i) => setB.has(i)).length;
-  return Math.round((100 * shared) / Math.min(a.interests.length, b.interests.length));
+  const shared = [...setA].filter((i) => setB.has(i)).length;
+  return Math.round((100 * shared) / Math.min(setA.size, setB.size));
 }
 
 export function scoreLabel(score: number): "Great fit" | "Good" | "Fair" | "Low" {
