@@ -81,17 +81,26 @@ export default async function ListingDetailPage({
         )}
       </section>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-3">
+        {user?.id === listing.owner_id ? null : (
+          // Signed-out visitors land on the chat page's login redirect and return here.
+          <Link
+            href={`/browse/${listing.id}/chat`}
+            className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-accent-contrast"
+          >
+            Message the owner
+          </Link>
+        )}
         {user ? (
           <form action={swipeAction.bind(null, listing.id, "like")}>
-            <button className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-contrast">
+            <button className="w-full rounded-xl border border-hairline py-3 text-sm font-semibold text-ink hover:border-accent">
               I&apos;m interested
             </button>
           </form>
         ) : (
           <Link
             href={`/login?next=/browse/${listing.id}`}
-            className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-accent-contrast"
+            className="block w-full rounded-xl border border-hairline py-3 text-center text-sm font-semibold text-ink hover:border-accent"
           >
             Sign in to show interest
           </Link>

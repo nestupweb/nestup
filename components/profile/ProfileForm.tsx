@@ -10,7 +10,15 @@ const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
 const label = "mt-4 block text-xs font-medium uppercase tracking-widest text-muted";
 
-export function ProfileForm({ profile, onboarding }: { profile: Profile | null; onboarding: boolean }) {
+export function ProfileForm({
+  profile,
+  onboarding,
+  next = "",
+}: {
+  profile: Profile | null;
+  onboarding: boolean;
+  next?: string;
+}) {
   const [state, formAction, pending] = useActionState<ProfileFormState, FormData>(
     upsertProfileAction,
     {}
@@ -18,6 +26,7 @@ export function ProfileForm({ profile, onboarding }: { profile: Profile | null; 
 
   return (
     <form action={formAction} className="px-5 pb-10">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <h1 className="font-serif text-3xl font-semibold">
         {onboarding ? "Tell us about you" : "Your profile"}
       </h1>

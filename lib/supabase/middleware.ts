@@ -30,7 +30,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const needsAuth = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
+  // /browse is public, but its per-listing chat requires auth. Matching here
+  // gives a real 307 (the page's own redirect() only streams a client redirect
+  // because of the /browse loading boundary — it stays as a backstop).
+  const needsAuth =
+    PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(p + "/")) ||
+    /^\/browse\/[^/]+\/chat$/.test(path);
   if (needsAuth && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

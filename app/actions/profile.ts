@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { sanitizeNextPath } from "@/lib/redirect";
 import { uploadImage } from "@/lib/storage";
 import { profileSchema } from "@/lib/validation/profile";
 
@@ -56,5 +57,6 @@ export async function upsertProfileAction(
   if (error) return { error: "Could not save your profile. Please try again." };
 
   revalidatePath("/profile");
-  redirect("/swipe");
+  // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
+  redirect(sanitizeNextPath(String(formData.get("next") ?? "")));
 }
