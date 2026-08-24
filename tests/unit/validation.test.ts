@@ -1,0 +1,79 @@
+import { describe, expect, test } from "vitest";
+import { profileSchema } from "@/lib/validation/profile";
+import { listingSchema } from "@/lib/validation/listing";
+import { messageSchema } from "@/lib/validation/message";
+import { listingFiltersSchema } from "@/lib/validation/filters";
+
+const validProfile = {
+  full_name: "Dana Levi", age: 26, occupation: "Student", bio: "Hi!",
+  smoker: false, has_pet: false, cleanliness: 4,
+  sleep_schedule: "early", guests_freq: "sometimes",
+  interests: ["Music", "Cooking", "Travel"],
+  ok_with_smoker: false, ok_with_pets: true,
+  budget_min: 2000, budget_max: 3500,
+  preferred_cities: ["Tel Aviv"], earliest_move_in: "2026-10-01",
+};
+
+describe("profileSchema", () => {
+  test("accepts a valid profile", () => {
+    expect(profileSchema.safeParse(validProfile).success).toBe(true);
+  });
+  test("rejects age under 18", () => {
+    expect(profileSchema.safeParse({ ...validProfile, age: 17 }).success).toBe(false);
+  });
+  test("rejects fewer than 3 interests", () => {
+    expect(profileSchema.safeParse({ ...validProfile, interests: ["Music"] }).success).toBe(false);
+  });
+  test("rejects unknown interest tags", () => {
+    expect(profileSchema.safeParse({ ...validProfile, interests: ["Music", "Cooking", "Zzz"] }).success).toBe(false);
+  });
+  test("rejects budget_max below budget_min", () => {
+    expect(profileSchema.safeParse({ ...validProfile, budget_min: 4000, budget_max: 3000 }).success).toBe(false);
+  });
+});
+
+describe("listingSchema", () => {
+  const validListing = {
+    title: "Sunlit room in Florentin", description: "Great flat", city: "Tel Aviv",
+    neighborhood: "Florentin", rent: 2800, available_from: "2026-10-01",
+    roommates_count: 2, pets_allowed: true, smoking_allowed: false,
+    balcony: true, air_conditioning: true, parking: false, elevator: false, furnished: true,
+  };
+  test("accepts a valid listing", () => {
+    expect(listingSchema.safeParse(validListing).success).toBe(true);
+  });
+  test("rejects rent of 0", () => {
+    expect(listingSchema.safeParse({ ...validListing, rent: 0 }).success).toBe(false);
+  });
+  test("rejects a city outside the list", () => {
+    expect(listingSchema.safeParse({ ...validListing, city: "Paris" }).success).toBe(false);
+  });
+  test("rejects a 3-character title", () => {
+    expect(listingSchema.safeParse({ ...validListing, title: "abc" }).success).toBe(false);
+  });
+});
+
+describe("messageSchema", () => {
+  test("accepts a normal message and trims it", () => {
+    const r = messageSchema.safeParse({ content: "  hey there  " });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.content).toBe("hey there");
+  });
+  test("rejects empty and over-long content", () => {
+    expect(messageSchema.safeParse({ content: "   " }).success).toBe(false);
+    expect(messageSchema.safeParse({ content: "x".repeat(2001) }).success).toBe(false);
+  });
+});
+
+describe("listingFiltersSchema", () => {
+  test("parses url-style strings and fills defaults", () => {
+    const r = listingFiltersSchema.parse({ city: "Haifa", rent_max: "3000", page: "2" });
+    expect(r).toMatchObject({ city: "Haifa", rent_max: 3000, page: 2, page_size: 20 });
+  });
+  test("clamps nonsense to safe defaults", () => {
+    const r = listingFiltersSchema.parse({ page: "-5", page_size: "9999", rent_max: "banana" });
+    expect(r.page).toBe(1);
+    expect(r.page_size).toBe(20);
+    expect(r.rent_max).toBeUndefined();
+  });
+});
