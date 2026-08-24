@@ -6,7 +6,7 @@ const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "RoomMatch",
+  title: "NestUp",
   description: "Find your next shared apartment — and the roommates you'll actually get along with.",
 };
 

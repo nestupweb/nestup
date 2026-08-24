@@ -1,4 +1,4 @@
-# RoomMatch Implementation Plan — Phase 3: Matching & Launch
+# NestUp Implementation Plan — Phase 3: Matching & Launch
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -1006,7 +1006,7 @@ git add -A && git commit -m "test: Playwright E2E for browse wall, onboarding, m
 - [ ] **Step 1: Replace `README.md` entirely**
 
 ```markdown
-# RoomMatch
+# NestUp
 
 Find the room *and* the roommates. A two-sided marketplace for shared apartments:
 seekers swipe on rooms, listers review interested seekers, a mutual like opens an
@@ -1086,14 +1086,14 @@ Expected: build succeeds with no type errors. Fix anything it surfaces before de
 - [ ] **Step 2: Push to GitHub**
 
 ```bash
-gh repo create roommatch --private --source . --push
+gh repo create nestup --private --source . --push
 ```
 
-(If `gh` is not authenticated: create an empty repo named `roommatch` on github.com, then `git remote add origin <url> && git push -u origin main`.)
+(If `gh` is not authenticated: create an empty repo named `nestup` on github.com, then `git remote add origin <url> && git push -u origin main`.)
 
 - [ ] **Step 3: Import to Vercel (dashboard)**
 
-vercel.com → Add New Project → import the `roommatch` repo → Framework: Next.js (auto) → add env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` (all three, values from `.env.local`) → Deploy.
+vercel.com → Add New Project → import the `nestup` repo → Framework: Next.js (auto) → add env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` (all three, values from `.env.local`) → Deploy.
 
 - [ ] **Step 4: Point Supabase auth at production**
 

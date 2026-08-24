@@ -1,4 +1,4 @@
-# RoomMatch Implementation Plan — Phase 2: Marketplace
+# NestUp Implementation Plan — Phase 2: Marketplace
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -139,7 +139,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="mx-auto min-h-dvh max-w-lg pb-20">
       <header className="flex items-center justify-between px-5 py-4">
         <Link href="/swipe" className="font-serif text-xl font-semibold">
-          Room<span className="italic font-normal text-accent">Match</span>
+          Nest<span className="italic font-normal text-accent">Up</span>
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -841,7 +841,7 @@ export default async function PublicLayout({ children }: { children: React.React
     <div className="mx-auto min-h-dvh max-w-3xl">
       <header className="flex items-center justify-between px-5 py-4">
         <Link href="/" className="font-serif text-xl font-semibold">
-          Room<span className="italic font-normal text-accent">Match</span>
+          Nest<span className="italic font-normal text-accent">Up</span>
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />

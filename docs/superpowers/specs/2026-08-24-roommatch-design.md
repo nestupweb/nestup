@@ -1,4 +1,4 @@
-# RoomMatch — Design Document
+# NestUp — Design Document
 
 **Date:** 2026-08-24
 **Course:** Internet Technologies — Become a Full-Stack Engineer, RUNI CS 2026 (final project, due 2026-09-06)
@@ -8,7 +8,7 @@
 
 ## 1. Product summary
 
-RoomMatch is a two-sided marketplace for finding shared apartments and roommates. Seekers swipe through available rooms dating-app style; listers post a room in their apartment and review interested seekers. A mutual like creates a match, which opens an in-app chat.
+NestUp is a two-sided marketplace for finding shared apartments and roommates. Seekers swipe through available rooms dating-app style; listers post a room in their apartment and review interested seekers. A mutual like creates a match, which opens an in-app chat.
 
 - **Problem:** finding a roommate today happens in chaotic Facebook groups and listing boards with no structure, no compatibility signal, and no privacy.
 - **Users:** young renters (students, young professionals) looking for a room, and people with a spare room looking for a compatible roommate.
@@ -182,7 +182,7 @@ tests/                 unit/, e2e/
 ## 7. Visual design system
 
 - **Themes:** Editorial (light) is the default; Noir (dark) is opt-in via a header toggle, persisted in `localStorage`, applied as `data-theme="dark"` on `<html>`. All colors are CSS custom properties so both themes share one component set.
-- **Typography:** Fraunces (serif — headlines, prices, logotype "Room*Match*") + Inter (UI/body). Google Fonts via `next/font`.
+- **Typography:** Fraunces (serif — headlines, prices, logotype "Nest*Up*") + Inter (UI/body). Google Fonts via `next/font`.
 - **Editorial palette:** paper `#FAF7F2`, ink `#201D1A`, accent deep green `#2F5D50`, hairlines `rgba(32,29,26,.10)`.
 - **Noir palette:** surface `#191613`, text `#F5EFE6`, accent champagne `#C9A468`, hairlines `rgba(255,255,255,.10)`.
 - **Language of the UI:** drawn SVG stroke icons (no emoji); one letterspaced small-caps spec line instead of chip clusters; real photography; quiet glass tag for the compatibility score on photos; large circular like/skip buttons; restrained radii and soft shadows.

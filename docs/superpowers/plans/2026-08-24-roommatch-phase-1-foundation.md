@@ -1,8 +1,8 @@
-# RoomMatch Implementation Plan — Phase 1: Foundation
+# NestUp Implementation Plan — Phase 1: Foundation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Scaffold the RoomMatch Next.js app with theming, Supabase (schema + RLS), the two compatibility-score engines, validation schemas, and working auth.
+**Goal:** Scaffold the NestUp Next.js app with theming, Supabase (schema + RLS), the two compatibility-score engines, validation schemas, and working auth.
 
 **Architecture:** Server-first Next.js App Router. Supabase is DB + Auth + Storage + Realtime; RLS is the authorization backbone. All scoring/validation logic lives in pure, unit-tested TypeScript modules under `lib/`.
 
@@ -174,7 +174,7 @@ const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "RoomMatch",
+  title: "NestUp",
   description: "Find your next shared apartment — and the roommates you'll actually get along with.",
 };
 
@@ -406,7 +406,7 @@ git add lib && git commit -m "feat: domain types and app constants"
 
 - [ ] **Step 1: Create the Supabase project (manual, one-time)**
 
-In https://supabase.com/dashboard → New project → name `roommatch`, region close to Israel (eu-central), generate a strong DB password and save it. From **Project Settings → API** copy: Project URL, `anon` public key, `service_role` key.
+In https://supabase.com/dashboard → New project → name `nestup`, region close to Israel (eu-central), generate a strong DB password and save it. From **Project Settings → API** copy: Project URL, `anon` public key, `service_role` key.
 
 - [ ] **Step 2: Install client libraries**
 
