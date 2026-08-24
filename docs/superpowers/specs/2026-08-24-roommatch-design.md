@@ -23,8 +23,9 @@ RoomMatch is a two-sided marketplace for finding shared apartments and roommates
 | 3 | UI language: **English** (LTR); Israeli cities as content |
 | 4 | Architecture: **server-first Next.js App Router + Supabase RLS** |
 | 5 | **Listings are public** (anonymous visitors can browse & filter); **Swipe requires sign-in** |
-| 6 | **Compatibility score never filters** — it informs and sorts only; both sides always decide manually |
+| 6 | **Compatibility scores never filter** — they inform and sort only; both sides always decide manually |
 | 7 | Visual design: **Editorial (light) as default theme, Noir (dark) as opt-in dark mode** |
+| 8 | **Two compatibility scores**: Lifestyle (habits + preferences) and Social (shared interests) |
 
 ---
 
@@ -40,7 +41,7 @@ Sign up → Create profile → Swipe on rooms → Lister sees "Interested" queue
 ### Screens (6)
 
 1. **Auth** — sign up / log in with Supabase Auth (email + password). New users are redirected to profile creation before anything else.
-2. **Profile** — create/edit: photo, full name, age, occupation, bio; lifestyle habits (smoker, has pet, cleanliness 1–5, sleep schedule, guest frequency); roommate preferences (ok with smoker, ok with pets); apartment preferences (budget min–max, preferred cities, earliest move-in).
+2. **Profile** — create/edit: photo, full name, age, occupation, bio; lifestyle habits (smoker, has pet, cleanliness 1–5, sleep schedule, guest frequency); **interests** (3–10 tags from a fixed list, feeds the Social score); roommate preferences (ok with smoker, ok with pets); apartment preferences (budget min–max, preferred cities, earliest move-in).
 3. **Swipe** (auth required) — card deck of active listings, sorted by compatibility score descending, excluding the user's own listing and already-swiped listings. Card shows: photo carousel, compatibility tag, title, rent, city/neighborhood, move-in date, spec line (flatmates count · pets · smoking), feature list, current-roommate row. Swipe right = like, left = skip (buttons + drag gesture).
 4. **Browse Listings** (public) — filterable list/grid: city, rent range, move-in date, number of roommates, pets allowed, smoking allowed, features. Tap opens listing detail. Anonymous visitors see roommate *count* but not personal roommate profiles; tapping "Like" while anonymous redirects to sign-in.
 5. **My Listing** (auth required) — create/edit the user's room listing (title, description, city, neighborhood, rent, available-from, roommates count, rules, features, up to 5 photos, active toggle) and the **Interested queue**: seeker profiles who liked the listing, sorted by the lister's directional compatibility score, each with "Like back" (creates match) or "Skip".
@@ -59,6 +60,7 @@ Mobile-first bottom tab bar, always visible: **Swipe · Browse · Matches · Lis
 **profiles** — 1:1 with `auth.users`
 - `user_id uuid PK` (= auth.users.id), `full_name text`, `age int CHECK (age >= 18)`, `occupation text`, `bio text`, `avatar_url text`
 - Lifestyle: `smoker bool`, `has_pet bool`, `cleanliness int CHECK 1..5`, `sleep_schedule enum('early','late','flexible')`, `guests_freq enum('rare','sometimes','often')`
+- Interests: `interests text[]` — chosen from a fixed app-defined tag list (~20 tags, e.g., Music, Cooking, Fitness, Gaming, Movies & TV, Reading, Travel, Hiking, Nightlife, Art, Photography, Tech, Sports, Board games, Yoga, Running, Concerts, Vegan food, Volunteering, Languages); pick 3–10
 - Roommate prefs: `ok_with_smoker bool`, `ok_with_pets bool`
 - Apartment prefs: `budget_min int`, `budget_max int CHECK (budget_max >= budget_min)`, `preferred_cities text[]`, `earliest_move_in date`
 - `created_at`, `updated_at`
@@ -107,9 +109,11 @@ Notes:
 
 ---
 
-## 5. Compatibility score
+## 5. Compatibility scores (two)
 
-Rule-based, transparent, computed in TypeScript (pure function, heavily unit-tested).
+Rule-based, transparent, computed in TypeScript (pure functions, heavily unit-tested). Every card shows **two scores side by side**: **Lifestyle** and **Social**.
+
+### 5a. Lifestyle score
 
 **Seeker → listing** (shown on swipe cards and Browse):
 | Component | Weight |
@@ -125,9 +129,20 @@ Rule-based, transparent, computed in TypeScript (pure function, heavily unit-tes
 
 **Lister → seeker** (shown in the Interested queue): same components evaluated from the lister's perspective (listing rules + lister lifestyle vs. seeker profile).
 
-- Output 0–100 with labels: **Great fit ≥ 80 · Good 60–79 · Fair 40–59 · Low < 40**.
-- **Scores are directional** — the two sides may see different numbers.
-- **Scores never filter or hide anyone** (approved rule): the deck shows all eligible listings and the Interested queue shows all likers, sorted by score with the score displayed. Humans decide; a match still requires both sides to say yes.
+### 5b. Social score (shared interests)
+
+Measures how much the seeker and the lister would *enjoy living together*, independent of practical fit.
+
+- Formula: `100 × |shared interests| / min(|seeker interests|, |lister interests|)` — full containment of the smaller set scores 100.
+- Symmetric by nature (both sides see the same number).
+- If either side picked no interests, the score shows as **“—”** with a hint (“Add interests to see social match”) rather than a misleading 0.
+
+### Shared rules
+
+- Output 0–100 with labels: **Great fit ≥ 80 · Good 60–79 · Fair 40–59 · Low < 40** (both scores).
+- **Lifestyle scores are directional** — the two sides may see different numbers; the social score is symmetric.
+- **Neither score filters or hides anyone** (approved rule): the deck shows all eligible listings and the Interested queue shows all likers. Sorting uses the average of the two scores (lifestyle only when social is “—”), with both scores displayed. Humans decide; a match still requires both sides to say yes.
+- Card UI: the photo tag shows both, e.g., `92 LIFESTYLE · 78 SOCIAL`; tapping/expanding a card reveals the shared interests themselves.
 
 ---
 
@@ -184,7 +199,7 @@ tests/                 unit/, e2e/
 
 ## 9. Testing strategy
 
-- **Unit (Vitest):** compatibility score (both directions, edge cases: missing fields, boundary budgets, label thresholds), Zod schemas, match-creation guard logic.
+- **Unit (Vitest):** both compatibility scores (lifestyle in both directions; social overlap incl. empty-interests “—” case; boundary budgets, label thresholds), Zod schemas, match-creation guard logic.
 - **Component (React Testing Library):** SwipeCard renders all data + fires like/skip; FilterBar builds correct query; profile & listing forms show validation errors.
 - **E2E (Playwright):** ① sign up → create profile → swipe right; ② lister sees Interested queue → likes back → match appears for both; ③ chat: send + receive a message; ④ permissions: anonymous can browse listings but is redirected from /swipe; ⑤ user A cannot access user B's match/chat by URL.
 - **RLS verification:** SQL-level tests (authenticated as different users via Supabase test clients) proving cross-user reads/writes fail.
