@@ -26,6 +26,7 @@ RoomMatch is a two-sided marketplace for finding shared apartments and roommates
 | 6 | **Compatibility scores never filter** — they inform and sort only; both sides always decide manually |
 | 7 | Visual design: **Editorial (light) as default theme, Noir (dark) as opt-in dark mode** |
 | 8 | **Two compatibility scores**: Lifestyle (habits + preferences) and Social (shared interests) |
+| 9 | **Email confirmation ON**: users must confirm their email before first sign-in (signup shows a "check your inbox" state; `/auth/confirm` route verifies the token). Caveat: Supabase's built-in mailer is dev-grade and rate-limited — documented in the scale/security docs; custom SMTP is the production path. |
 
 ---
 
@@ -209,7 +210,7 @@ tests/                 unit/, e2e/
 - **Indexes:** `listings(city, rent, available_from) WHERE is_active`, `swipes(listing_id) WHERE direction='like'`, `swipes(seeker_id)`, `messages(match_id, created_at)`, `matches(seeker_id)`, `matches(lister_id)`.
 - **Pagination:** Browse & API paginated (page size ~20); chat loads latest N messages with "load older"; deck fetches in small batches.
 - **Known v1 limits (documented honestly):** compatibility computed in app code per request (fine at hundreds of users; would precompute/cache at scale), Realtime connection per open chat, no image CDN transforms beyond Supabase defaults, one active listing per user.
-- **Security posture:** RLS everywhere, server-side validation, security-definer match creation, secrets in env vars, no service key on the client, private data (profiles, matches, chat) invisible to anonymous users. Residual risks to document: no email verification enforcement in v1, no rate limiting on auth/API, photos are public-read by URL.
+- **Security posture:** RLS everywhere, server-side validation, security-definer match creation, secrets in env vars, no service key on the client, private data (profiles, matches, chat) invisible to anonymous users. Residual risks to document: no rate limiting on auth/API, photos are public-read by URL, confirmation emails rely on Supabase's rate-limited dev mailer (custom SMTP is the production fix).
 
 ## 11. Out of scope for v1 (future work section in the docs)
 
