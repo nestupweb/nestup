@@ -40,6 +40,7 @@ export interface Listing {
   description: string;
   city: string;
   neighborhood: string;
+  address: string;
   rent: number;
   available_from: string; // ISO date
   property_type: PropertyType;

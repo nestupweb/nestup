@@ -40,7 +40,7 @@ export default async function ListingDetailPage({
 
       <div className="mt-6 flex items-baseline justify-between gap-3">
         <h1 className="font-serif text-3xl font-semibold sm:text-4xl">
-          {listing.city}{listing.neighborhood ? `, ${listing.neighborhood}` : ""}
+          {listing.city}, {listing.address || listing.neighborhood}
         </h1>
         <p className="whitespace-nowrap font-serif text-2xl font-semibold sm:text-3xl">
           ₪{listing.rent.toLocaleString()}<span className="text-sm font-normal text-muted"> /mo</span>
