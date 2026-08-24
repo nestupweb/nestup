@@ -7,7 +7,7 @@ export const listingSchema = z.object({
   city: z.enum(CITIES),
   neighborhood: z.string().trim().max(80).default(""),
   rent: z.coerce.number().int().positive(),
-  available_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  available_from: z.iso.date(),
   roommates_count: z.coerce.number().int().min(0).max(10),
   pets_allowed: z.coerce.boolean().default(false),
   smoking_allowed: z.coerce.boolean().default(false),

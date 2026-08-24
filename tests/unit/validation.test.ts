@@ -30,6 +30,12 @@ describe("profileSchema", () => {
   test("rejects budget_max below budget_min", () => {
     expect(profileSchema.safeParse({ ...validProfile, budget_min: 4000, budget_max: 3000 }).success).toBe(false);
   });
+  test("rejects duplicate interest tags", () => {
+    expect(profileSchema.safeParse({ ...validProfile, interests: ["Music", "Music", "Cooking"] }).success).toBe(false);
+  });
+  test("rejects a non-existent calendar date", () => {
+    expect(profileSchema.safeParse({ ...validProfile, earliest_move_in: "2026-13-45" }).success).toBe(false);
+  });
 });
 
 describe("listingSchema", () => {

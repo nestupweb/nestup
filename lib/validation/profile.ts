@@ -12,17 +12,17 @@ export const profileSchema = z
     cleanliness: z.coerce.number().int().min(1).max(5),
     sleep_schedule: z.enum(["early", "late", "flexible"]),
     guests_freq: z.enum(["rare", "sometimes", "often"]),
-    interests: z.array(z.enum(INTERESTS)).min(MIN_INTERESTS).max(MAX_INTERESTS),
+    interests: z
+      .array(z.enum(INTERESTS))
+      .min(MIN_INTERESTS, "Select at least 3 interests")
+      .max(MAX_INTERESTS)
+      .refine((arr) => new Set(arr).size === arr.length, "Interests must be unique"),
     ok_with_smoker: z.coerce.boolean().default(false),
     ok_with_pets: z.coerce.boolean().default(false),
     budget_min: z.coerce.number().int().min(0).default(0),
     budget_max: z.coerce.number().int().min(0).default(0),
     preferred_cities: z.array(z.enum(CITIES)).default([]),
-    earliest_move_in: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .nullable()
-      .default(null),
+    earliest_move_in: z.iso.date().nullable().default(null),
   })
   .refine((p) => p.budget_max === 0 || p.budget_max >= p.budget_min, {
     message: "Max budget must be at least the min budget",
