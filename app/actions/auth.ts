@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeNextPath } from "@/lib/redirect";
 
 export type AuthState = { error?: string; sent?: boolean };
 
@@ -34,11 +35,7 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
     }
     return { error: "Wrong email or password." };
   }
-  const safeNext =
-    next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")
-      ? next
-      : "/swipe";
-  redirect(safeNext);
+  redirect(sanitizeNextPath(next));
 }
 
 export async function signOutAction(): Promise<void> {
