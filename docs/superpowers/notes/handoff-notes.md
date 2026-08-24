@@ -31,6 +31,8 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 
 ## Product/state facts
 
+- **Seed data:** `npm run seed` (`scripts/seed.ts`, Node-native TS + `--env-file=.env.local`) seeds 12 demo owners + active listings across all 12 cities; idempotent (skips existing seed emails `seed.user1..12@nestup.dev`); uses `SUPABASE_SERVICE_ROLE_KEY` from env — never hardcoded. Already run against the live project (2026-08-24). Demo password: Demo1234!.
+
 - Email confirmation is ON by explicit user decision — users must click the emailed link. Confirm-signup email template in Supabase must link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
 - User-approved scope focus (2026-08-24): build order Profile → Listings → Swipe; landing polish and extras deferred. Seed data allowed as support so Browse/Swipe have content.
 - Interim pages to be replaced later: `app/(app)/swipe/page.tsx` stub (Task 16), `app/page.tsx` interim landing (Task 15, deferred).
