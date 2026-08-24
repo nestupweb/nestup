@@ -23,4 +23,16 @@ describe("sanitizeNextPath", () => {
   test("uses a custom fallback", () => {
     expect(sanitizeNextPath("//evil.com", "/")).toBe("/");
   });
+  test("rejects a tab-obfuscated protocol-relative host", () => {
+    expect(sanitizeNextPath("/\t/evil.com")).toBe("/swipe");
+  });
+  test("rejects a newline-obfuscated backslash host", () => {
+    expect(sanitizeNextPath("/\n\\evil.com")).toBe("/swipe");
+  });
+  test("rejects a path made absolute after stripping control chars", () => {
+    expect(sanitizeNextPath("\thttps://evil.com")).toBe("/swipe");
+  });
+  test("strips control chars from an otherwise-safe path", () => {
+    expect(sanitizeNextPath("/pro\tfile")).toBe("/profile");
+  });
 });
