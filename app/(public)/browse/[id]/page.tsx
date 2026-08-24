@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FEATURES, propertyTypeLabel } from "@/lib/constants";
+import { ListingGallery } from "@/components/listings/ListingGallery";
 import { swipeAction } from "@/app/actions/swipe";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -33,23 +33,7 @@ export default async function ListingDetailPage({
 
   return (
     <main className="px-5 pb-16">
-      <div className="flex gap-2 overflow-x-auto">
-        {listing.photo_urls.length > 0 ? (
-          listing.photo_urls.map((url, i) => (
-            <div key={url} className="relative h-64 w-80 shrink-0 overflow-hidden rounded-2xl">
-              <Image
-                src={url}
-                alt={`${listing.title} — photo ${i + 1}`}
-                fill
-                sizes="320px"
-                className="object-cover"
-              />
-            </div>
-          ))
-        ) : (
-          <div className="h-64 w-full rounded-2xl bg-hairline" />
-        )}
-      </div>
+      <ListingGallery photos={listing.photo_urls} title={listing.title} />
 
       <div className="mt-4 flex items-baseline justify-between gap-3">
         <h1 className="font-serif text-3xl font-semibold">{listing.title}</h1>

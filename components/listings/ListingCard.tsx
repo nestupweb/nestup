@@ -1,30 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FEATURES, propertyTypeLabel } from "@/lib/constants";
+import { NoPhoto } from "@/components/listings/NoPhoto";
 import { SaveButton } from "@/components/listings/SaveButton";
 import type { Listing } from "@/lib/types";
-
-function NoPhoto() {
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2 border-r border-hairline bg-surface text-muted">
-      <svg
-        viewBox="0 0 24 24"
-        className="h-8 w-8 opacity-60"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 10.5 12 3l9 7.5" />
-        <path d="M5 9v12h14V9" />
-        <path d="M9.5 21v-6h5v6" />
-      </svg>
-      <span className="text-[10px] font-medium uppercase tracking-widest">No photo yet</span>
-    </div>
-  );
-}
 
 export function ListingCard({ listing }: { listing: Listing }) {
   const meta = [
@@ -59,7 +38,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
               className="object-cover"
             />
           ) : (
-            <NoPhoto />
+            <NoPhoto className="border-r border-hairline" />
           )}
         </div>
         <div className="min-w-0 flex-1 p-4 pr-14 sm:p-5 sm:pr-16">
