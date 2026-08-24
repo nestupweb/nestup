@@ -29,6 +29,15 @@ export default async function ListingDetailPage({
     .maybeSingle();
   const owner = ownerData as Profile | null;
 
+  // Extra flatmates beyond the owner (RLS: signed-in only, like profiles).
+  const { data: residentRows } = await supabase
+    .from("listing_residents")
+    .select("profiles(*)")
+    .eq("listing_id", listing.id);
+  const residents = (residentRows ?? [])
+    .map((r) => r.profiles as unknown as Profile | null)
+    .filter((p): p is Profile => p !== null && p.user_id !== listing.owner_id);
+
   const features = FEATURES.filter((f) => listing[f.key]).map((f) => f.label);
 
   const sectionHeading = "font-serif text-xl font-semibold";
@@ -85,17 +94,24 @@ export default async function ListingDetailPage({
         <section className="border-t border-hairline pt-7">
           <h2 className={sectionHeading}>Who lives here</h2>
           {owner ? (
-            <div className="mt-4 flex items-center gap-4">
-              {owner.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={owner.avatar_url} alt={owner.full_name} className="h-14 w-14 rounded-full object-cover" />
-              ) : (
-                <div className="h-14 w-14 rounded-full bg-hairline" />
-              )}
-              <div>
-                <p className="text-base font-medium">{owner.full_name}, {owner.age}</p>
-                <p className="mt-0.5 text-sm text-muted">{owner.occupation}</p>
-              </div>
+            <div className="mt-4 space-y-5">
+              {[owner, ...residents].map((p, idx) => (
+                <div key={p.user_id} className="flex items-center gap-4">
+                  {p.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.avatar_url} alt={p.full_name} className="h-14 w-14 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-full bg-hairline" />
+                  )}
+                  <div>
+                    <p className="text-base font-medium">{p.full_name}, {p.age}</p>
+                    <p className="mt-0.5 text-sm text-muted">
+                      {p.occupation}
+                      {idx === 0 ? <span className="text-accent"> · Lists this room</span> : null}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <p className={`${sectionBody} text-muted`}>
