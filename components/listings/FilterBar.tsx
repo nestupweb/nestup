@@ -91,7 +91,7 @@ export function FilterBar() {
         ) : null}
 
         <form action={apply}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <label className={label}>City
               <select name="city" defaultValue={params.get("city") ?? "any"} className={input}>
                 <option value="any">Any city</option>

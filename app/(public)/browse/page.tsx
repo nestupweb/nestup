@@ -32,7 +32,7 @@ export default async function BrowsePage({
   };
 
   return (
-    <main className="px-5 pb-16">
+    <main className="px-4 pb-16 sm:px-6">
       <h1 className="font-serif text-3xl font-semibold">Find a room</h1>
       <p className="mt-1 text-sm text-muted">
         Rooms in shared apartments — browse openly, match when you&rsquo;re ready.

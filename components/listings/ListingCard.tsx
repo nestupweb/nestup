@@ -27,43 +27,54 @@ export function ListingCard({ listing }: { listing: Listing }) {
         aria-label={`${listing.title} — ₪${listing.rent.toLocaleString()} per month`}
         className="absolute inset-0 z-[1]"
       />
-      <div className="flex min-h-36 sm:min-h-44">
-        <div className="relative w-32 shrink-0 self-stretch sm:w-2/5">
+      <div className="flex min-h-36 sm:min-h-44 md:min-h-52">
+        <div className="relative w-32 shrink-0 self-stretch sm:w-56 md:w-72 lg:w-80">
           {listing.photo_urls[0] ? (
             <Image
               src={listing.photo_urls[0]}
               alt=""
               fill
-              sizes="(min-width: 640px) 40vw, 128px"
+              sizes="(min-width: 1024px) 320px, (min-width: 768px) 288px, (min-width: 640px) 224px, 128px"
               className="object-cover"
             />
           ) : (
             <NoPhoto className="border-r border-hairline" />
           )}
         </div>
-        <div className="min-w-0 flex-1 p-4 pr-14 sm:p-5 sm:pr-16">
-          <p className="font-serif text-2xl font-semibold">
-            ₪{listing.rent.toLocaleString()}
-            <span className="text-sm font-normal text-muted"> / mo</span>
-          </p>
-          <h3 className="mt-1.5 truncate text-[15px] font-medium">{listing.title}</h3>
-          <p className="mt-0.5 truncate text-sm text-muted">
-            {listing.city}
-            {listing.neighborhood ? ` · ${listing.neighborhood}` : ""}
-          </p>
-          <p className="mt-2 text-xs text-muted">{meta}</p>
-          {chips.length > 0 ? (
-            <div className="mt-3 hidden flex-wrap gap-1.5 sm:flex">
-              {chips.map((c) => (
-                <span
-                  key={c}
-                  className="rounded-full border border-hairline px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted"
-                >
-                  {c}
-                </span>
-              ))}
-            </div>
-          ) : null}
+        <div className="flex min-w-0 flex-1">
+          <div className="min-w-0 flex-1 p-4 pr-14 sm:p-5 lg:pr-5">
+            <p className="font-serif text-2xl font-semibold lg:hidden">
+              ₪{listing.rent.toLocaleString()}
+              <span className="text-sm font-normal text-muted"> / mo</span>
+            </p>
+            <h3 className="mt-1.5 truncate text-[15px] font-medium lg:mt-0.5 lg:text-base">
+              {listing.title}
+            </h3>
+            <p className="mt-0.5 truncate text-sm text-muted">
+              {listing.city}
+              {listing.neighborhood ? ` · ${listing.neighborhood}` : ""}
+            </p>
+            <p className="mt-2 text-xs text-muted">{meta}</p>
+            {chips.length > 0 ? (
+              <div className="mt-3 hidden flex-wrap gap-1.5 md:flex">
+                {chips.map((c) => (
+                  <span
+                    key={c}
+                    className="rounded-full border border-hairline px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {/* Wide screens: rent as its own right-aligned scan column. */}
+          <div className="hidden w-44 shrink-0 flex-col items-end border-l border-hairline p-5 pr-14 lg:flex">
+            <p className="whitespace-nowrap text-right font-serif text-2xl font-semibold">
+              ₪{listing.rent.toLocaleString()}
+            </p>
+            <p className="mt-0.5 text-xs text-muted">per month</p>
+          </div>
         </div>
       </div>
       <SaveButton listingId={listing.id} className="absolute right-3 top-3 z-[2]" />
