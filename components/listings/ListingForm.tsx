@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { saveListingAction, type ListingFormState } from "@/app/actions/listing";
-import { CITIES, FEATURES, MAX_LISTING_PHOTOS } from "@/lib/constants";
+import { CITIES, FEATURES, MAX_LISTING_PHOTOS, PROPERTY_TYPES } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
 const input =
@@ -43,6 +43,17 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
         </label>
         <label className={label}>Neighborhood
           <input name="neighborhood" maxLength={80} defaultValue={listing?.neighborhood ?? ""} className={input} />
+        </label>
+        <label className={label}>Property type
+          <select name="property_type" required defaultValue={listing?.property_type ?? "apartment"} className={input}>
+            {PROPERTY_TYPES.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select>
+        </label>
+        <label className={label}>Rooms
+          <input name="rooms" type="number" required min={1} max={12} step={0.5} defaultValue={listing?.rooms ?? 3} className={input} />
+        </label>
+        <label className={label}>Size (m²)
+          <input name="size_sqm" type="number" min={10} max={1000} defaultValue={listing?.size_sqm ?? ""} className={input} />
         </label>
         <label className={label}>Rent (₪ / month)
           <input name="rent" type="number" required min={1} defaultValue={listing?.rent ?? ""} className={input} />

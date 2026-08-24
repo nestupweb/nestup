@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { FEATURES } from "@/lib/constants";
+import { FEATURES, propertyTypeLabel } from "@/lib/constants";
 import { swipeAction } from "@/app/actions/swipe";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -55,6 +55,9 @@ export default async function ListingDetailPage({
       </p>
 
       <p className="mt-4 border-y border-hairline py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+        {propertyTypeLabel(listing.property_type)} ·{" "}
+        {listing.rooms} room{listing.rooms === 1 ? "" : "s"}
+        {listing.size_sqm ? ` · ${listing.size_sqm} m²` : ""} ·{" "}
         {listing.roommates_count} flatmate{listing.roommates_count === 1 ? "" : "s"} ·{" "}
         {listing.pets_allowed ? "Pets welcome" : "No pets"} ·{" "}
         {listing.smoking_allowed ? "Smoking OK" : "No smoking"}

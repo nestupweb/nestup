@@ -1,3 +1,5 @@
+import type { PropertyType } from "@/lib/types";
+
 export const CITIES = [
   "Tel Aviv", "Jerusalem", "Haifa", "Ramat Gan", "Givatayim", "Herzliya",
   "Beer Sheva", "Rishon LeZion", "Petah Tikva", "Netanya", "Rehovot", "Raanana",
@@ -13,6 +15,19 @@ export const MIN_INTERESTS = 3;
 export const MAX_INTERESTS = 10;
 export const MAX_LISTING_PHOTOS = 5;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+export const PROPERTY_TYPES = [
+  { key: "apartment", label: "Apartment" },
+  { key: "garden_apartment", label: "Garden apartment" },
+  { key: "penthouse", label: "Penthouse" },
+  { key: "studio", label: "Studio" },
+  { key: "duplex", label: "Duplex" },
+  { key: "private_house", label: "Private house" },
+] as const satisfies readonly { key: PropertyType; label: string }[];
+
+export function propertyTypeLabel(key: PropertyType): string {
+  return PROPERTY_TYPES.find((p) => p.key === key)?.label ?? key;
+}
 
 export const FEATURES = [
   { key: "balcony", label: "Balcony" },

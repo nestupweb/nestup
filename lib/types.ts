@@ -2,6 +2,13 @@ export type SleepSchedule = "early" | "late" | "flexible";
 export type GuestsFreq = "rare" | "sometimes" | "often";
 export type SwipeDirection = "like" | "skip";
 export type ListerResponse = "pending" | "liked" | "skipped";
+export type PropertyType =
+  | "apartment"
+  | "garden_apartment"
+  | "penthouse"
+  | "studio"
+  | "duplex"
+  | "private_house";
 
 export interface Profile {
   user_id: string;
@@ -35,6 +42,9 @@ export interface Listing {
   neighborhood: string;
   rent: number;
   available_from: string; // ISO date
+  property_type: PropertyType;
+  rooms: number; // halves allowed, e.g. 3.5
+  size_sqm: number | null;
   roommates_count: number;
   pets_allowed: boolean;
   smoking_allowed: boolean;
