@@ -34,7 +34,11 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
     }
     return { error: "Wrong email or password." };
   }
-  redirect(next.startsWith("/") ? next : "/swipe");
+  const safeNext =
+    next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")
+      ? next
+      : "/swipe";
+  redirect(safeNext);
 }
 
 export async function signOutAction(): Promise<void> {

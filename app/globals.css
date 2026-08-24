@@ -9,6 +9,7 @@
   /* hairline & muted already carry alpha — don't stack /NN opacity modifiers on them */
   --hairline: rgba(32, 29, 26, 0.1);
   --muted: rgba(32, 29, 26, 0.68);
+  --danger: #a3402f;
 }
 
 [data-theme="dark"] {
@@ -19,6 +20,7 @@
   --surface: #201c18;
   --hairline: rgba(255, 255, 255, 0.1);
   --muted: rgba(245, 239, 230, 0.55);
+  --danger: #d98873;
 }
 
 @theme inline {
@@ -29,6 +31,7 @@
   --color-surface: var(--surface);
   --color-hairline: var(--hairline);
   --color-muted: var(--muted);
+  --color-danger: var(--danger);
   --font-serif: var(--font-fraunces);
   --font-sans: var(--font-inter);
 }

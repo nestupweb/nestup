@@ -60,7 +60,7 @@ export function AuthForm({
         />
       </label>
 
-      {state.error ? <p role="alert" className="mt-3 text-sm text-red-600">{state.error}</p> : null}
+      {state.error ? <p role="alert" className="mt-3 text-sm text-danger">{state.error}</p> : null}
 
       <button
         type="submit" disabled={pending}
