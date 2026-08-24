@@ -1,0 +1,16 @@
+# dependencies / build
+node_modules/
+.next/
+out/
+
+# env & secrets
+.env
+.env*.local
+
+# tooling
+.superpowers/
+.vercel/
+*.tsbuildinfo
+
+# misc
+.DS_Store
