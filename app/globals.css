@@ -6,8 +6,9 @@
   --accent: #2f5d50;
   --accent-contrast: #faf7f2;
   --surface: #ffffff;
+  /* hairline & muted already carry alpha — don't stack /NN opacity modifiers on them */
   --hairline: rgba(32, 29, 26, 0.1);
-  --muted: rgba(32, 29, 26, 0.55);
+  --muted: rgba(32, 29, 26, 0.68);
 }
 
 [data-theme="dark"] {

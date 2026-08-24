@@ -18,3 +18,9 @@ test("toggles dark theme on <html> and persists to localStorage", async () => {
   expect(document.documentElement.dataset.theme).toBeUndefined();
   expect(localStorage.theme).toBe("light");
 });
+
+test("syncs its label when the page loads already in dark mode", async () => {
+  document.documentElement.dataset.theme = "dark";
+  render(<ThemeToggle />);
+  expect(await screen.findByRole("button", { name: /switch to light mode/i })).toBeInTheDocument();
+});
