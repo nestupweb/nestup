@@ -44,7 +44,7 @@ export function ListingGallery({ photos, title }: { photos: string[]; title: str
           src={photos[index]}
           alt={`${title} — photo ${index + 1} of ${total}`}
           fill
-          sizes="(min-width: 768px) 728px, 100vw"
+          sizes="(min-width: 1024px) 640px, 100vw"
           className="object-cover"
         />
         {total > 1 ? (
