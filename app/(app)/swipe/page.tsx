@@ -5,14 +5,14 @@ export default async function SwipePage() {
   const { user } = await requireUser();
 
   return (
-    <main className="px-5 py-10">
+    <main className="mx-auto max-w-xl px-4 py-16 text-center sm:px-6 md:py-24">
       <p className="text-xs font-medium uppercase tracking-widest text-muted">
         Signed in as {user.email}
       </p>
       <h1 className="mt-4 font-serif text-4xl font-semibold leading-tight">
         You&rsquo;re in.
       </h1>
-      <p className="mt-5 max-w-md text-base leading-7 text-muted">
+      <p className="mx-auto mt-5 max-w-md text-base leading-7 text-muted">
         The swipe deck is being built next and will appear right here.
       </p>
     </main>
