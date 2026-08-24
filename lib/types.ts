@@ -78,9 +78,17 @@ export interface Match {
   created_at: string;
 }
 
+/** One chat thread per (listing, seeker) — no match required to start. */
+export interface Conversation {
+  id: string;
+  listing_id: string;
+  seeker_id: string;
+  created_at: string;
+}
+
 export interface Message {
   id: string;
-  match_id: string;
+  conversation_id: string;
   sender_id: string;
   content: string;
   created_at: string;
