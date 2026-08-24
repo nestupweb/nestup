@@ -39,7 +39,7 @@ export default async function BrowsePage({
       </p>
 
       <div className="mt-5 lg:mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
-        <div className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
+        <div className="lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)]">
           <FilterBar />
         </div>
 

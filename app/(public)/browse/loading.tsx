@@ -4,7 +4,7 @@ export default function BrowseLoading() {
       <div className="h-9 w-44 animate-pulse rounded-lg bg-hairline" />
       <div className="mt-3 h-4 w-72 max-w-full animate-pulse rounded bg-hairline" />
       <div className="mt-5 lg:mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
-        <div className="h-11 animate-pulse rounded-xl border border-hairline bg-surface lg:h-[36rem]" />
+        <div className="h-11 animate-pulse rounded-xl border border-hairline bg-surface lg:h-[calc(100dvh-3rem)]" />
         <div>
           <div className="mt-4 h-4 w-36 animate-pulse rounded bg-hairline lg:mt-0" />
           <div className="mt-4 flex flex-col gap-4">
