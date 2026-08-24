@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FEATURES, propertyTypeLabel } from "@/lib/constants";
 import { ListingGallery } from "@/components/listings/ListingGallery";
+import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
 import { swipeAction } from "@/app/actions/swipe";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -38,10 +39,24 @@ export default async function ListingDetailPage({
     .map((r) => r.profiles as unknown as Profile | null)
     .filter((p): p is Profile => p !== null && p.user_id !== listing.owner_id);
 
-  const features = FEATURES.filter((f) => listing[f.key]).map((f) => f.label);
+  const features = FEATURES.filter((f) => listing[f.key]);
+
+  const AMENITY_ICONS: Record<string, DetailIconName> = {
+    balcony: "balcony",
+    air_conditioning: "snowflake",
+    parking: "parking",
+    elevator: "elevator",
+    furnished: "sofa",
+  };
+  const propertyIcon: DetailIconName =
+    listing.property_type === "private_house" || listing.property_type === "garden_apartment"
+      ? "home"
+      : "building";
 
   const sectionHeading = "font-serif text-xl font-semibold";
   const sectionBody = "mt-3 text-base leading-relaxed";
+  const itemRow = "mt-4 flex flex-wrap gap-x-7 gap-y-3 text-base";
+  const item = "inline-flex items-center gap-2.5";
 
   return (
     <main className="mx-auto max-w-3xl px-5 pb-20">
@@ -62,25 +77,53 @@ export default async function ListingDetailPage({
       <div className="mt-10 space-y-9">
         <section className="border-t border-hairline pt-7">
           <h2 className={sectionHeading}>Property details</h2>
-          <p className={sectionBody}>
-            {propertyTypeLabel(listing.property_type)} · {listing.rooms} room{listing.rooms === 1 ? "" : "s"}
-            {listing.size_sqm ? ` · ${listing.size_sqm} m²` : ""}
-          </p>
+          <div className={itemRow}>
+            <span className={item}>
+              <DetailIcon name={propertyIcon} />
+              {propertyTypeLabel(listing.property_type)}
+            </span>
+            <span className={item}>
+              <DetailIcon name="door" />
+              {listing.rooms} room{listing.rooms === 1 ? "" : "s"}
+            </span>
+            {listing.size_sqm ? (
+              <span className={item}>
+                <DetailIcon name="ruler" />
+                {listing.size_sqm} m²
+              </span>
+            ) : null}
+          </div>
         </section>
 
         <section className="border-t border-hairline pt-7">
           <h2 className={sectionHeading}>House rules</h2>
-          <p className={sectionBody}>
-            {listing.roommates_count} flatmate{listing.roommates_count === 1 ? "" : "s"} ·{" "}
-            {listing.pets_allowed ? "Pets welcome" : "No pets"} ·{" "}
-            {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
-          </p>
+          <div className={itemRow}>
+            <span className={item}>
+              <DetailIcon name="users" />
+              {listing.roommates_count} flatmate{listing.roommates_count === 1 ? "" : "s"}
+            </span>
+            <span className={item}>
+              <DetailIcon name="paw" />
+              {listing.pets_allowed ? "Pets welcome" : "No pets"}
+            </span>
+            <span className={item}>
+              <DetailIcon name={listing.smoking_allowed ? "smoking" : "no-smoking"} />
+              {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
+            </span>
+          </div>
         </section>
 
         {features.length > 0 ? (
           <section className="border-t border-hairline pt-7">
             <h2 className={sectionHeading}>Amenities</h2>
-            <p className={sectionBody}>{features.join(" · ")}</p>
+            <div className={itemRow}>
+              {features.map((f) => (
+                <span key={f.key} className={item}>
+                  <DetailIcon name={AMENITY_ICONS[f.key] ?? "building"} />
+                  {f.label}
+                </span>
+              ))}
+            </div>
           </section>
         ) : null}
 
