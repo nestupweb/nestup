@@ -114,15 +114,15 @@ export function FilterBar() {
               <input name="roommates_max" type="number" min={0} max={10} defaultValue={params.get("roommates_max") ?? ""} className={input} />
             </label>
           </div>
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm lg:mt-5 lg:flex-col lg:items-start lg:gap-y-2.5 lg:border-t lg:border-hairline lg:pb-5 lg:pt-4">
-            <label className="flex items-center gap-1.5">
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm lg:mt-5 lg:flex-1 lg:flex-col lg:items-start lg:justify-evenly lg:gap-y-3 lg:border-t lg:border-hairline lg:pb-4 lg:pt-4 lg:text-base">
+            <label className="flex items-center gap-1.5 lg:gap-2.5">
               <input type="checkbox" name="pets_allowed" defaultChecked={params.get("pets_allowed") === "true"} /> Pets allowed
             </label>
-            <label className="flex items-center gap-1.5">
+            <label className="flex items-center gap-1.5 lg:gap-2.5">
               <input type="checkbox" name="smoking_allowed" defaultChecked={params.get("smoking_allowed") === "true"} /> Smoking allowed
             </label>
             {FEATURES.map((f) => (
-              <label key={f.key} className="flex items-center gap-1.5">
+              <label key={f.key} className="flex items-center gap-1.5 lg:gap-2.5">
                 <input type="checkbox" name={f.key} defaultChecked={params.get(f.key) === "true"} /> {f.label}
               </label>
             ))}
