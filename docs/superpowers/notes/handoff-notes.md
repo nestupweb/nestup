@@ -14,6 +14,7 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
   - `app/actions/auth.ts` — credential extraction duplicated between signUp/signIn (small helper or zod schema); malformed-email branch in signIn returns inaccurate copy ("Email and password are required.").
   - `lib/auth.ts` helpers gained first consumers in Tasks 10–11 (requireUser via /swipe stub + profile action; getOwnProfile via /profile page) — behavior now exercised.
 - **TabBar:** Browse/Matches/Listing links 404 until their tasks land — interim state, not a bug.
+- **Cosmetic (chat action):** `app/actions/chat.ts` revalidates `/browse/${listingId}/chat` from a client-supplied (UUID-validated) listing_id; no security impact (RLS governs the insert), but could derive the path from the conversation's own listing_id for consistency.
 
 ## For the scale doc
 
@@ -27,7 +28,8 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 
 - `respond_to_interest` executable by any authenticated user is INTENTIONAL (RLS + function logic scope what it can do); anon execute was revoked in migration 0002.
 - Supabase advisor `rls_auto_enable` warning is a false positive (event-trigger return type; not directly callable).
-- Open-redirect fix history: login `next` param sanitized via `lib/redirect.ts` `sanitizeNextPath` (blocks `//` and `/\`), unit-tested — good security-doc example.
+- Open-redirect fix history: login/onboarding `next` param sanitized via `lib/redirect.ts` `sanitizeNextPath` — blocks `//` and `/\`, and (commit 7591a6d, after the chat security review) strips ASCII tab/newline/CR first because browsers ignore those in URLs (`/\t/evil.com` would otherwise escape). Unit-tested (11 cases) — good security-doc example of iterative hardening.
+- Chat RLS verified by live adversarial probes (2026-08-24 security review): 12/12 spoof/leak attempts blocked (foreign reads, spoofed seeker_id/sender_id, foreign-conversation inserts, own-listing chat, inactive-listing chat, UPDATE/DELETE absence). Pre-existing advisor note: "leaked password protection disabled" (project auth setting) — consider enabling before deploy.
 - Client MIME trust in uploads (see storage backstop above).
 
 ## Product/state facts
