@@ -9,9 +9,10 @@ const input =
 const label = "block text-[10px] font-semibold uppercase tracking-widest text-muted";
 
 /**
- * GET-style filter bar: submits the chosen filters into /browse?… search params
- * (the server re-queries; no client-side filtering). Inline on sm+; below sm it
- * collapses behind a "Filters" button that opens a bottom drawer.
+ * GET-style filters: submits the chosen filters into /browse?… search params
+ * (the server re-queries; no client-side filtering). Vertical sidebar card on
+ * lg+; below lg it collapses behind a "Filters" button that opens a bottom
+ * drawer.
  */
 export function FilterBar() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export function FilterBar() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-xl border border-hairline bg-surface px-4 py-2.5 text-sm font-medium text-ink sm:hidden"
+        className="w-full rounded-xl border border-hairline bg-surface px-4 py-2.5 text-sm font-medium text-ink lg:hidden"
       >
         Filters
       </button>
@@ -52,7 +53,7 @@ export function FilterBar() {
         <div
           aria-hidden="true"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-ink/40 sm:hidden"
+          className="fixed inset-0 z-40 bg-ink/40 lg:hidden"
         />
       ) : null}
 
@@ -62,12 +63,12 @@ export function FilterBar() {
         aria-label={open ? "Filters" : undefined}
         className={
           open
-            ? "fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-2xl border-t border-hairline bg-surface p-5 shadow-xl sm:static sm:z-auto sm:max-h-none sm:overflow-visible sm:rounded-2xl sm:border sm:p-4 sm:shadow-none"
-            : "hidden rounded-2xl border border-hairline bg-surface p-4 sm:block"
+            ? "fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-2xl border-t border-hairline bg-surface p-5 shadow-xl lg:static lg:z-auto lg:max-h-none lg:overflow-visible lg:rounded-2xl lg:border lg:shadow-none"
+            : "hidden rounded-2xl border border-hairline bg-surface p-5 lg:block"
         }
       >
         {open ? (
-          <div className="mb-4 flex items-center justify-between sm:hidden">
+          <div className="mb-4 flex items-center justify-between lg:hidden">
             <p className="font-serif text-lg font-semibold">Filters</p>
             <button
               type="button"
@@ -90,8 +91,10 @@ export function FilterBar() {
           </div>
         ) : null}
 
+        <p className="mb-4 hidden font-serif text-lg font-semibold lg:block">Filters</p>
+
         <form action={apply}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:gap-4">
             <label className={label}>City
               <select name="city" defaultValue={params.get("city") ?? "any"} className={input}>
                 <option value="any">Any city</option>
@@ -111,7 +114,7 @@ export function FilterBar() {
               <input name="roommates_max" type="number" min={0} max={10} defaultValue={params.get("roommates_max") ?? ""} className={input} />
             </label>
           </div>
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm lg:mt-5 lg:flex-col lg:items-start lg:gap-y-2.5 lg:border-t lg:border-hairline lg:pt-4">
             <label className="flex items-center gap-1.5">
               <input type="checkbox" name="pets_allowed" defaultChecked={params.get("pets_allowed") === "true"} /> Pets allowed
             </label>
@@ -126,7 +129,7 @@ export function FilterBar() {
           </div>
           <button
             type="submit"
-            className="mt-5 w-full rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-accent-contrast sm:mt-4 sm:w-auto sm:py-2"
+            className="mt-5 w-full rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-accent-contrast"
           >
             Apply filters
           </button>

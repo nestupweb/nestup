@@ -38,61 +38,65 @@ export default async function BrowsePage({
         Rooms in shared apartments — browse openly, match when you&rsquo;re ready.
       </p>
 
-      <div className="mt-5">
-        <FilterBar />
-      </div>
+      <div className="mt-5 lg:mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
+        <div className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
+          <FilterBar />
+        </div>
 
-      <div className="mt-4 flex items-baseline justify-between gap-3 text-sm">
-        <p className="text-muted">
-          {filtersActive
-            ? `${total} result${total === 1 ? "" : "s"} match your filters`
-            : `${total} room${total === 1 ? "" : "s"} available`}
-        </p>
-        {filtersActive ? (
-          <Link href="/browse" className="shrink-0 text-accent underline underline-offset-4">
-            Clear filters
-          </Link>
-        ) : null}
-      </div>
-
-      {listings.length === 0 ? (
-        total === 0 && !filtersActive ? (
-          <EmptyState
-            title="No rooms listed yet"
-            hint="Check back soon — or sign up and be the first to list one."
-          />
-        ) : (
-          <>
-            <EmptyState
-              title="No rooms match your filters"
-              hint="Try widening the rent range or clearing a filter."
-            />
-            <p className="mt-4 text-center">
-              <Link href="/browse" className="text-sm text-accent underline underline-offset-4">
+        <div>
+          <div className="mt-4 flex items-baseline justify-between gap-3 text-sm lg:mt-0">
+            <p className="text-muted">
+              {filtersActive
+                ? `${total} result${total === 1 ? "" : "s"} match your filters`
+                : `${total} room${total === 1 ? "" : "s"} available`}
+            </p>
+            {filtersActive ? (
+              <Link href="/browse" className="shrink-0 text-accent underline underline-offset-4">
                 Clear filters
               </Link>
-            </p>
-          </>
-        )
-      ) : (
-        <div className="mt-5 flex flex-col gap-4">
-          {listings.map((l) => (
-            <ListingCard key={l.id} listing={l} />
-          ))}
-        </div>
-      )}
+            ) : null}
+          </div>
 
-      {lastPage > 1 ? (
-        <div className="mt-6 flex items-center justify-center gap-4 text-sm">
-          {filters.page > 1 ? (
-            <Link className="text-accent underline" href={pageLink(filters.page - 1)}>← Previous</Link>
-          ) : null}
-          <span className="text-muted">Page {filters.page} of {lastPage}</span>
-          {filters.page < lastPage ? (
-            <Link className="text-accent underline" href={pageLink(filters.page + 1)}>Next →</Link>
+          {listings.length === 0 ? (
+            total === 0 && !filtersActive ? (
+              <EmptyState
+                title="No rooms listed yet"
+                hint="Check back soon — or sign up and be the first to list one."
+              />
+            ) : (
+              <>
+                <EmptyState
+                  title="No rooms match your filters"
+                  hint="Try widening the rent range or clearing a filter."
+                />
+                <p className="mt-4 text-center">
+                  <Link href="/browse" className="text-sm text-accent underline underline-offset-4">
+                    Clear filters
+                  </Link>
+                </p>
+              </>
+            )
+          ) : (
+            <div className="mt-4 flex flex-col gap-4">
+              {listings.map((l) => (
+                <ListingCard key={l.id} listing={l} />
+              ))}
+            </div>
+          )}
+
+          {lastPage > 1 ? (
+            <div className="mt-6 flex items-center justify-center gap-4 text-sm">
+              {filters.page > 1 ? (
+                <Link className="text-accent underline" href={pageLink(filters.page - 1)}>← Previous</Link>
+              ) : null}
+              <span className="text-muted">Page {filters.page} of {lastPage}</span>
+              {filters.page < lastPage ? (
+                <Link className="text-accent underline" href={pageLink(filters.page + 1)}>Next →</Link>
+              ) : null}
+            </div>
           ) : null}
         </div>
-      ) : null}
+      </div>
     </main>
   );
 }
