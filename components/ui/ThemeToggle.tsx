@@ -6,6 +6,9 @@ export function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
+    // Sync from the <html> attribute the inline head script sets pre-paint; a lazy
+    // initializer would mismatch the server-rendered label during hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDark(document.documentElement.dataset.theme === "dark");
   }, []);
 
