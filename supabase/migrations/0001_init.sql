@@ -155,21 +155,21 @@ create or replace function public.respond_to_interest(p_swipe_id uuid, p_respons
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  v_swipe swipes%rowtype;
-  v_listing listings%rowtype;
+  v_swipe public.swipes%rowtype;
+  v_listing public.listings%rowtype;
   v_match_id uuid;
 begin
   if p_response not in ('liked','skipped') then
     raise exception 'response must be liked or skipped';
   end if;
 
-  select * into v_swipe from swipes where id = p_swipe_id;
+  select * into v_swipe from public.swipes where id = p_swipe_id;
   if not found then raise exception 'swipe not found'; end if;
 
-  select * into v_listing from listings where id = v_swipe.listing_id;
+  select * into v_listing from public.listings where id = v_swipe.listing_id;
   if v_listing.owner_id is distinct from auth.uid() then
     raise exception 'only the listing owner may respond';
   end if;
@@ -177,13 +177,13 @@ begin
     raise exception 'can only respond to likes';
   end if;
 
-  update swipes set lister_response = p_response where id = p_swipe_id;
+  update public.swipes set lister_response = p_response where id = p_swipe_id;
 
   if p_response = 'liked' then
-    insert into matches (listing_id, seeker_id, lister_id)
+    insert into public.matches (listing_id, seeker_id, lister_id)
     values (v_listing.id, v_swipe.seeker_id, v_listing.owner_id)
     on conflict (listing_id, seeker_id) do nothing;
-    select id into v_match_id from matches
+    select id into v_match_id from public.matches
       where listing_id = v_listing.id and seeker_id = v_swipe.seeker_id;
   end if;
 
