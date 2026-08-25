@@ -7,10 +7,10 @@ export function Avatar({
 }: {
   url: string | null | undefined;
   name?: string | null;
-  size?: 10 | 12 | 14 | 16 | 28;
+  size?: 10 | 12 | 14 | 16 | 20 | 28;
   className?: string;
 }) {
-  const dims = { 10: "h-10 w-10", 12: "h-12 w-12", 14: "h-14 w-14", 16: "h-16 w-16", 28: "h-28 w-28" }[size];
+  const dims = { 10: "h-10 w-10", 12: "h-12 w-12", 14: "h-14 w-14", 16: "h-16 w-16", 20: "h-20 w-20", 28: "h-28 w-28" }[size];
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element

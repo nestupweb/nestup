@@ -26,7 +26,7 @@ import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 function profile(overrides: Partial<Profile> = {}): Profile {
   return {
     user_id: "seeker", full_name: "Seeker", age: 25, occupation: "Designer", bio: "",
-    avatar_url: null, smoker: false, has_pet: false, cleanliness: 3,
+    avatar_url: null, photo_urls: [], smoker: false, has_pet: false, cleanliness: 3,
     sleep_schedule: "flexible", guests_freq: "sometimes",
     interests: ["Music", "Cooking"], ok_with_smoker: true, ok_with_pets: true,
     budget_min: 0, budget_max: 3000, preferred_cities: [], earliest_move_in: null,

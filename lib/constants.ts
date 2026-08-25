@@ -40,6 +40,7 @@ export function safeRoomLabel(key: SafeRoom): string {
   return SAFE_ROOM_OPTIONS.find((o) => o.key === key)?.label ?? "None";
 }
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+export const MAX_PROFILE_PHOTOS = 6; // extra pictures beyond the avatar
 
 export const PROPERTY_TYPES = [
   { key: "apartment", label: "Apartment" },

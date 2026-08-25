@@ -5,7 +5,7 @@ import type { Listing, Profile } from "@/lib/types";
 function profile(overrides: Partial<Profile> = {}): Profile {
   return {
     user_id: "u1", full_name: "Test User", age: 25, occupation: "", bio: "",
-    avatar_url: null, smoker: false, has_pet: false, cleanliness: 3,
+    avatar_url: null, photo_urls: [], smoker: false, has_pet: false, cleanliness: 3,
     sleep_schedule: "flexible", guests_freq: "sometimes",
     interests: ["Music", "Cooking", "Travel"],
     ok_with_smoker: true, ok_with_pets: true,

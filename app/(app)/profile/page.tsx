@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getAuthContext, getOwnProfile } from "@/lib/auth";
-import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { ProfileAvatar, ProfileGallery } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
 import type { Listing } from "@/lib/types";
@@ -82,6 +82,8 @@ export default async function ProfilePage({
           ) : null}
         </div>
       </div>
+
+      <ProfileGallery photos={profile.photo_urls ?? []} name={profile.full_name} />
 
       <div className="mt-8">
         <ProfileTabs mine={mine} liked={liked} history={history} initial={initial} />
