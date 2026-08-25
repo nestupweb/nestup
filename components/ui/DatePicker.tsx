@@ -77,11 +77,13 @@ export function DatePicker({
   const initial = parseISODate(selected) ?? parseISODate(min) ?? parseISODate(today)!;
   const [view, setView] = useState({ y: initial.y, m: initial.m });
 
-  // Jump to the selected month when the value changes from outside.
-  useEffect(() => {
+  // Jump to the selected month when the value changes (state adjusted during render).
+  const [seen, setSeen] = useState(selected);
+  if (seen !== selected) {
+    setSeen(selected);
     const p = parseISODate(selected);
     if (p) setView({ y: p.y, m: p.m });
-  }, [selected]);
+  }
 
   useEffect(() => {
     if (!open) return;

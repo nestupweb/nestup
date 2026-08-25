@@ -75,11 +75,9 @@ export function ScheduleViewing({
     return p ? new Date(p.y, p.m - 1, p.d).getDay() : 0;
   }, [date]);
   const times = useMemo(() => startTimes(slots, weekday, duration), [slots, weekday, duration]);
-  const [time, setTime] = useState<string>("");
-  useEffect(() => {
-    // Keep a valid time selected as the day / duration changes.
-    setTime((t) => (times.includes(t) ? t : times.includes("18:00") ? "18:00" : times[0] ?? ""));
-  }, [times]);
+  const [picked, setTime] = useState<string>("18:00");
+  // The chosen time, or the nearest valid one as the day / duration changes.
+  const time = times.includes(picked) ? picked : times.includes("18:00") ? "18:00" : times[0] ?? "";
 
   const startsAt = useMemo(() => {
     if (!date || !time) return "";
