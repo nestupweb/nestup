@@ -24,6 +24,8 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 - **History tab:** `listing_views` is upserted from the listing detail page render for signed-in users (`app/(public)/browse/[id]/page.tsx`); capped at the 30 most recent on the profile.
 - **Cosmetic (chat action):** `app/actions/chat.ts` revalidates `/browse/${listingId}/chat` from a client-supplied (UUID-validated) listing_id; no security impact (RLS governs the insert), but could derive the path from the conversation's own listing_id for consistency.
 
+- **City picker browse-all (2026-08-25):** `components/ui/CityCombobox.tsx` (listing form, browse filter, profile `CityMultiPicker`) now has two ways in: typing lists *every* match (was capped at `suggestCities` default 8 — the default stays 8 for `cities.test.ts`; the combobox passes `CITIES.length`), and a chevron button (`aria-label` "Browse all cities") / focusing the empty box lists all 124 cities A–Z with sticky letter headers (`role="presentation"` rows, `aria-hidden` headers, options keep `id=<list>-<index>` for `aria-activedescendant`). `browseAll` state is cleared on typing/Escape/outside click; the active row `scrollIntoView`s (guarded — jsdom lacks it) and the list snaps to the top when its contents change. List is `z-50` so it paints over the `z-40` BottomNav. Tests: `tests/unit/city-combobox.test.tsx`.
+
 ## For the scale doc
 
 - Unbounded page offsets in listing pagination (deep OFFSET scans).
