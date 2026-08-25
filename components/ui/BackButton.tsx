@@ -1,42 +1,54 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { canGoBack, parentPath } from "@/lib/back";
+import { canGoBack, markGoingBack, pageName, parentPath, previousVisit, recordVisit, subscribeTrail } from "@/lib/back";
 
 /**
- * Top-left "Back" on every page: returns to the previous page when there is
- * one, otherwise to the page's parent (see parentPath). Listings is the app's
- * front door (`/` redirects there), so on /browse with no history there is
- * nowhere to go and the button stays hidden — decided in the browser, which is
- * the only place that knows its history (the server assumes there is one).
+ * "← Back to chats" under the site header, top-left of every page. Names the
+ * page this tab came from (the in-app trail in lib/back) and returns to it
+ * through the browser's history; on a direct link there is no trail, so it
+ * names and opens the page's parent instead. Listings is the front door
+ * (`/` redirects there), so with nothing to return to it stays hidden.
+ * Styled like the Swipe panel's "Full listing →" link, pointing the other way.
  */
-const subscribe = (onChange: () => void) => {
-  window.addEventListener("popstate", onChange);
-  return () => window.removeEventListener("popstate", onChange);
-};
 export function BackButton({ className = "" }: { className?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const hasHistory = useSyncExternalStore(subscribe, () => canGoBack(), () => true);
-  if (pathname === "/" || (pathname === "/browse" && !hasHistory)) return null;
 
+  useEffect(() => {
+    recordVisit(pathname);
+  }, [pathname]);
+  useEffect(() => {
+    const onPop = () => markGoingBack();
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const prev = useSyncExternalStore(subscribeTrail, () => previousVisit(pathname), () => null);
+  if (pathname === "/" || (pathname === "/browse" && !prev)) return null;
+
+  const target = prev ?? parentPath(pathname);
+  const label = `Back to ${pageName(target)}`;
   const back = () => {
-    if (canGoBack()) router.back();
-    else router.push(parentPath(pathname));
+    if (prev && canGoBack()) {
+      markGoingBack();
+      router.back();
+    } else {
+      router.push(target);
+    }
   };
 
   return (
-    <button
-      type="button"
-      onClick={back}
-      aria-label="Back"
-      title="Back"
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hairline text-ink transition-colors hover:border-accent hover:text-accent ${className}`}
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-        <path d="M15 5l-7 7 7 7" />
-      </svg>
-    </button>
+    <div className={`flex h-[2.375rem] items-end px-4 pb-1 sm:px-6 ${className}`}>
+      <button
+        type="button"
+        onClick={back}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-accent underline-offset-4 hover:underline"
+      >
+        <span aria-hidden="true">←</span>
+        {label}
+      </button>
+    </div>
   );
 }

@@ -15,12 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh pb-28">
       <header className="border-b border-hairline" style={{ viewTransitionName: "site-header" }}>
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <Link href="/browse" aria-label="NestUp home" className="flex items-center text-ink">
-              <Logo className="h-7" />
-            </Link>
-          </div>
+          <Link href="/browse" aria-label="NestUp home" className="flex items-center text-ink">
+            <Logo className="h-7" />
+          </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <form action={signOutAction}>
@@ -31,7 +28,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-6xl">{children}</div>
+      <div className="mx-auto w-full max-w-6xl">
+        <BackButton />
+        {children}
+      </div>
       <BottomNav unread={unread} />
     </div>
   );
