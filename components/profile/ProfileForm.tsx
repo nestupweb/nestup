@@ -33,6 +33,12 @@ export function ProfileForm({
       {onboarding ? (
         <p className="mt-1 text-sm text-muted">This is what listers see when you swipe right.</p>
       ) : null}
+      {onboarding && next ? (
+        <p className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
+          One quick step first: complete your profile so the lister knows who&rsquo;s
+          writing. Save it and you&rsquo;ll continue straight to your chat.
+        </p>
+      ) : null}
 
       <label className={label}>Photo
         <input name="avatar" type="file" accept="image/jpeg,image/png,image/webp" className={input} />
