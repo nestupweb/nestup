@@ -30,11 +30,21 @@ export default async function ChatThreadPage({
   ]);
   await markConversationRead(supabase, id);
 
+  // Photos live in a private bucket; hand the client short-lived signed URLs.
+  const messages = (messageRows as Message[] | null) ?? [];
+  const paths = messages.map((m) => m.image_path).filter((p): p is string => Boolean(p));
+  if (paths.length > 0) {
+    const { data: signed } = await supabase.storage.from("chat-images").createSignedUrls(paths, 60 * 60);
+    const byPath = new Map<string, string>();
+    for (const s of signed ?? []) if (s.path && s.signedUrl) byPath.set(s.path, s.signedUrl);
+    for (const m of messages) if (m.image_path) m.image_url = byPath.get(m.image_path);
+  }
+
   return (
     <ChatThread
       meId={user.id}
       conversation={conversation}
-      messages={(messageRows as Message[] | null) ?? []}
+      messages={messages}
       viewings={(viewingRows as Viewing[] | null) ?? []}
       google={{
         configured: isGoogleConfigured(),

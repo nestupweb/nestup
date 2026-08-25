@@ -1,4 +1,6 @@
 import { SHABBAT_OPTIONS } from "@/lib/validation/about";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { Select, TimeSelect } from "@/components/ui/Select";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
@@ -60,17 +62,17 @@ export function AboutFields({
           <input name="lifestyle" maxLength={200} defaultValue={d?.lifestyle ?? ""} placeholder="e.g. work from home, gym in the evenings" className={input} />
         </label>
         <label className={label}>Wake-up time
-          <input name="wake_time" type="time" defaultValue={d?.wake_time ?? ""} className={input} />
+          <TimeSelect name="wake_time" step={15} allowEmpty defaultValue={d?.wake_time ?? ""} />
         </label>
         <label className={label}>Bedtime
-          <input name="bed_time" type="time" defaultValue={d?.bed_time ?? ""} className={input} />
+          <TimeSelect name="bed_time" step={15} allowEmpty defaultValue={d?.bed_time ?? ""} />
         </label>
         <label className={label}>Shabbat observance
-          <select name="shabbat" defaultValue={d?.shabbat ?? ""} className={input}>
+          <Select name="shabbat" defaultValue={d?.shabbat ?? ""}>
             {SHABBAT_OPTIONS.map((o) => (
               <option key={o.key} value={o.key}>{o.label}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className={label}>Cooking habits
           <input name="cooking" maxLength={120} defaultValue={d?.cooking ?? ""} placeholder="e.g. cook most evenings, love hosting" className={input} />
@@ -134,7 +136,7 @@ export function AboutFields({
             <input name="budget_max" type="number" min={0} defaultValue={profile?.budget_max ?? 0} className={input} />
           </label>
           <label className={label}>Preferred move-in date
-            <input name="earliest_move_in" type="date" defaultValue={profile?.earliest_move_in ?? ""} className={input} />
+            <DatePicker name="earliest_move_in" defaultValue={profile?.earliest_move_in ?? ""} clearable placeholder="Any time" />
           </label>
         </Section>
       )}

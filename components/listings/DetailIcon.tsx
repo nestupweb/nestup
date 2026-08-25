@@ -15,9 +15,16 @@ export type DetailIconName =
   | "elevator"
   | "sofa"
   | "shield"
-  | "food";
+  | "food"
+  | "calendar";
 
 const PATHS: Record<DetailIconName, JSX.Element> = {
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </>
+  ),
   building: (
     <>
       <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />

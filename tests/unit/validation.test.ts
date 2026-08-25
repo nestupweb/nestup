@@ -74,6 +74,11 @@ describe("messageSchema", () => {
   });
   test("rejects empty and over-long content", () => {
     expect(messageSchema.safeParse({ content: "   " }).success).toBe(false);
+    // a photo alone is a valid message; the path must be <conversation>/<uuid>.<ext>
+    const img = "11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222.jpg";
+    expect(messageSchema.safeParse({ content: "", image_path: img }).success).toBe(true);
+    expect(messageSchema.safeParse({ content: "", image_path: "../etc/passwd" }).success).toBe(false);
+    expect(messageSchema.safeParse({ content: "", image_path: "11111111-1111-4111-8111-111111111111/x.jpg" }).success).toBe(false);
     expect(messageSchema.safeParse({ content: "x".repeat(2001) }).success).toBe(false);
   });
 });

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FEATURES, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
+import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { SaveButton } from "@/components/listings/SaveButton";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
@@ -56,6 +57,7 @@ export default async function ListingDetailPage({
     .filter((p): p is Profile => p !== null && p.user_id !== listing.owner_id);
 
   const features = FEATURES.filter((f) => listing[f.key]);
+  const viewingHours = describeSlots(normalizeSlots(listing.viewing_slots));
 
   const AMENITY_ICONS: Record<string, DetailIconName> = {
     balcony: "balcony",
@@ -143,6 +145,21 @@ export default async function ListingDetailPage({
             ) : null}
           </div>
         </section>
+
+        {viewingHours.length > 0 ? (
+          <section className="border-t border-hairline pt-7">
+            <h2 className={sectionHeading}>Viewing hours</h2>
+            <div className={itemRow}>
+              {viewingHours.map((h) => (
+                <span key={h} className={item}>
+                  <DetailIcon name="calendar" />
+                  {h}
+                </span>
+              ))}
+            </div>
+            <p className="mt-3 text-sm text-muted">Request a time in the chat — the host approves it before it goes on the calendar.</p>
+          </section>
+        ) : null}
 
         {features.length > 0 ? (
           <section className="border-t border-hairline pt-7">

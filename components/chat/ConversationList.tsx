@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Avatar } from "@/components/ui/Avatar";
 import { householdLabel, previewTime } from "@/lib/chat-format";
 import type { ConversationSummary } from "@/lib/types";
 
@@ -57,13 +56,10 @@ export function ConversationList({
                     active ? "bg-accent/10" : "hover:bg-hairline/40"
                   }`}
                 >
-                  <span className="relative shrink-0">
-                    <Avatar url={c.other_avatar} name={title} size={12} />
-                    <span className="absolute -bottom-1 -right-1 h-6 w-6 overflow-hidden rounded-md border-2 border-paper bg-hairline">
-                      {c.listing_photo ? (
-                        <Image src={c.listing_photo} alt="" fill sizes="24px" className="object-cover" />
-                      ) : null}
-                    </span>
+                  <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-hairline">
+                    {c.listing_photo ? (
+                      <Image src={c.listing_photo} alt="" fill sizes="56px" className="object-cover" />
+                    ) : null}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">

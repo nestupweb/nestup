@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FEATURES } from "@/lib/constants";
 import { CityCombobox } from "@/components/ui/CityCombobox";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent";
@@ -106,7 +107,7 @@ export function FilterBar() {
               <input name="rent_max" type="number" min={0} defaultValue={params.get("rent_max") ?? ""} className={input} />
             </label>
             <label className={label}>Move in by
-              <input name="move_in_by" type="date" defaultValue={params.get("move_in_by") ?? ""} className={input} />
+              <DatePicker name="move_in_by" defaultValue={params.get("move_in_by") ?? ""} clearable placeholder="Any date" />
             </label>
             <label className={label}>Max roommates
               <input name="roommates_max" type="number" min={0} max={10} defaultValue={params.get("roommates_max") ?? ""} className={input} />

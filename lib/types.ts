@@ -1,3 +1,5 @@
+import type { ViewingSlot } from "@/lib/availability";
+
 export type SleepSchedule = "early" | "late" | "flexible";
 export type GuestsFreq = "rare" | "sometimes" | "often";
 export type SwipeDirection = "like" | "skip";
@@ -102,6 +104,7 @@ export interface Listing {
   food_restrictions: string;
   photo_urls: string[];
   photo_labels: string[]; // PhotoRoom per photo, same order as photo_urls
+  viewing_slots: ViewingSlot[]; // weekly viewing hours; empty = any time
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -139,6 +142,8 @@ export interface Message {
   conversation_id: string;
   sender_id: string;
   content: string;
+  image_path: string | null; // `chat-images` bucket, `<conversation>/<uuid>.<ext>`
+  image_url?: string; // short-lived signed URL, filled in by the page
   created_at: string;
 }
 
@@ -169,6 +174,7 @@ export interface ConversationSummary {
   unread_count: number;
   created_at: string;
   household: HouseholdMember[];
+  listing_viewing_slots: unknown; // jsonb → normalizeSlots()
 }
 
 export type ViewingStatus = "proposed" | "confirmed" | "declined" | "cancelled";

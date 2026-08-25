@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { getAuthContext } from "@/lib/auth";
@@ -12,8 +13,8 @@ export default async function PublicLayout({ children }: { children: React.React
     <div className={`min-h-dvh ${user ? "pb-28" : ""}`}>
       <header className="border-b border-hairline">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/" className="text-xl font-semibold">
-            Nest<span className="italic font-normal text-accent">Up</span>
+          <Link href="/" aria-label="NestUp home" className="flex items-center text-ink">
+            <Logo className="h-7" />
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />

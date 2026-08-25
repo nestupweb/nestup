@@ -4,6 +4,9 @@ import { useActionState, useEffect, useRef } from "react";
 import { saveListingAction, type ListingFormState } from "@/app/actions/listing";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { PhotoPicker } from "@/components/listings/PhotoPicker";
+import { ViewingHoursEditor } from "@/components/listings/ViewingHoursEditor";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { normalizeSlots } from "@/lib/availability";
 import { FEATURES, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
@@ -103,7 +106,7 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className={label}>
             Available from
-            <input name="available_from" type="date" required defaultValue={listing?.available_from ?? ""} className={input} />
+            <DatePicker name="available_from" defaultValue={listing?.available_from ?? ""} placeholder="Pick a date" />
           </label>
           <label className={label}>
             Current roommates
@@ -146,6 +149,16 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
             className={input}
           />
         </label>
+      </section>
+
+      {/* ===== Viewing hours ===== */}
+      <section className={section}>
+        <h2 className={heading}>Viewing hours</h2>
+        <p className="mt-1 text-sm text-muted">
+          When can seekers come by? In the chat they can only request times inside these hours, and you approve each
+          viewing before it goes on the calendar.
+        </p>
+        <ViewingHoursEditor initial={normalizeSlots(listing?.viewing_slots)} />
       </section>
 
       {listing ? (

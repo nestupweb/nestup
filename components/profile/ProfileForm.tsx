@@ -6,6 +6,7 @@ import { upsertProfileAction, type ProfileFormState } from "@/app/actions/profil
 import { InterestsPicker } from "@/components/profile/InterestsPicker";
 import { CityMultiPicker } from "@/components/profile/CityMultiPicker";
 import { AboutFields } from "@/components/profile/AboutFields";
+import { DatePicker } from "@/components/ui/DatePicker";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
@@ -104,7 +105,7 @@ export function ProfileForm({
         </label>
       </div>
       <label className={label}>Earliest move-in
-        <input name="earliest_move_in" type="date" defaultValue={profile?.earliest_move_in ?? ""} className={input} />
+        <DatePicker name="earliest_move_in" defaultValue={profile?.earliest_move_in ?? ""} clearable placeholder="Any time" />
       </label>
       <fieldset className="mt-4">
         <legend className="text-xs font-medium uppercase tracking-widest text-muted">Preferred cities</legend>

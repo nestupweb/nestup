@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
+import { fitsAvailability, normalizeSlots } from "@/lib/availability";
 import {
   VIEWING_DURATIONS,
   describeViewing,
@@ -11,9 +12,11 @@ import {
   type ViewingDuration,
 } from "@/lib/calendar";
 import { createCalendarEvent, getGoogleConnection } from "@/lib/google";
-import type { ConversationSummary, ViewingStatus } from "@/lib/types";
+import type { ConversationSummary, Viewing, ViewingStatus } from "@/lib/types";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 export type ViewingFormState = { error?: string; warning?: string; done?: number };
+export type ViewingResult = { ok: boolean; error?: string; warning?: string };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,10 +29,14 @@ async function requestOrigin(): Promise<string> {
   return host ? `${proto}://${host}` : "";
 }
 
+async function myConversation(supabase: SupabaseClient, conversationId: string): Promise<ConversationSummary | null> {
+  const { data: rows } = await supabase.rpc("my_conversations");
+  return ((rows as ConversationSummary[] | null) ?? []).find((c) => c.id === conversationId) ?? null;
+}
+
 /**
- * Propose a viewing inside a chat. Always stored in `viewings`; when the
- * proposer has Google Calendar connected the event is also created there with
- * both participants as attendees (Google emails the invite).
+ * Request a viewing inside a chat. Seekers must pick a time inside the host's
+ * viewing hours. Nothing reaches a calendar until the other party approves.
  */
 export async function proposeViewingAction(
   _prev: ViewingFormState,
@@ -48,73 +55,132 @@ export async function proposeViewingAction(
     ? (durationRaw as ViewingDuration)
     : 45;
   const note = String(formData.get("note") ?? "").trim().slice(0, 300);
-  const timeZone = String(formData.get("time_zone") || "Asia/Jerusalem").slice(0, 64);
   const { start, end } = viewingWindow(startsAt, duration);
 
   // Participant check + listing context in one RLS-scoped call.
-  const { data: rows } = await supabase.rpc("my_conversations");
-  const conv = ((rows as ConversationSummary[] | null) ?? []).find((c) => c.id === conversationId);
+  const conv = await myConversation(supabase, conversationId);
   if (!conv) return { error: "Could not find this conversation." };
 
-  const { data: inserted, error } = await supabase
-    .from("viewings")
-    .insert({
-      conversation_id: conversationId,
-      proposed_by: user.id,
-      starts_at: start.toISOString(),
-      ends_at: end.toISOString(),
-      note,
-    })
-    .select("id")
-    .single();
-  if (error || !inserted) return { error: "Could not save the viewing. Please try again." };
-
-  let warning: string | undefined;
-  const google = await getGoogleConnection(supabase, user.id);
-  if (google) {
-    try {
-      const { data: partnerEmail } = await supabase.rpc("conversation_partner_email", {
-        p_conversation: conversationId,
-      });
-      const attendees = [...new Set([user.email, partnerEmail].filter((e): e is string => typeof e === "string" && e.length > 0))];
-      const origin = await requestOrigin();
-      const copy = describeViewing(
-        { title: conv.listing_title, address: conv.listing_address, city: conv.listing_city, rent: conv.listing_rent },
-        conv.other_name ?? "your NestUp contact",
-        note,
-        origin ? `${origin}/chat/${conversationId}` : undefined
-      );
-      const event = await createCalendarEvent(google.accessToken, { ...copy, start, end, timeZone, attendees });
-      await supabase
-        .from("viewings")
-        .update({ google_event_id: event.id, google_event_link: event.htmlLink })
-        .eq("id", inserted.id);
-    } catch {
-      warning = "Saved the viewing, but Google Calendar did not accept the event.";
+  if (conv.seeker_id === user.id) {
+    const slots = normalizeSlots(conv.listing_viewing_slots);
+    if (!fitsAvailability(slots, start.toISOString(), end.toISOString())) {
+      return { error: "Pick a time inside the host's viewing hours." };
     }
   }
 
+  const { error } = await supabase.from("viewings").insert({
+    conversation_id: conversationId,
+    proposed_by: user.id,
+    starts_at: start.toISOString(),
+    ends_at: end.toISOString(),
+    note,
+  });
+  if (error) return { error: "Could not save the viewing. Please try again." };
+
   revalidatePath(`/chat/${conversationId}`);
   revalidatePath("/chat");
-  return { done: Date.now(), warning };
+  return { done: Date.now() };
+}
+
+/** Creates the Google event from `user`'s calendar and mirrors it on the viewing. */
+async function mirrorToGoogle(
+  supabase: SupabaseClient,
+  user: User,
+  viewing: Viewing,
+  conv: ConversationSummary,
+  timeZone: string
+): Promise<string | undefined> {
+  const google = await getGoogleConnection(supabase, user.id);
+  if (!google) return undefined;
+  try {
+    const { data: partnerEmail } = await supabase.rpc("conversation_partner_email", {
+      p_conversation: conv.id,
+    });
+    const attendees = [...new Set([user.email, partnerEmail].filter((e): e is string => typeof e === "string" && e.length > 0))];
+    const origin = await requestOrigin();
+    const copy = describeViewing(
+      { title: conv.listing_title, address: conv.listing_address, city: conv.listing_city, rent: conv.listing_rent },
+      conv.other_name ?? "your NestUp contact",
+      viewing.note,
+      origin ? `${origin}/chat/${conv.id}` : undefined
+    );
+    const event = await createCalendarEvent(google.accessToken, {
+      ...copy,
+      start: new Date(viewing.starts_at),
+      end: new Date(viewing.ends_at),
+      timeZone,
+      attendees,
+    });
+    await supabase
+      .from("viewings")
+      .update({ google_event_id: event.id, google_event_link: event.htmlLink })
+      .eq("id", viewing.id);
+    return undefined;
+  } catch {
+    return "Approved, but Google Calendar did not accept the event.";
+  }
 }
 
 const RESPONSES: ViewingStatus[] = ["confirmed", "declined", "cancelled"];
 
-/** Confirm / decline (other participant) or cancel (proposer). RLS limits it to participants. */
+/**
+ * Approve / decline (the other party only) or cancel. The database trigger
+ * enforces the same rules; this returns a readable message. On approval, the
+ * approver's Google Calendar (if connected) creates the event and invites the
+ * other side — the first moment anything reaches a calendar.
+ */
 export async function respondViewingAction(
   viewingId: string,
   status: ViewingStatus,
-  conversationId: string
-): Promise<{ ok: boolean }> {
+  conversationId: string,
+  timeZone = "Asia/Jerusalem"
+): Promise<ViewingResult> {
   if (!UUID_RE.test(viewingId) || !UUID_RE.test(conversationId) || !RESPONSES.includes(status)) {
-    return { ok: false };
+    return { ok: false, error: "Could not update the viewing." };
   }
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
+  const { data } = await supabase.from("viewings").select("*").eq("id", viewingId).maybeSingle();
+  const viewing = data as Viewing | null;
+  if (!viewing || viewing.conversation_id !== conversationId) return { ok: false, error: "Could not find the viewing." };
+
+  if (status !== "cancelled") {
+    if (viewing.status !== "proposed") return { ok: false, error: "This viewing is no longer pending." };
+    if (viewing.proposed_by === user.id) return { ok: false, error: "The other party has to approve the viewing." };
+  } else if (viewing.status === "declined" || viewing.status === "cancelled") {
+    return { ok: false, error: "This viewing is already closed." };
+  }
+
   const { error } = await supabase.from("viewings").update({ status }).eq("id", viewingId);
-  if (error) return { ok: false };
+  if (error) return { ok: false, error: "Could not update the viewing." };
+
+  let warning: string | undefined;
+  if (status === "confirmed") {
+    const conv = await myConversation(supabase, conversationId);
+    if (conv) warning = await mirrorToGoogle(supabase, user, { ...viewing, status }, conv, timeZone.slice(0, 64));
+  }
+
   revalidatePath(`/chat/${conversationId}`);
-  return { ok: true };
+  return { ok: true, warning };
+}
+
+/** An approved viewing without a Google event yet: create it from the caller's calendar. */
+export async function syncViewingToGoogleAction(
+  viewingId: string,
+  conversationId: string,
+  timeZone = "Asia/Jerusalem"
+): Promise<ViewingResult> {
+  if (!UUID_RE.test(viewingId) || !UUID_RE.test(conversationId)) return { ok: false, error: "Could not find the viewing." };
+  const { supabase, user } = await requireUser();
+  const { data } = await supabase.from("viewings").select("*").eq("id", viewingId).maybeSingle();
+  const viewing = data as Viewing | null;
+  if (!viewing || viewing.conversation_id !== conversationId) return { ok: false, error: "Could not find the viewing." };
+  if (viewing.status !== "confirmed") return { ok: false, error: "Only an approved viewing can be added to the calendar." };
+  if (viewing.google_event_link) return { ok: true };
+  const conv = await myConversation(supabase, conversationId);
+  if (!conv) return { ok: false, error: "Could not find this conversation." };
+  const warning = await mirrorToGoogle(supabase, user, viewing, conv, timeZone.slice(0, 64));
+  revalidatePath(`/chat/${conversationId}`);
+  return warning ? { ok: false, error: warning } : { ok: true };
 }
 
 export async function disconnectGoogleAction(conversationId: string): Promise<void> {

@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Avatar } from "@/components/ui/Avatar";
 import { CalendarIcon, MessageComposer } from "@/components/chat/MessageComposer";
 import { ScheduleViewing, type GoogleState } from "@/components/chat/ScheduleViewing";
 import { ViewingCard } from "@/components/chat/ViewingCard";
@@ -44,7 +43,16 @@ export function ChatThread({
   const mounted = useMounted();
   const [sheetOpen, setSheetOpen] = useState(calendarNotice === "connected");
   const [notice, setNotice] = useState(calendarNotice ? NOTICES[calendarNotice] : undefined);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
   const timeline = useMemo<TimelineItem[]>(
@@ -95,7 +103,15 @@ export function ChatThread({
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </Link>
-        <Avatar url={conversation.other_avatar} name={other} size={10} />
+        <Link
+          href={`/browse/${conversation.listing_id}`}
+          aria-label={conversation.listing_title}
+          className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-hairline"
+        >
+          {conversation.listing_photo ? (
+            <Image src={conversation.listing_photo} alt="" fill sizes="44px" className="object-cover" />
+          ) : null}
+        </Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-[16px] font-semibold">{other}</h1>
           <p className="truncate text-xs text-muted">{roleLine}</p>
@@ -114,11 +130,6 @@ export function ChatThread({
         href={`/browse/${conversation.listing_id}`}
         className="flex items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors hover:bg-hairline/30 lg:px-5"
       >
-        <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-hairline">
-          {conversation.listing_photo ? (
-            <Image src={conversation.listing_photo} alt="" fill sizes="48px" className="object-cover" />
-          ) : null}
-        </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[16px] font-semibold">{conversation.listing_title}</span>
           <span className="block truncate text-xs text-muted">{where}</span>
@@ -155,7 +166,7 @@ export function ChatThread({
                   if (item.kind === "viewing") {
                     return (
                       <li key={`v-${item.id}`}>
-                        <ViewingCard viewing={item} meId={meId} conversation={conversation} />
+                        <ViewingCard viewing={item} meId={meId} conversation={conversation} google={google} />
                       </li>
                     );
                   }
@@ -167,6 +178,8 @@ export function ChatThread({
                         mine={item.sender_id === meId}
                         grouped={grouped}
                         content={item.content}
+                        image={item.image_url}
+                        onOpenImage={setLightbox}
                         at={item.created_at}
                         sender={groupChat && item.sender_id !== meId && !grouped ? nameFor(item.sender_id) : undefined}
                       />
@@ -183,7 +196,23 @@ export function ChatThread({
         <MessageComposer conversationId={conversation.id} onSchedule={() => setSheetOpen(true)} />
       </div>
 
-      {sheetOpen ? <ScheduleViewing conversation={conversation} google={google} onClose={closeSheet} /> : null}
+      {sheetOpen ? <ScheduleViewing conversation={conversation} meId={meId} google={google} onClose={closeSheet} /> : null}
+
+      {lightbox ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 p-4" role="dialog" aria-modal="true" aria-label="Photo">
+          <button type="button" aria-label="Close" onClick={() => setLightbox(null)} className="absolute inset-0" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="" className="relative max-h-[90dvh] max-w-full rounded-2xl object-contain shadow-2xl" />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="Close photo"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur"
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -192,12 +221,16 @@ function Bubble({
   mine,
   grouped,
   content,
+  image,
+  onOpenImage,
   at,
   sender,
 }: {
   mine: boolean;
   grouped: boolean;
   content: string;
+  image?: string;
+  onOpenImage: (url: string) => void;
   at: string;
   sender?: string;
 }) {
@@ -205,14 +238,20 @@ function Bubble({
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
       {sender ? <span className="mb-0.5 ml-3 text-[11px] font-semibold uppercase tracking-wider text-muted">{sender}</span> : null}
       <div
-        className={`max-w-[78%] px-3.5 py-2 text-[16px] leading-snug shadow-sm ${
+        className={`max-w-[78%] text-[16px] leading-snug shadow-sm ${image ? "p-1.5" : "px-3.5 py-2"} ${
           mine
             ? `rounded-2xl rounded-br-md bg-accent text-accent-contrast ${grouped ? "rounded-tr-md" : ""}`
             : `rounded-2xl rounded-bl-md border border-hairline bg-surface text-ink ${grouped ? "rounded-tl-md" : ""}`
         }`}
       >
-        <p className="whitespace-pre-line break-words">{content}</p>
-        <time dateTime={at} className={`mt-1 block text-right text-[11px] ${mine ? "text-accent-contrast/70" : "text-muted"}`}>
+        {image ? (
+          <button type="button" onClick={() => onOpenImage(image)} aria-label="Open photo" className="block overflow-hidden rounded-xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={image} alt="" className="max-h-72 w-auto max-w-full object-cover" />
+          </button>
+        ) : null}
+        {content ? <p className={`whitespace-pre-line break-words ${image ? "px-2 pt-1.5" : ""}`}>{content}</p> : null}
+        <time dateTime={at} className={`mt-1 block text-right text-[11px] ${image ? "px-2 pb-0.5" : ""} ${mine ? "text-accent-contrast/70" : "text-muted"}`}>
           {timeLabel(at)}
         </time>
       </div>

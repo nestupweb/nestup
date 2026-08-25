@@ -7,6 +7,7 @@ import { uploadImage } from "@/lib/storage";
 import { listingSchema, missingPhotoRooms, photoRoomSchema } from "@/lib/validation/listing";
 import { buildListingTitle } from "@/lib/listing-title";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/constants";
+import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 
 export type ListingFormState = { error?: string; saved?: boolean };
 
@@ -56,6 +57,21 @@ export async function saveListingAction(
     return { error: field ? `${FIELD_NAMES[field] ?? field}: ${issue.message}` : issue.message };
   }
 
+  // Weekly viewing hours (JSON from the editor); every row must be well-formed.
+  let viewing_slots: ViewingSlot[] = [];
+  const slotsRaw = formData.get("viewing_slots");
+  if (typeof slotsRaw === "string" && slotsRaw.trim()) {
+    let arr: unknown = null;
+    try {
+      arr = JSON.parse(slotsRaw);
+    } catch {
+      arr = null;
+    }
+    if (!Array.isArray(arr)) return { error: "Viewing hours: could not read the hours — please re-add them." };
+    viewing_slots = normalizeSlots(arr);
+    if (viewing_slots.length !== arr.length) return { error: "Viewing hours: each range must end after it starts." };
+  }
+
   if (formData.get("photos_uploading")) {
     return { error: "Your photos are still uploading — give it a moment and publish again." };
   }
@@ -101,6 +117,7 @@ export async function saveListingAction(
     address,
     photo_urls,
     photo_labels,
+    viewing_slots,
     is_active,
     owner_id: user.id,
     updated_at: new Date().toISOString(),
