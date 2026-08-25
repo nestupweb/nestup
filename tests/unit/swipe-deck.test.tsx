@@ -63,7 +63,7 @@ test("shows both compatibility scores and the first of three photos", () => {
   expect(screen.getByRole("img", { name: /lifestyle match 82/i })).toBeInTheDocument();
   expect(screen.getByRole("img", { name: /social match 50/i })).toBeInTheDocument();
   expect(screen.getByAltText(/photo 1 of 3/)).toHaveAttribute("src", "https://example.com/a.jpg");
-  expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  expect(screen.queryByText(/1 \/ 2/)).not.toBeInTheDocument(); // no deck counter on the image
 });
 
 test("arrows move through the photos and wrap around", async () => {
@@ -85,7 +85,6 @@ test("information panel has three pages with address, home details and flatmates
   expect(screen.getByText("House rules")).toBeInTheDocument();
   expect(screen.getByText("Balcony")).toBeInTheDocument();
   expect(screen.getByText("No smoking")).toBeInTheDocument();
-  expect(screen.getByText("2/3")).toBeInTheDocument();
 
   await userEvent.click(screen.getByRole("tab", { name: "Flatmates" }));
   expect(screen.getByText("Dana, 29")).toBeInTheDocument();
@@ -98,7 +97,7 @@ test("liking records the swipe and loads the next room; the last rejection empti
   render(<SwipeDeck entries={entries} seeker={profile()} />);
   await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
   expect(recordSwipeAction).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", "like");
-  await waitFor(() => expect(screen.getByRole("heading", { name: "Quiet room by the park" })).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole("article", { name: "Quiet room by the park" })).toBeInTheDocument());
   expect(screen.getByRole("img", { name: /social match unavailable/i })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /next photo/i })).not.toBeInTheDocument(); // single photo: no arrows
 

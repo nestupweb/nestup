@@ -17,7 +17,6 @@ const EXIT_MS = 360;
  */
 export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: Profile }) {
   const [queue, setQueue] = useState(entries);
-  const [done, setDone] = useState(0); // decisions made this session — keeps "n of N" stable across refreshes
   const [leaving, setLeaving] = useState<SwipeDirection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
@@ -43,7 +42,6 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
       .catch(() => setError("That one didn't save — check your connection and try the next room."));
     timer.current = window.setTimeout(() => {
       setQueue((q) => q.slice(1));
-      setDone((n) => n + 1);
       setLeaving(null);
       timer.current = null;
     }, EXIT_MS);
@@ -59,8 +57,6 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
         seeker={seeker}
         leaving={leaving}
         onDecide={decide}
-        position={done + 1}
-        total={done + queue.length}
       />
       {upcoming?.listing.photo_urls[0] ? (
         // Warm the cache for the next room's cover so the hand-off is instant.

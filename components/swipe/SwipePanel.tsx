@@ -66,9 +66,6 @@ export function SwipePanel({
           })}
         </div>
         <div className="mb-2 flex items-center gap-1.5">
-          <span className="mr-1 text-xs tabular-nums text-muted" aria-live="polite">
-            {page + 1}/{PAGES.length}
-          </span>
           <PagerButton label="Previous page" disabled={page === 0} onClick={() => go(page - 1)}>
             <path d="M14.5 6 9 12l5.5 6" />
           </PagerButton>
