@@ -69,6 +69,8 @@ export function DatePicker({
   const [inner, setInner] = useState(defaultValue);
   const selected = controlled ? value : inner;
   const [open, setOpen] = useState(false);
+  // Popover is position: fixed so scrolling panels (filters sidebar, sheets) can't clip it.
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number }>({});
   const wrapRef = useRef<HTMLDivElement>(null);
   const autoId = useId();
   const fieldId = id ?? `date-${autoId}`;
@@ -93,13 +95,18 @@ export function DatePicker({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
+    const onMove = () => setOpen(false);
     document.addEventListener("mousedown", onDown);
     document.addEventListener("touchstart", onDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onMove);
+    document.addEventListener("scroll", onMove, true);
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("touchstart", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onMove);
+      document.removeEventListener("scroll", onMove, true);
     };
   }, [open]);
 
@@ -137,11 +144,12 @@ export function DatePicker({
     <div
       role={inline ? undefined : "dialog"}
       aria-label={inline ? undefined : "Choose a date"}
-      className={
+      style={inline ? undefined : pos}
+      className={`font-normal normal-case tracking-normal text-ink ${
         inline
           ? "w-full"
-          : "absolute left-0 top-full z-40 mt-2 w-[19rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-hairline bg-surface p-3 shadow-xl"
-      }
+          : "fixed z-[70] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-hairline bg-surface p-3 shadow-xl"
+      }`}
     >
       <div className="flex items-center justify-between">
         <button
@@ -229,7 +237,20 @@ export function DatePicker({
         aria-label={ariaLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          const r = wrapRef.current?.getBoundingClientRect();
+          if (r) {
+            const W = 19 * 16;
+            const H = 340;
+            const next: typeof pos = {};
+            if (r.left + W > window.innerWidth - 12) next.right = Math.max(12, window.innerWidth - r.right);
+            else next.left = r.left;
+            if (r.bottom + 8 + H > window.innerHeight && r.top > H + 8) next.bottom = window.innerHeight - r.top + 8;
+            else next.top = r.bottom + 8;
+            setPos(next);
+          }
+          setOpen((o) => !o);
+        }}
         className={`mt-1 flex w-full items-center justify-between gap-2 rounded-xl border bg-surface px-3 py-2.5 text-left text-sm outline-none transition-colors ${
           open ? "border-accent" : "border-hairline hover:border-accent/60"
         } ${selected ? "text-ink" : "text-muted"}`}
