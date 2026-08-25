@@ -51,6 +51,44 @@ test("saves under the session user's id even if the form names someone else", as
   expect(row.full_name).toBe("Noa Peretz");
 });
 
+test("About-me fields in the same form are saved to profile_details under the session user", async () => {
+  vi.doMock("@/lib/auth", () => ({
+    requireUser: async () => ({
+      user: { id: "me-111" },
+      supabase: { from: (table: string) => ({ upsert: (row: unknown) => upsert(table, row) }) },
+    }),
+  }));
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  await expect(
+    upsertProfileAction({}, validForm({ about: "Hi!", languages: "Hebrew, English", wake_time: "07:30", instagram: "@noa", next: "/profile" }))
+  ).rejects.toThrow("REDIRECT:/profile");
+
+  expect(upsert).toHaveBeenCalledTimes(2);
+  const [table, row] = upsert.mock.calls[1] as unknown as [string, Record<string, unknown>];
+  expect(table).toBe("profile_details");
+  expect(row.user_id).toBe("me-111");
+  expect(row.about).toBe("Hi!");
+  expect(row.languages).toEqual(["Hebrew", "English"]);
+  expect(row.wake_time).toBe("07:30");
+  expect(row).not.toHaveProperty("full_name");
+});
+
+test("an invalid About-me field blocks the whole save with a readable message", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  const res = await upsertProfileAction({}, validForm({ about: "Hi!", wake_time: "7am" }));
+  expect(res.error).toMatch(/Wake-up time/);
+  expect(upsert).not.toHaveBeenCalled();
+});
+
+test("without About-me fields the form saves only the profile (old layout)", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  await expect(upsertProfileAction({}, validForm())).rejects.toThrow("REDIRECT:/swipe");
+  expect(upsert).toHaveBeenCalledTimes(1);
+});
+
 test("a signed-out request never reaches the database", async () => {
   auth.userId = "";
   vi.doMock("@/lib/auth", () => ({

@@ -6,8 +6,15 @@ import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { uploadImage } from "@/lib/storage";
 import { profileSchema } from "@/lib/validation/profile";
+import { aboutDetailsFromForm, aboutDetailsSchema } from "@/lib/validation/about";
 
 export type ProfileFormState = { error?: string };
+
+const ABOUT_LABELS: Record<string, string> = {
+  contact_email: "Email",
+  wake_time: "Wake-up time",
+  bed_time: "Bedtime",
+};
 
 export async function upsertProfileAction(
   _prev: ProfileFormState,
@@ -38,6 +45,16 @@ export async function upsertProfileAction(
     return { error: issue ? (issue.path.length ? String(issue.path[0]) + ": " + issue.message : issue.message) : "Please check the form." };
   }
 
+  // The pencil page carries the About-me details in the same form
+  // (`PROFILE_EDIT_ON_PENCIL_PAGE`); validate them before touching anything.
+  const withAbout = formData.has("about");
+  const about = withAbout ? aboutDetailsSchema.safeParse(aboutDetailsFromForm(formData)) : null;
+  if (about && !about.success) {
+    const issue = about.error.issues[0];
+    const field = issue?.path.length ? String(issue.path[0]) : "";
+    return { error: issue ? (field ? `${ABOUT_LABELS[field] ?? field}: ${issue.message}` : issue.message) : "Please check the About me section." };
+  }
+
   let avatar_url: string | undefined;
   const avatar = formData.get("avatar");
   if (avatar instanceof File && avatar.size > 0) {
@@ -55,6 +72,13 @@ export async function upsertProfileAction(
     updated_at: new Date().toISOString(),
   });
   if (error) return { error: "Could not save your profile. Please try again." };
+
+  if (about?.success) {
+    const { error: aboutError } = await supabase
+      .from("profile_details")
+      .upsert({ user_id: user.id, ...about.data, updated_at: new Date().toISOString() });
+    if (aboutError) return { error: "Your profile was saved, but the About me section could not be. Please try again." };
+  }
 
   revalidatePath("/profile");
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.

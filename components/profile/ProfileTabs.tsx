@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { PropertyTile } from "@/components/listings/PropertyTile";
 import { AboutMe } from "@/components/profile/AboutMe";
+import { AboutView } from "@/components/profile/AboutView";
 import type { Listing, Profile, ProfileDetails } from "@/lib/types";
 
 export type TabKey = "about" | "listings" | "liked" | "history";
@@ -25,7 +26,7 @@ export function ProfileTabs({
   history: ProfileTabItem[];
   initial?: TabKey;
   /** Data for the About me tab (own profile only). */
-  about: { profile: Profile; details: ProfileDetails | null; email: string };
+  about: { profile: Profile; details: ProfileDetails | null; email: string; readOnly?: boolean };
 }) {
   const [tab, setTab] = useState<TabKey>(initial);
 
@@ -85,11 +86,11 @@ export function ProfileTabs({
         className="mt-5"
       >
         {current.items === null ? (
-          <AboutMe
-            profile={about.profile}
-            details={about.details}
-            email={about.email}
-          />
+          about.readOnly ? (
+            <AboutView profile={about.profile} details={about.details} self />
+          ) : (
+            <AboutMe profile={about.profile} details={about.details} email={about.email} />
+          )
         ) : current.items.length === 0 ? (
           <Empty tab={current.key as Exclude<TabKey, "about">} />
         ) : (

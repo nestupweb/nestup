@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { aboutSchema } from "@/lib/validation/about";
+import { aboutDetailsFromForm, aboutSchema } from "@/lib/validation/about";
 
 export type AboutFormState = { error?: string; saved?: boolean; nonce?: number };
 
@@ -19,20 +19,7 @@ export async function saveAboutAction(_prev: AboutFormState, formData: FormData)
   const { supabase, user } = await requireUser();
 
   const parsed = aboutSchema.safeParse({
-    about: formData.get("about") ?? "",
-    languages: formData.get("languages") ?? "",
-    diet: formData.get("diet") ?? "",
-    pet_details: formData.get("pet_details") ?? "",
-    lifestyle: formData.get("lifestyle") ?? "",
-    wake_time: formData.get("wake_time") ?? "",
-    bed_time: formData.get("bed_time") ?? "",
-    shabbat: formData.get("shabbat") ?? "",
-    cooking: formData.get("cooking") ?? "",
-    phone: formData.get("phone") ?? "",
-    contact_email: formData.get("contact_email") ?? "",
-    instagram: formData.get("instagram") ?? "",
-    facebook: formData.get("facebook") ?? "",
-    linkedin: formData.get("linkedin") ?? "",
+    ...aboutDetailsFromForm(formData),
     occupation: formData.get("occupation") ?? "",
     smoker: formData.get("smoker") === "on",
     has_pet: formData.get("has_pet") === "on",

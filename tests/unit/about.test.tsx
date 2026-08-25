@@ -68,3 +68,38 @@ test("About me is the first tab, shows the editable section, and hides it on oth
   expect(screen.queryByLabelText(/phone number/i)).not.toBeInTheDocument();
   expect(screen.getByText(/no listings yet/i)).toBeInTheDocument();
 });
+
+test("read-only mode shows the About me section as other members see it — no inputs, no contact info", () => {
+  render(
+    <ProfileTabs
+      mine={[]}
+      liked={[]}
+      history={[]}
+      about={{
+        profile,
+        details: {
+          user_id: "u1", about: "Plants and shakshuka.", languages: ["Hebrew", "English"], diet: "Vegetarian",
+          pet_details: "a cat", lifestyle: "WFH", wake_time: "07:30", bed_time: "23:00", shabbat: "traditional",
+          cooking: "Most evenings", phone: "050-1234567", contact_email: "noa@example.com",
+          instagram: "@noa", facebook: "", linkedin: "", updated_at: "",
+        },
+        email: "noa@example.com",
+        readOnly: true,
+      }}
+    />
+  );
+  expect(screen.getByText("Plants and shakshuka.")).toBeInTheDocument();
+  expect(screen.getByText("Hebrew, English")).toBeInTheDocument();
+  expect(screen.getByText("7:30")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "@noa" })).toHaveAttribute("href", "https://instagram.com/noa");
+  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument();
+  expect(screen.queryByText("050-1234567")).not.toBeInTheDocument();
+  expect(screen.queryByText("noa@example.com")).not.toBeInTheDocument();
+});
+
+test("read-only mode with no details points at the pencil page", () => {
+  render(<ProfileTabs mine={[]} liked={[]} history={[]} about={{ profile, details: null, email: "", readOnly: true }} />);
+  expect(screen.getByRole("link", { name: /tap the pencil/i })).toHaveAttribute("href", "/profile/edit");
+  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+});

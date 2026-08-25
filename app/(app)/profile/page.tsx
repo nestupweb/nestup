@@ -3,6 +3,7 @@ import { getAuthContext, getOwnProfile } from "@/lib/auth";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
+import { PROFILE_EDIT_ON_PENCIL_PAGE } from "@/lib/feature-flags";
 import type { Listing, ProfileDetails } from "@/lib/types";
 
 type JoinedRow<K extends string> = { [P in K]: string } & { listings: Listing | null };
@@ -97,7 +98,7 @@ export default async function ProfilePage({
           liked={liked}
           history={history}
           initial={initial}
-          about={{ profile, details, email: user?.email ?? "" }}
+          about={{ profile, details, email: user?.email ?? "", readOnly: PROFILE_EDIT_ON_PENCIL_PAGE }}
         />
       </div>
     </main>

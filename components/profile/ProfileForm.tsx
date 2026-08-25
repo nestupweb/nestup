@@ -5,7 +5,8 @@ import { ProfilePhotos } from "@/components/profile/ProfilePhotos";
 import { upsertProfileAction, type ProfileFormState } from "@/app/actions/profile";
 import { InterestsPicker } from "@/components/profile/InterestsPicker";
 import { CityMultiPicker } from "@/components/profile/CityMultiPicker";
-import type { Profile } from "@/lib/types";
+import { AboutFields } from "@/components/profile/AboutFields";
+import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
@@ -15,10 +16,13 @@ export function ProfileForm({
   profile,
   onboarding,
   next = "",
+  about,
 }: {
   profile: Profile | null;
   onboarding: boolean;
   next?: string;
+  /** Present on the pencil page: the About-me details ride along in this form. */
+  about?: { details: ProfileDetails | null; email: string };
 }) {
   const [state, formAction, pending] = useActionState<ProfileFormState, FormData>(
     upsertProfileAction,
@@ -108,6 +112,16 @@ export function ProfileForm({
           <CityMultiPicker name="preferred_cities" initial={profile?.preferred_cities ?? []} />
         </div>
       </fieldset>
+
+      {about ? (
+        <section className="mt-10 border-t border-hairline pt-6" aria-label="About me">
+          <h2 className="text-xl font-semibold">About me</h2>
+          <p className="mt-1 text-sm text-muted">Shown to other members on your profile — except phone and e-mail, which stay private.</p>
+          <div className="mt-5">
+            <AboutFields profile={profile} details={about.details} email={about.email} compact />
+          </div>
+        </section>
+      ) : null}
 
       {state.error ? <p role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
 
