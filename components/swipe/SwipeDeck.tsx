@@ -88,7 +88,7 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
 function EmptyDeck({ seenAny }: { seenAny: boolean }) {
   return (
     <div className="mx-auto mt-24 max-w-sm px-6 text-center">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">Swipe</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-muted">Swipe</p>
       <h1 className="mt-3 text-3xl font-semibold leading-tight">
         {seenAny ? "That's every strong match for now." : "No strong matches yet."}
       </h1>

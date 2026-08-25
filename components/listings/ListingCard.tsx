@@ -55,7 +55,7 @@ export function ListingCard({
               ₪{listing.rent.toLocaleString()}
               <span className="text-sm font-normal text-muted"> / mo</span>
             </p>
-            <h3 className="mt-1.5 truncate text-[15px] font-medium lg:mt-0.5 lg:text-base">
+            <h3 className="mt-1.5 truncate text-[16px] font-medium lg:mt-0.5 lg:text-base">
               {listing.title}
             </h3>
             <p className="mt-0.5 truncate text-sm text-muted">
@@ -68,7 +68,7 @@ export function ListingCard({
                 {chips.map((c) => (
                   <span
                     key={c}
-                    className="rounded-full border border-hairline px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted"
+                    className="rounded-full border border-hairline px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted"
                   >
                     {c}
                   </span>

@@ -29,45 +29,67 @@ export function ProfileTabs({
 }) {
   const [tab, setTab] = useState<TabKey>(initial);
 
-  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null }[] = [
-    { key: "about", label: "About me", items: null },
-    { key: "listings", label: "My Listings", items: mine },
-    { key: "liked", label: "Liked", items: liked },
-    { key: "history", label: "History", items: history },
-  ];
+  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null }[] =
+    [
+      { key: "about", label: "About me", items: null },
+      { key: "listings", label: "My Listings", items: mine },
+      { key: "liked", label: "Liked", items: liked },
+      { key: "history", label: "History", items: history },
+    ];
   const current = TABS.find((t) => t.key === tab) ?? TABS[0];
 
   return (
     <div>
       {/* Same header treatment as the Swipe panel tabs. */}
-      <div role="tablist" aria-label="Profile sections" className="flex gap-5 border-b border-hairline sm:gap-7">
-        {TABS.map((t) => {
-          const active = t.key === tab;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              id={`tab-${t.key}`}
-              aria-selected={active}
-              aria-controls={`panel-${t.key}`}
-              onClick={() => setTab(t.key)}
-              className={`-mb-px flex items-baseline gap-1.5 whitespace-nowrap border-b-2 pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
-                active ? "border-accent text-accent" : "border-transparent text-muted hover:text-ink"
-              }`}
-            >
-              {t.label}
-              {t.items ? (
-                <span className={`text-[10px] tracking-normal ${active ? "text-accent" : "text-muted"}`}>{t.items.length}</span>
-              ) : null}
-            </button>
-          );
-        })}
+      <div className="border-b border-hairline">
+        <div
+          role="tablist"
+          aria-label="Profile sections"
+          className="no-scrollbar -mb-px flex gap-4 overflow-x-auto pb-px sm:gap-7"
+        >
+          {TABS.map((t) => {
+            const active = t.key === tab;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                id={`tab-${t.key}`}
+                aria-selected={active}
+                aria-controls={`panel-${t.key}`}
+                onClick={() => setTab(t.key)}
+                className={`-mb-px flex items-baseline gap-1.5 whitespace-nowrap border-b-2 pb-3 text-[12px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                  active
+                    ? "border-accent text-accent"
+                    : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                {t.label}
+                {t.items ? (
+                  <span
+                    className={`text-[11px] tracking-normal ${active ? "text-accent" : "text-muted"}`}
+                  >
+                    {t.items.length}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div role="tabpanel" id={`panel-${current.key}`} aria-labelledby={`tab-${current.key}`} className="mt-5">
+      <div
+        role="tabpanel"
+        id={`panel-${current.key}`}
+        aria-labelledby={`tab-${current.key}`}
+        className="mt-5"
+      >
         {current.items === null ? (
-          <AboutMe profile={about.profile} details={about.details} email={about.email} />
+          <AboutMe
+            profile={about.profile}
+            details={about.details}
+            email={about.email}
+          />
         ) : current.items.length === 0 ? (
           <Empty tab={current.key as Exclude<TabKey, "about">} />
         ) : (
@@ -76,7 +98,11 @@ export function ProfileTabs({
               <PropertyTile
                 key={listing.id}
                 listing={listing}
-                badge={current.key === "listings" && !listing.is_active ? "Paused" : undefined}
+                badge={
+                  current.key === "listings" && !listing.is_active
+                    ? "Paused"
+                    : undefined
+                }
                 caption={caption}
               />
             ))}
@@ -95,16 +121,33 @@ function AddTile() {
       className="flex aspect-[4/5] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-hairline text-muted transition-colors hover:border-accent hover:text-accent"
     >
       <span className="text-3xl font-light leading-none">+</span>
-      <span className="text-[10px] font-semibold uppercase tracking-widest">Edit listing</span>
+      <span className="text-[11px] font-semibold uppercase tracking-widest">
+        Edit listing
+      </span>
     </Link>
   );
 }
 
 function Empty({ tab }: { tab: Exclude<TabKey, "about"> }) {
   const copy = {
-    listings: { title: "No listings yet", hint: "Post a room and interested seekers will find you.", href: "/listing", cta: "List a room" },
-    liked: { title: "Nothing liked yet", hint: "Tap the heart on any room to keep it here.", href: "/browse", cta: "Browse rooms" },
-    history: { title: "No history yet", hint: "Rooms you open will show up here.", href: "/browse", cta: "Browse rooms" },
+    listings: {
+      title: "No listings yet",
+      hint: "Post a room and interested seekers will find you.",
+      href: "/listing",
+      cta: "List a room",
+    },
+    liked: {
+      title: "Nothing liked yet",
+      hint: "Tap the heart on any room to keep it here.",
+      href: "/browse",
+      cta: "Browse rooms",
+    },
+    history: {
+      title: "No history yet",
+      hint: "Rooms you open will show up here.",
+      href: "/browse",
+      cta: "Browse rooms",
+    },
   }[tab];
   return (
     <div className="mx-auto max-w-sm py-12 text-center">

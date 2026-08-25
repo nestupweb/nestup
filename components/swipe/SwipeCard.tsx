@@ -129,7 +129,7 @@ export function SwipeCard({
         ) : null}
 
         {listing.photo_labels?.[photo] ? (
-          <span className="absolute bottom-7 left-5 rounded-full bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/90 backdrop-blur-md">
+          <span className="absolute bottom-7 left-5 rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/90 backdrop-blur-md">
             {photoRoomLabel(listing.photo_labels[photo])}
           </span>
         ) : null}
@@ -179,10 +179,10 @@ function ScorePill({ value, label }: { value: number | null; label: string }) {
       title={text}
       className="flex items-center gap-2.5 rounded-full bg-black/45 py-1 pl-1 pr-3.5 text-white ring-1 ring-white/15 backdrop-blur-md"
     >
-      <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-white/15 px-1.5 text-[15px] font-semibold tabular-nums">
+      <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-white/15 px-1.5 text-[16px] font-semibold tabular-nums">
         {value === null ? "—" : value}
       </span>
-      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/90">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/90">{label}</span>
     </div>
   );
 }

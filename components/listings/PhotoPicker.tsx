@@ -146,12 +146,12 @@ export function PhotoPicker({
                 className={`h-full w-full object-cover transition-opacity ${it.status === "ready" ? "opacity-100" : "opacity-50"}`}
               />
               {it.status === "uploading" ? (
-                <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[10px] font-semibold uppercase tracking-widest text-white">
+                <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[11px] font-semibold uppercase tracking-widest text-white">
                   Uploading…
                 </span>
               ) : null}
               {it.status === "failed" ? (
-                <span role="alert" className="absolute inset-x-0 bottom-0 bg-danger/90 px-1 py-1 text-center text-[10px] font-semibold leading-tight text-white">
+                <span role="alert" className="absolute inset-x-0 bottom-0 bg-danger/90 px-1 py-1 text-center text-[11px] font-semibold leading-tight text-white">
                   {it.error ?? "Upload failed"}
                 </span>
               ) : null}
@@ -188,7 +188,7 @@ export function PhotoPicker({
             className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-hairline text-muted transition-colors hover:border-accent hover:text-accent"
           >
             <span className="text-2xl leading-none">+</span>
-            <span className="text-[10px] font-semibold uppercase tracking-widest">Add photos</span>
+            <span className="text-[11px] font-semibold uppercase tracking-widest">Add photos</span>
           </button>
         ) : null}
       </div>

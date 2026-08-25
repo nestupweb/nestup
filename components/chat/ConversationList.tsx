@@ -20,7 +20,7 @@ export function ConversationList({
     <div className="flex flex-col">
       <div className="flex items-baseline justify-between px-4 pb-3 pt-5 sm:px-0 lg:px-5">
         <h1 className="text-3xl font-semibold lg:text-2xl">Chats</h1>
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted">
           {conversations.length} {conversations.length === 1 ? "conversation" : "conversations"}
         </span>
       </div>
@@ -67,13 +67,13 @@ export function ConversationList({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className={`truncate text-[15px] ${unread ? "font-semibold" : "font-medium"}`}>
+                      <span className={`truncate text-[16px] ${unread ? "font-semibold" : "font-medium"}`}>
                         {title}
                       </span>
                       <time
                         suppressHydrationWarning
                         dateTime={stamp}
-                        className={`shrink-0 text-[11px] ${unread ? "font-semibold text-accent" : "text-muted"}`}
+                        className={`shrink-0 text-[12px] ${unread ? "font-semibold text-accent" : "text-muted"}`}
                       >
                         {previewTime(stamp)}
                       </time>
@@ -88,7 +88,7 @@ export function ConversationList({
                       {unread > 0 ? (
                         <span
                           aria-label={`${unread} unread`}
-                          className="shrink-0 rounded-full bg-accent px-1.5 text-[10px] font-bold leading-[1.15rem] text-accent-contrast"
+                          className="shrink-0 rounded-full bg-accent px-1.5 text-[11px] font-bold leading-[1.15rem] text-accent-contrast"
                         >
                           {unread > 99 ? "99+" : unread}
                         </span>

@@ -57,7 +57,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
           {profile.interests.map((s) => (
             <span
               key={s}
-              className="rounded-full border border-hairline px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted"
+              className="rounded-full border border-hairline px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted"
             >
               {s}
             </span>
@@ -66,11 +66,11 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       ) : null}
 
       <div className="mt-8 border-b border-hairline pb-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">About {first}</h2>
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.18em] text-ink">About {first}</h2>
       </div>
 
       {about ? (
-        <p className="mt-5 max-w-2xl whitespace-pre-line text-[15px] leading-6">{about}</p>
+        <p className="mt-5 max-w-2xl whitespace-pre-line text-[16px] leading-6">{about}</p>
       ) : (
         <p className="mt-5 text-sm text-muted">{first} hasn&rsquo;t written an introduction yet.</p>
       )}
@@ -78,11 +78,11 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       <div className="mt-6 space-y-6">
         {groups.map((g) => (
           <section key={g.title} className="border-t border-hairline pt-5">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">{g.title}</h3>
+            <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-accent">{g.title}</h3>
             <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
               {g.rows.map((r) => (
                 <div key={r.label} className="min-w-0">
-                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">{r.label}</dt>
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{r.label}</dt>
                   <dd className="mt-0.5 break-words text-sm text-ink">
                     {r.href ? (
                       <a href={r.href} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
@@ -101,7 +101,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
       {listings.length > 0 ? (
         <section className="mt-10 border-t border-hairline pt-5">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">
+          <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-accent">
             {first}&rsquo;s {listings.length === 1 ? "room" : "rooms"}
           </h3>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -7,13 +7,13 @@ import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
-const label = "block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted";
+const label = "block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted";
 const check = "flex items-center gap-2 text-sm";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="border-t border-hairline pt-5">
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">{title}</h3>
+      <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-accent">{title}</h3>
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
     </section>
   );
@@ -41,7 +41,7 @@ export function AboutMe({ profile, details, email }: { profile: Profile; details
           maxLength={3000}
           defaultValue={d?.about ?? ""}
           placeholder="Who you are, how you live, what you're looking for in a home and in roommates…"
-          className={`${input} min-h-40 text-[15px] leading-6`}
+          className={`${input} min-h-40 text-[16px] leading-6`}
         />
       </div>
 

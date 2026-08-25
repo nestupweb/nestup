@@ -28,18 +28,18 @@ export function PropertyTile({
           <NoPhoto />
         )}
         {badge ? (
-          <span className="absolute left-2 top-2 rounded-full bg-paper/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink backdrop-blur">
+          <span className="absolute left-2 top-2 rounded-full bg-paper/90 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-ink backdrop-blur">
             {badge}
           </span>
         ) : null}
       </div>
-      <p className="mt-2 truncate text-[15px] leading-tight text-ink sm:text-base">
+      <p className="mt-2 truncate text-[16px] leading-tight text-ink sm:text-base">
         {listing.title}
       </p>
       <p className="mt-0.5 truncate text-xs text-muted">
         ₪{listing.rent.toLocaleString()} · {listing.city}
       </p>
-      {caption ? <p className="mt-0.5 truncate text-[11px] text-muted">{caption}</p> : null}
+      {caption ? <p className="mt-0.5 truncate text-[12px] text-muted">{caption}</p> : null}
     </Link>
   );
 }

@@ -53,7 +53,7 @@ export function MessageComposer({
           placeholder="Write a message…"
           onKeyDown={onKeyDown}
           defaultValue={state.error ? state.content ?? "" : ""}
-          className="max-h-40 min-h-11 flex-1 resize-none rounded-3xl border border-hairline bg-surface px-4 py-3 text-[15px] leading-5 text-ink outline-none focus:border-accent"
+          className="max-h-40 min-h-11 flex-1 resize-none rounded-3xl border border-hairline bg-surface px-4 py-3 text-[16px] leading-5 text-ink outline-none focus:border-accent"
         />
         <button
           type="submit"

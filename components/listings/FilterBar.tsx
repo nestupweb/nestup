@@ -7,7 +7,7 @@ import { CityCombobox } from "@/components/ui/CityCombobox";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent";
-const label = "block text-[10px] font-semibold uppercase tracking-widest text-muted";
+const label = "block text-[11px] font-semibold uppercase tracking-widest text-muted";
 
 /**
  * GET-style filters: submits the chosen filters into /browse?… search params

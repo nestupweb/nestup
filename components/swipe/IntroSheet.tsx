@@ -57,7 +57,7 @@ export function IntroSheet({ entry, onClose }: { entry: DeckEntry; onClose: () =
       >
         {status.kind === "sent" ? (
           <div className="py-4 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">Sent</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">Sent</p>
             <p id="intro-title" className="mt-2 text-2xl font-semibold">
               Your hello is on its way to {who}.
             </p>
@@ -77,7 +77,7 @@ export function IntroSheet({ entry, onClose }: { entry: DeckEntry; onClose: () =
                 ))}
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">You liked this room</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">You liked this room</p>
                 <h2 id="intro-title" className="truncate text-xl font-semibold leading-tight">
                   Say hi to {who}?
                 </h2>
@@ -93,7 +93,7 @@ export function IntroSheet({ entry, onClose }: { entry: DeckEntry; onClose: () =
               onChange={(e) => setText(e.target.value)}
               rows={4}
               maxLength={2000}
-              className="mt-4 w-full resize-none rounded-2xl border border-hairline bg-paper px-4 py-3 text-[15px] leading-6 text-ink outline-none focus:border-accent"
+              className="mt-4 w-full resize-none rounded-2xl border border-hairline bg-paper px-4 py-3 text-[16px] leading-6 text-ink outline-none focus:border-accent"
             />
             {status.kind === "error" ? (
               <p role="alert" className="mt-2 text-sm text-danger">

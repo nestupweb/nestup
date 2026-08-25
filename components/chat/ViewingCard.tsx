@@ -62,7 +62,7 @@ export function ViewingCard({
           <CalendarIcon />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
             {mine ? "You proposed a viewing" : `${other} proposed a viewing`}
           </p>
           <p className="mt-1 text-lg font-semibold leading-tight">{date}</p>
@@ -75,7 +75,7 @@ export function ViewingCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${status.tone}`}>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${status.tone}`}>
           {status.label}
         </span>
         {viewing.status === "proposed" && !mine ? (

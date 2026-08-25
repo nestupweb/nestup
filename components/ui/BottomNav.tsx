@@ -64,7 +64,7 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-w-[4.5rem] flex-col items-center gap-1 rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+              className={`relative flex min-w-[4.5rem] flex-col items-center gap-1 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
                 active ? "bg-accent/10 text-accent" : "text-muted hover:text-ink"
               }`}
             >
@@ -84,7 +84,7 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
               {item.href === "/chat" && unread > 0 ? (
                 <span
                   aria-label={`${unread} unread`}
-                  className="absolute right-2.5 top-1 min-w-[1.15rem] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[1.15rem] tracking-normal text-accent-contrast"
+                  className="absolute right-2.5 top-1 min-w-[1.15rem] rounded-full bg-accent px-1 text-center text-[11px] font-bold leading-[1.15rem] tracking-normal text-accent-contrast"
                 >
                   {unread > 99 ? "99+" : unread}
                 </span>

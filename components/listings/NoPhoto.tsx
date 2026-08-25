@@ -18,7 +18,7 @@ export function NoPhoto({ className = "" }: { className?: string }) {
         <path d="M5 9v12h14V9" />
         <path d="M9.5 21v-6h5v6" />
       </svg>
-      <span className="text-[10px] font-medium uppercase tracking-widest">No photo yet</span>
+      <span className="text-[11px] font-medium uppercase tracking-widest">No photo yet</span>
     </div>
   );
 }

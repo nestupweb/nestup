@@ -22,7 +22,7 @@ const AMENITY_ICONS: Record<string, DetailIconName> = {
   furnished: "sofa",
 };
 
-const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.2em] text-muted";
+const eyebrow = "text-[11px] font-semibold uppercase tracking-[0.2em] text-muted";
 const SWIPE_THRESHOLD = 48;
 
 /** Full-width, three-page information panel under the photo stage. */
@@ -56,7 +56,7 @@ export function SwipePanel({
                 aria-selected={active}
                 aria-controls={`swipe-panel-${p.key}`}
                 onClick={() => onPageChange(i)}
-                className={`-mb-px whitespace-nowrap border-b-2 pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                className={`-mb-px whitespace-nowrap border-b-2 pb-3 text-[12px] font-semibold uppercase tracking-[0.18em] transition-colors ${
                   active ? "border-accent text-accent" : "border-transparent text-muted hover:text-ink"
                 }`}
               >
@@ -102,7 +102,7 @@ function Essentials({ entry }: { entry: DeckEntry }) {
   return (
     <div>
       <p className={eyebrow}>{propertyTypeLabel(listing.property_type)}</p>
-      <h2 className="mt-2 text-[26px] font-semibold leading-tight sm:text-3xl">{street}</h2>
+      <h2 className="mt-2 text-[28px] font-semibold leading-tight sm:text-3xl">{street}</h2>
       <p className="mt-1 text-sm text-muted">{locality}</p>
 
       <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-hairline pt-5">
@@ -180,7 +180,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div>
       <p className={eyebrow}>{title}</p>
-      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-[15px]">{children}</div>
+      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-[16px]">{children}</div>
     </div>
   );
 }
@@ -225,7 +225,7 @@ function Roommates({ entry, seeker }: { entry: DeckEntry; seeker: Profile }) {
                   {shared.map((s) => (
                     <span
                       key={s}
-                      className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent"
+                      className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-accent"
                     >
                       {s}
                     </span>
@@ -233,13 +233,13 @@ function Roommates({ entry, seeker }: { entry: DeckEntry; seeker: Profile }) {
                   {others.map((s) => (
                     <span
                       key={s}
-                      className="rounded-full border border-hairline px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted"
+                      className="rounded-full border border-hairline px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted"
                     >
                       {s}
                     </span>
                   ))}
                   {shared.length > 0 ? (
-                    <span className="self-center text-[10px] uppercase tracking-wider text-muted">in common</span>
+                    <span className="self-center text-[11px] uppercase tracking-wider text-muted">in common</span>
                   ) : null}
                 </div>
               ) : null}

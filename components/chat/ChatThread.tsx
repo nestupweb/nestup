@@ -97,13 +97,13 @@ export function ChatThread({
         </Link>
         <Avatar url={conversation.other_avatar} name={other} size={10} />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[15px] font-semibold">{other}</h1>
+          <h1 className="truncate text-[16px] font-semibold">{other}</h1>
           <p className="truncate text-xs text-muted">{roleLine}</p>
         </div>
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
-          className="hidden items-center gap-2 rounded-full border border-hairline px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-ink transition-colors hover:border-accent hover:text-accent sm:flex"
+          className="hidden items-center gap-2 rounded-full border border-hairline px-3.5 py-2 text-[12px] font-semibold uppercase tracking-wider text-ink transition-colors hover:border-accent hover:text-accent sm:flex"
         >
           <CalendarIcon className="h-4 w-4" />
           Schedule a viewing
@@ -120,12 +120,12 @@ export function ChatThread({
           ) : null}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-semibold">{conversation.listing_title}</span>
+          <span className="block truncate text-[16px] font-semibold">{conversation.listing_title}</span>
           <span className="block truncate text-xs text-muted">{where}</span>
         </span>
         <span className="shrink-0 text-right">
           <span className="block text-base font-semibold">₪{conversation.listing_rent.toLocaleString()}</span>
-          <span className="block text-[10px] uppercase tracking-wider text-muted">per month</span>
+          <span className="block text-[11px] uppercase tracking-wider text-muted">per month</span>
         </span>
       </Link>
 
@@ -146,7 +146,7 @@ export function ChatThread({
           groups.map((g) => (
             <section key={g.key} aria-label={g.label} className="mb-4">
               <div className="flex justify-center">
-                <span className="rounded-full border border-hairline bg-surface px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted">
+                <span className="rounded-full border border-hairline bg-surface px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted">
                   {g.label}
                 </span>
               </div>
@@ -203,16 +203,16 @@ function Bubble({
 }) {
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
-      {sender ? <span className="mb-0.5 ml-3 text-[10px] font-semibold uppercase tracking-wider text-muted">{sender}</span> : null}
+      {sender ? <span className="mb-0.5 ml-3 text-[11px] font-semibold uppercase tracking-wider text-muted">{sender}</span> : null}
       <div
-        className={`max-w-[78%] px-3.5 py-2 text-[15px] leading-snug shadow-sm ${
+        className={`max-w-[78%] px-3.5 py-2 text-[16px] leading-snug shadow-sm ${
           mine
             ? `rounded-2xl rounded-br-md bg-accent text-accent-contrast ${grouped ? "rounded-tr-md" : ""}`
             : `rounded-2xl rounded-bl-md border border-hairline bg-surface text-ink ${grouped ? "rounded-tl-md" : ""}`
         }`}
       >
         <p className="whitespace-pre-line break-words">{content}</p>
-        <time dateTime={at} className={`mt-1 block text-right text-[10px] ${mine ? "text-accent-contrast/70" : "text-muted"}`}>
+        <time dateTime={at} className={`mt-1 block text-right text-[11px] ${mine ? "text-accent-contrast/70" : "text-muted"}`}>
           {timeLabel(at)}
         </time>
       </div>
