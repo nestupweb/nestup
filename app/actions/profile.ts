@@ -6,7 +6,6 @@ import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { uploadImage } from "@/lib/storage";
 import { profileSchema } from "@/lib/validation/profile";
-import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 
 export type ProfileFormState = { error?: string };
 
@@ -49,25 +48,10 @@ export async function upsertProfileAction(
     }
   }
 
-  // Extra pictures: kept URLs first, then new uploads (all into the caller's avatars folder).
-  const photo_urls = formData.getAll("existing_photos").map(String).filter((u) => u.startsWith("https://"));
-  const newPhotos = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
-  if (photo_urls.length + newPhotos.length > MAX_PROFILE_PHOTOS) {
-    return { error: `Up to ${MAX_PROFILE_PHOTOS} extra photos.` };
-  }
-  for (const file of newPhotos) {
-    try {
-      photo_urls.push(await uploadImage(supabase, "avatars", user.id, file));
-    } catch (e) {
-      return { error: e instanceof Error ? e.message : "Photo upload failed." };
-    }
-  }
-
   const { error } = await supabase.from("profiles").upsert({
     user_id: user.id,
     ...parsed.data,
     ...(avatar_url ? { avatar_url } : {}),
-    photo_urls,
     updated_at: new Date().toISOString(),
   });
   if (error) return { error: "Could not save your profile. Please try again." };

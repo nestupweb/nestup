@@ -19,7 +19,6 @@ export interface Profile {
   occupation: string;
   bio: string;
   avatar_url: string | null;
-  photo_urls: string[]; // extra pictures beyond the avatar
   smoker: boolean;
   has_pet: boolean;
   cleanliness: number; // 1..5

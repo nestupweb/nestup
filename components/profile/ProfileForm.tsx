@@ -41,11 +41,7 @@ export function ProfileForm({
         </p>
       ) : null}
 
-      <ProfilePhotos
-        name={profile?.full_name || "Your photo"}
-        avatarUrl={profile?.avatar_url ?? null}
-        photoUrls={profile?.photo_urls ?? []}
-      />
+      <ProfilePhotos name={profile?.full_name || "Your photo"} avatarUrl={profile?.avatar_url ?? null} />
       <label className={label}>Full name
         <input name="full_name" required minLength={2} maxLength={60} defaultValue={profile?.full_name ?? ""} className={input} />
       </label>
