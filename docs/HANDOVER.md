@@ -3,7 +3,7 @@
 Paste this into a new chat to continue the project. Read `docs/superpowers/notes/handoff-notes.md` next — it holds the detailed technical findings.
 
 ## What this is
-**NestUp** — my final project for RUNI "Internet Technologies — Become a Full-Stack Engineer" (assignment PDF: `Internet Technologies (2).pdf`, **due 2026-09-06**). A two-sided shared-apartment / roommate matching app: seekers browse rooms and swipe, listers post rooms, mutual interest creates a match, chat is in-app. Two compatibility scores (Lifestyle + Social/shared interests) that NEVER filter anyone — both sides always decide manually.
+**NestUp** — my final project for RUNI "Internet Technologies — Become a Full-Stack Engineer" (assignment PDF: `Internet Technologies (2).pdf`, **due 2026-09-06**). A two-sided shared-apartment / roommate matching app: seekers browse rooms and swipe, listers post rooms, mutual interest creates a match, chat is in-app. Two compatibility scores (Lifestyle + Social/shared interests). The swipe deck shows only high matches (combined score ≥ `MIN_DECK_SCORE` = 60, the "Good" band); everywhere else scores inform and sort only, and both sides still decide manually.
 
 ## Stack and environment
 - Next.js 16.3.2 App Router + Turbopack (NOTE: `proxy.ts` replaces `middleware.ts`; `searchParams`/`params`/`cookies()` are async; check `node_modules/next/dist/docs/` before assuming APIs).

@@ -103,10 +103,10 @@ test("liking records the swipe and loads the next room; the last rejection empti
 
   await userEvent.click(screen.getByRole("button", { name: /not for me/i }));
   expect(recordSwipeAction).toHaveBeenLastCalledWith("22222222-2222-4222-8222-222222222222", "skip");
-  await waitFor(() => expect(screen.getByText(/every room for now/i)).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText(/every strong match for now/i)).toBeInTheDocument());
 });
 
 test("an empty deck explains itself", () => {
   render(<SwipeDeck entries={[]} seeker={profile()} />);
-  expect(screen.getByText(/no rooms to show yet/i)).toBeInTheDocument();
+  expect(screen.getByText(/no strong matches yet/i)).toBeInTheDocument();
 });

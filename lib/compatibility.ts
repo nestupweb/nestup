@@ -68,7 +68,8 @@ function guestPoints(seeker: Profile, lister: Profile): number {
 /**
  * Lifestyle compatibility 0–100. Directional: pass the perspective of the
  * person LOOKING (seeker viewing a listing, or lister viewing a seeker).
- * Scores NEVER filter — they only inform and sort (spec rule 6).
+ * The swipe deck admits only rooms whose combined score reaches
+ * `MIN_DECK_SCORE` (lib/swipe.ts); elsewhere scores inform and sort only.
  */
 export function lifestyleScore(
   seeker: Profile,
@@ -104,7 +105,7 @@ export function scoreLabel(score: number): "Great fit" | "Good" | "Fair" | "Low"
   return "Low";
 }
 
-/** Deck/queue ordering key. Sorting only — never used to exclude anyone. */
+/** Deck/queue ordering key; the swipe deck also gates on it (`MIN_DECK_SCORE`). */
 export function sortKey(lifestyle: number, social: number | null): number {
   return social === null ? lifestyle : (lifestyle + social) / 2;
 }

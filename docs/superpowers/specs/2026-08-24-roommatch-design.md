@@ -23,7 +23,7 @@ NestUp is a two-sided marketplace for finding shared apartments and roommates. S
 | 3 | UI language: **English** (LTR); Israeli cities as content |
 | 4 | Architecture: **server-first Next.js App Router + Supabase RLS** |
 | 5 | **Listings are public** (anonymous visitors can browse & filter); **Swipe requires sign-in** |
-| 6 | **Compatibility scores never filter** — they inform and sort only; both sides always decide manually |
+| 6 | **Compatibility scores inform and sort**; both sides always decide manually. Amended 2026-08-25: the swipe deck admits only high matches (combined score ≥ 60, the "Good" band) — lower-scoring rooms remain reachable via Browse |
 | 7 | Visual design: **Editorial (light) as default theme, Noir (dark) as opt-in dark mode** |
 | 8 | **Two compatibility scores**: Lifestyle (habits + preferences) and Social (shared interests) |
 | 9 | **Email confirmation ON**: users must confirm their email before first sign-in (signup shows a "check your inbox" state; `/auth/confirm` route verifies the token). Caveat: Supabase's built-in mailer is dev-grade and rate-limited — documented in the scale/security docs; custom SMTP is the production path. |
@@ -142,7 +142,7 @@ Measures how much the seeker and the lister would *enjoy living together*, indep
 
 - Output 0–100 with labels: **Great fit ≥ 80 · Good 60–79 · Fair 40–59 · Low < 40** (both scores).
 - **Lifestyle scores are directional** — the two sides may see different numbers; the social score is symmetric.
-- **Neither score filters or hides anyone** (approved rule): the deck shows all eligible listings and the Interested queue shows all likers. Sorting uses the average of the two scores (lifestyle only when social is “—”), with both scores displayed. Humans decide; a match still requires both sides to say yes.
+- **Swipe deck shows only high matches** (amended 2026-08-25): a room enters the deck only when its combined score is ≥ `MIN_DECK_SCORE` (60, the "Good" band); lower-scoring rooms stay visible in Browse. The Interested queue still shows all likers. Sorting uses the average of the two scores (lifestyle only when social is “—”), with both scores displayed. Humans decide; a match still requires both sides to say yes.
 - Card UI: the photo tag shows both, e.g., `92 LIFESTYLE · 78 SOCIAL`; tapping/expanding a card reveals the shared interests themselves.
 
 ---

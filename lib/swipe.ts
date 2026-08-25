@@ -14,10 +14,17 @@ export interface DeckEntry {
 export const DECK_SIZE = 30;
 
 /**
+ * Only high-matching rooms make the deck: the combined score (`sortKey`) must
+ * reach the "Good" band of `scoreLabel`. Lower-scoring rooms stay reachable
+ * through Browse, so nothing is hidden from the seeker entirely.
+ */
+export const MIN_DECK_SCORE = 60;
+
+/**
  * Pure ranking step: attach owners/residents, score from the seeker's
- * questionnaire, sort best-fit first. Scores only order the deck — they
- * never exclude a room (spec rule: humans decide, not the number).
- * A listing whose owner profile is unavailable can't be scored and is skipped.
+ * questionnaire, keep only rooms at or above `MIN_DECK_SCORE`, sort best-fit
+ * first. A listing whose owner profile is unavailable can't be scored and is
+ * skipped.
  */
 export function buildDeck(
   seeker: Profile,
@@ -41,13 +48,10 @@ export function buildDeck(
     const flatmates = (residentsByListing.get(listing.id) ?? []).filter(
       (p) => p.user_id !== owner.user_id
     );
-    entries.push({
-      listing,
-      owner,
-      residents: flatmates,
-      lifestyle: lifestyleScore(seeker, listing, owner, "seeker"),
-      social: socialScore(seeker, owner),
-    });
+    const lifestyle = lifestyleScore(seeker, listing, owner, "seeker");
+    const social = socialScore(seeker, owner);
+    if (sortKey(lifestyle, social) < MIN_DECK_SCORE) continue;
+    entries.push({ listing, owner, residents: flatmates, lifestyle, social });
   }
   return entries.sort(
     (a, b) => sortKey(b.lifestyle, b.social) - sortKey(a.lifestyle, a.social)
@@ -75,8 +79,9 @@ export function sharedInterests(a: Profile, b: Profile): string[] {
 }
 
 /**
- * Active rooms the seeker hasn't swiped on yet (and doesn't own), ranked by
- * compatibility. Owners and extra flatmates come along for the third panel.
+ * Active rooms the seeker hasn't swiped on yet (and doesn't own), limited to
+ * high matches (see `MIN_DECK_SCORE`) and ranked by compatibility. Owners and
+ * extra flatmates come along for the third panel.
  */
 export async function getSwipeDeck(supabase: SupabaseClient, seeker: Profile): Promise<DeckEntry[]> {
   const [{ data: swiped }, { data: listingRows }] = await Promise.all([

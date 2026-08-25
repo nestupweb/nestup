@@ -78,11 +78,12 @@ function EmptyDeck({ seenAny }: { seenAny: boolean }) {
     <div className="mx-auto mt-24 max-w-sm px-6 text-center">
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">Swipe</p>
       <h1 className="mt-3 font-serif text-3xl font-semibold leading-tight">
-        {seenAny ? "That's every room for now." : "No rooms to show yet."}
+        {seenAny ? "That's every strong match for now." : "No strong matches yet."}
       </h1>
       <p className="mt-3 text-sm leading-6 text-muted">
-        New listings land here the moment they&rsquo;re posted. Until then, revisit the rooms you
-        liked, or browse every listing.
+        Only rooms that score Good or better with your profile show up here. New high-scoring
+        listings land the moment they&rsquo;re posted &mdash; until then, revisit the rooms you liked,
+        or browse every listing.
       </p>
       <div className="mt-7 flex justify-center gap-3">
         <Link

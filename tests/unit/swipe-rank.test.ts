@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { buildDeck, formatMoveIn, sharedInterests } from "@/lib/swipe";
+import { MIN_DECK_SCORE, buildDeck, formatMoveIn, sharedInterests } from "@/lib/swipe";
+import { sortKey } from "@/lib/compatibility";
 import type { Listing, Profile } from "@/lib/types";
 
 function profile(overrides: Partial<Profile> = {}): Profile {
@@ -31,18 +32,45 @@ describe("buildDeck", () => {
   const seeker = profile();
   const goodOwner = profile({ user_id: "o1", interests: ["Music", "Cooking", "Travel"] });
   const farOwner = profile({ user_id: "o2", smoker: true, interests: ["Gaming"] });
+  // Shares two of three interests → social 67; lifestyle stays high → combined ≥ 60.
+  const okOwner = profile({ user_id: "o3", interests: ["Music", "Cooking", "Gaming"] });
 
-  test("ranks the better-matching room first without dropping the weaker one", () => {
+  test("ranks the better-matching room first", () => {
+    const deck = buildDeck(
+      seeker,
+      [listing({ id: "ok", owner_id: "o3" }), listing({ id: "near", owner_id: "o1" })],
+      [goodOwner, okOwner],
+      []
+    );
+    expect(deck.map((e) => e.listing.id)).toEqual(["near", "ok"]);
+    expect(deck[0].social).toBe(100);
+    expect(deck[1].social).toBe(67);
+    for (const e of deck) expect(sortKey(e.lifestyle, e.social)).toBeGreaterThanOrEqual(MIN_DECK_SCORE);
+  });
+
+  test("drops rooms whose combined score falls below MIN_DECK_SCORE", () => {
     const deck = buildDeck(
       seeker,
       [listing({ id: "far", owner_id: "o2", city: "Haifa", rent: 5000 }), listing({ id: "near", owner_id: "o1" })],
       [goodOwner, farOwner],
       []
     );
-    expect(deck.map((e) => e.listing.id)).toEqual(["near", "far"]);
-    expect(deck[0].lifestyle).toBeGreaterThan(deck[1].lifestyle);
-    expect(deck[0].social).toBe(100);
-    expect(deck[1].social).toBe(0);
+    expect(deck.map((e) => e.listing.id)).toEqual(["near"]);
+  });
+
+  test("keeps a room sitting exactly on the threshold", () => {
+    // Lifestyle 100 (identical profile, ideal listing) with no interests on
+    // the owner's side → social null → combined = lifestyle. Push lifestyle
+    // to exactly 60 via city (−20), pets (−10), sleep early/late (−5),
+    // guests sometimes/often two steps apart (−5).
+    const edgeOwner = profile({
+      user_id: "o4", interests: [], has_pet: true, sleep_schedule: "early", guests_freq: "often",
+    });
+    const edgeSeeker = profile({ ok_with_pets: false, sleep_schedule: "late", guests_freq: "rare" });
+    const deck = buildDeck(edgeSeeker, [listing({ id: "edge", owner_id: "o4", city: "Haifa" })], [edgeOwner], []);
+    expect(deck.map((e) => e.listing.id)).toEqual(["edge"]);
+    expect(deck[0].lifestyle).toBe(MIN_DECK_SCORE);
+    expect(deck[0].social).toBeNull();
   });
 
   test("attaches extra flatmates and never repeats the host", () => {
