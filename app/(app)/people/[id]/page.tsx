@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { Avatar } from "@/components/ui/Avatar";
-import { ListingCard } from "@/components/listings/ListingCard";
+import { PropertyTile } from "@/components/listings/PropertyTile";
 import { AboutView } from "@/components/profile/AboutView";
 import type { PublicDetails } from "@/lib/people";
 import type { Listing, Profile } from "@/lib/types";
@@ -64,9 +64,10 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
           <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-accent">
             {first}&rsquo;s {listings.length === 1 ? "room" : "rooms"}
           </h3>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Same photo tiles as the owner's own "My Listings" tab — the row card is built for full-width lists and crushes its text in a grid cell. */}
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5">
             {listings.map((l) => (
-              <ListingCard key={l.id} listing={l} signedIn />
+              <PropertyTile key={l.id} listing={l} />
             ))}
           </div>
         </section>
