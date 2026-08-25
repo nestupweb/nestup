@@ -19,6 +19,13 @@ export function parentPath(pathname: string): string {
   return parts.length > 1 ? "/" + parts.slice(0, -1).join("/") : "/browse";
 }
 
+/** The four tabs (and the landing redirect): top-level pages that never show "Back". */
+export const MAIN_PAGES = ["/", "/swipe", "/browse", "/chat", "/profile"] as const;
+
+export function isMainPage(pathname: string): boolean {
+  return (MAIN_PAGES as readonly string[]).includes(pathname);
+}
+
 /** How a page is named in "Back to …". */
 export function pageName(pathname: string): string {
   const parts = pathname.split("/").filter(Boolean);

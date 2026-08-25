@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { canGoBack, markGoingBack, pageName, parentPath, previousVisit, recordVisit, resetTrail } from "@/lib/back";
+import { canGoBack, isMainPage, markGoingBack, pageName, parentPath, previousVisit, recordVisit, resetTrail } from "@/lib/back";
 
 const router = { back: vi.fn(), push: vi.fn() };
 let pathname = "/browse/abc";
@@ -108,14 +108,16 @@ describe("BackButton", () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  test("Listings hides it unless the tab came from somewhere", async () => {
-    pathname = "/browse";
-    const { unmount } = render(<BackButton />);
-    await waitFor(() => expect(screen.queryByRole("button")).toBeNull());
-    unmount();
-    resetTrail();
+  test("the main tabs never show it, even when the tab came from somewhere", async () => {
     recordVisit("/profile");
-    render(<BackButton />);
-    expect(await screen.findByRole("button", { name: "Back to profile" })).toBeInTheDocument();
+    for (const main of ["/", "/swipe", "/browse", "/chat", "/profile"]) {
+      expect(isMainPage(main)).toBe(true);
+      pathname = main;
+      const { unmount } = render(<BackButton />);
+      await waitFor(() => expect(screen.queryByRole("button")).toBeNull());
+      unmount();
+    }
+    expect(isMainPage("/chat/123")).toBe(false);
+    expect(isMainPage("/browse/abc")).toBe(false);
   });
 });

@@ -8,15 +8,15 @@ import type { ReactNode } from "react";
  * full-screen overlay below the site header and the "← Back to chats" row —
  * 4rem + 2.375rem, see BackButton). Desktop: list on the left, thread on the
  * right, like a messaging desktop app; its height leaves room for the header,
- * the back row, its own top margin and the floating bottom nav (14.5rem) so
- * the page itself never scrolls.
+ * its own top margin and the floating bottom nav — plus the back row, which
+ * only a thread shows — so the page itself never scrolls.
  */
 export function ChatShell({ list, children }: { list: ReactNode; children: ReactNode }) {
   const pathname = usePathname();
   const inThread = pathname !== "/chat";
 
   return (
-    <div className="sm:px-6 lg:mt-4 lg:grid lg:h-[calc(100dvh-14.5rem)] lg:min-h-[30rem] lg:grid-cols-[22rem_minmax(0,1fr)] lg:overflow-hidden lg:rounded-3xl lg:border lg:border-hairline lg:bg-surface lg:shadow-sm">
+    <div className={`sm:px-6 lg:mt-4 lg:grid ${inThread ? "lg:h-[calc(100dvh-14.5rem)]" : "lg:h-[calc(100dvh-12.125rem)]"} lg:min-h-[30rem] lg:grid-cols-[22rem_minmax(0,1fr)] lg:overflow-hidden lg:rounded-3xl lg:border lg:border-hairline lg:bg-surface lg:shadow-sm`}>
       <aside
         className={`${inThread ? "hidden lg:flex" : "flex"} min-h-0 flex-col lg:overflow-y-auto lg:border-r lg:border-hairline`}
       >

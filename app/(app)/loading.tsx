@@ -50,7 +50,7 @@ function SwipeSkeleton() {
 
 function ChatSkeleton() {
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]" aria-busy="true" aria-label="Loading chats">
+    <div className="flex lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]" aria-busy="true" aria-label="Loading chats">
       <div className="w-full border-hairline lg:border-r">
         <div className="px-4 pb-3 pt-4 sm:px-6">
           <div className={`h-8 w-24 ${pulse}`} />
