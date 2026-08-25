@@ -3,7 +3,7 @@ import { getAuthContext, getOwnProfile } from "@/lib/auth";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
-import type { Listing } from "@/lib/types";
+import type { Listing, ProfileDetails } from "@/lib/types";
 
 type JoinedRow<K extends string> = { [P in K]: string } & { listings: Listing | null };
 
@@ -30,8 +30,8 @@ export default async function ProfilePage({
     );
   }
 
-  const { supabase } = await getAuthContext();
-  const [mineRes, likedRes, historyRes] = await Promise.all([
+  const { supabase, user } = await getAuthContext();
+  const [mineRes, likedRes, historyRes, detailsRes] = await Promise.all([
     supabase.from("listings").select("*").eq("owner_id", userId).order("created_at", { ascending: false }),
     supabase
       .from("saved_listings")
@@ -44,7 +44,9 @@ export default async function ProfilePage({
       .eq("user_id", userId)
       .order("viewed_at", { ascending: false })
       .limit(30),
+    supabase.from("profile_details").select("*").eq("user_id", userId).maybeSingle(),
   ]);
+  const details = (detailsRes.data as ProfileDetails | null) ?? null;
 
   const mine: ProfileTabItem[] = ((mineRes.data as Listing[] | null) ?? []).map((listing) => ({ listing }));
   const liked: ProfileTabItem[] = ((likedRes.data as unknown as JoinedRow<"created_at">[] | null) ?? [])
@@ -54,7 +56,7 @@ export default async function ProfilePage({
     .filter((r) => r.listings)
     .map((r) => ({ listing: r.listings as Listing, caption: `Viewed ${shortDate(r.viewed_at)}` }));
 
-  const initial = tab === "liked" || tab === "history" ? tab : "listings";
+  const initial = tab === "liked" || tab === "history" || tab === "listings" ? tab : "about";
 
   return (
     <main className="px-4 pb-8 pt-2 sm:px-6">
@@ -84,7 +86,13 @@ export default async function ProfilePage({
       </div>
 
       <div className="mt-8">
-        <ProfileTabs mine={mine} liked={liked} history={history} initial={initial} />
+        <ProfileTabs
+          mine={mine}
+          liked={liked}
+          history={history}
+          initial={initial}
+          about={{ profile, details, email: user?.email ?? "" }}
+        />
       </div>
     </main>
   );

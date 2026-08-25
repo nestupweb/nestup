@@ -35,6 +35,46 @@ export interface Profile {
   updated_at: string;
 }
 
+/** Private "About me" details — owner-only table `profile_details`. */
+export interface ProfileDetails {
+  user_id: string;
+  about: string;
+  languages: string[];
+  diet: string;
+  pet_details: string;
+  lifestyle: string;
+  wake_time: string; // "HH:MM" or ""
+  bed_time: string;
+  shabbat: "" | "observant" | "traditional" | "not_observant";
+  cooking: string;
+  phone: string;
+  contact_email: string;
+  instagram: string;
+  facebook: string;
+  linkedin: string;
+  updated_at: string;
+}
+
+/** Private "About me" details — owner-only table `profile_details`. */
+export interface ProfileDetails {
+  user_id: string;
+  about: string;
+  languages: string[];
+  diet: string;
+  pet_details: string;
+  lifestyle: string;
+  wake_time: string; // "HH:MM" or ""
+  bed_time: string;
+  shabbat: "" | "observant" | "traditional" | "not_observant";
+  cooking: string;
+  phone: string;
+  contact_email: string;
+  instagram: string;
+  facebook: string;
+  linkedin: string;
+  updated_at: string;
+}
+
 export interface Listing {
   id: string;
   owner_id: string;

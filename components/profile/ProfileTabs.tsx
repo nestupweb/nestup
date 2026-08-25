@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PropertyTile } from "@/components/listings/PropertyTile";
-import type { Listing } from "@/lib/types";
+import { AboutMe } from "@/components/profile/AboutMe";
+import type { Listing, Profile, ProfileDetails } from "@/lib/types";
 
-type TabKey = "listings" | "liked" | "history";
+export type TabKey = "about" | "listings" | "liked" | "history";
 
 export interface ProfileTabItem {
   listing: Listing;
@@ -16,16 +17,20 @@ export function ProfileTabs({
   mine,
   liked,
   history,
-  initial = "listings",
+  initial = "about",
+  about,
 }: {
   mine: ProfileTabItem[];
   liked: ProfileTabItem[];
   history: ProfileTabItem[];
   initial?: TabKey;
+  /** Data for the About me tab (own profile only). */
+  about: { profile: Profile; details: ProfileDetails | null; email: string };
 }) {
   const [tab, setTab] = useState<TabKey>(initial);
 
-  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] }[] = [
+  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null }[] = [
+    { key: "about", label: "About me", items: null },
     { key: "listings", label: "My Listings", items: mine },
     { key: "liked", label: "Liked", items: liked },
     { key: "history", label: "History", items: history },
@@ -34,7 +39,8 @@ export function ProfileTabs({
 
   return (
     <div>
-      <div role="tablist" aria-label="Profile sections" className="flex gap-7 border-b border-hairline">
+      {/* Same header treatment as the Swipe panel tabs. */}
+      <div role="tablist" aria-label="Profile sections" className="flex gap-5 border-b border-hairline sm:gap-7">
         {TABS.map((t) => {
           const active = t.key === tab;
           return (
@@ -46,20 +52,24 @@ export function ProfileTabs({
               aria-selected={active}
               aria-controls={`panel-${t.key}`}
               onClick={() => setTab(t.key)}
-              className={`-mb-px flex items-baseline gap-1.5 border-b-2 pb-2.5 text-lg transition-colors ${
-                active ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"
+              className={`-mb-px flex items-baseline gap-1.5 whitespace-nowrap border-b-2 pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                active ? "border-accent text-accent" : "border-transparent text-muted hover:text-ink"
               }`}
             >
               {t.label}
-              <span className={`text-xs ${active ? "text-accent" : "text-muted"}`}>{t.items.length}</span>
+              {t.items ? (
+                <span className={`text-[10px] tracking-normal ${active ? "text-accent" : "text-muted"}`}>{t.items.length}</span>
+              ) : null}
             </button>
           );
         })}
       </div>
 
       <div role="tabpanel" id={`panel-${current.key}`} aria-labelledby={`tab-${current.key}`} className="mt-5">
-        {current.items.length === 0 ? (
-          <Empty tab={current.key} />
+        {current.items === null ? (
+          <AboutMe profile={about.profile} details={about.details} email={about.email} />
+        ) : current.items.length === 0 ? (
+          <Empty tab={current.key as Exclude<TabKey, "about">} />
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5">
             {current.items.map(({ listing, caption }) => (
@@ -90,7 +100,7 @@ function AddTile() {
   );
 }
 
-function Empty({ tab }: { tab: TabKey }) {
+function Empty({ tab }: { tab: Exclude<TabKey, "about"> }) {
   const copy = {
     listings: { title: "No listings yet", hint: "Post a room and interested seekers will find you.", href: "/listing", cta: "List a room" },
     liked: { title: "Nothing liked yet", hint: "Tap the heart on any room to keep it here.", href: "/browse", cta: "Browse rooms" },
