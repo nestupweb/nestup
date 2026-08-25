@@ -46,7 +46,7 @@ export function ProfileTabs({
               aria-selected={active}
               aria-controls={`panel-${t.key}`}
               onClick={() => setTab(t.key)}
-              className={`-mb-px flex items-baseline gap-1.5 border-b-2 pb-2.5 font-serif text-lg transition-colors ${
+              className={`-mb-px flex items-baseline gap-1.5 border-b-2 pb-2.5 text-lg transition-colors ${
                 active ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"
               }`}
             >
@@ -98,7 +98,7 @@ function Empty({ tab }: { tab: TabKey }) {
   }[tab];
   return (
     <div className="mx-auto max-w-sm py-12 text-center">
-      <p className="font-serif text-2xl font-semibold">{copy.title}</p>
+      <p className="text-2xl font-semibold">{copy.title}</p>
       <p className="mt-2 text-sm text-muted">{copy.hint}</p>
       <Link
         href={copy.href}

@@ -65,7 +65,7 @@ export function ViewingCard({
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
             {mine ? "You proposed a viewing" : `${other} proposed a viewing`}
           </p>
-          <p className="mt-1 font-serif text-lg font-semibold leading-tight">{date}</p>
+          <p className="mt-1 text-lg font-semibold leading-tight">{date}</p>
           <p className="text-sm text-muted">
             {time}
             {copy.location ? ` · ${copy.location}` : ""}

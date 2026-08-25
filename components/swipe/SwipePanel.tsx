@@ -102,20 +102,20 @@ function Essentials({ entry }: { entry: DeckEntry }) {
   return (
     <div>
       <p className={eyebrow}>{propertyTypeLabel(listing.property_type)}</p>
-      <h2 className="mt-2 font-serif text-[26px] font-semibold leading-tight sm:text-3xl">{street}</h2>
+      <h2 className="mt-2 text-[26px] font-semibold leading-tight sm:text-3xl">{street}</h2>
       <p className="mt-1 text-sm text-muted">{locality}</p>
 
       <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-hairline pt-5">
         <div>
           <dt className={eyebrow}>Monthly</dt>
-          <dd className="mt-1.5 font-serif text-2xl font-semibold">
+          <dd className="mt-1.5 text-2xl font-semibold">
             ₪{listing.rent.toLocaleString()}
             <span className="text-sm font-normal text-muted"> / mo</span>
           </dd>
         </div>
         <div>
           <dt className={eyebrow}>Move in</dt>
-          <dd className="mt-1.5 font-serif text-2xl font-semibold">{formatMoveIn(listing.available_from)}</dd>
+          <dd className="mt-1.5 text-2xl font-semibold">{formatMoveIn(listing.available_from)}</dd>
         </div>
       </dl>
 

@@ -27,7 +27,7 @@ export function ProfileForm({
   return (
     <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
       {next ? <input type="hidden" name="next" value={next} /> : null}
-      <h1 className="font-serif text-3xl font-semibold">
+      <h1 className="text-3xl font-semibold">
         {onboarding ? "Tell us about you" : "Your profile"}
       </h1>
       {onboarding ? (
@@ -58,7 +58,7 @@ export function ProfileForm({
         <textarea name="bio" maxLength={500} rows={3} defaultValue={profile?.bio ?? ""} className={input} />
       </label>
 
-      <h2 className="mt-8 font-serif text-xl font-semibold">Lifestyle</h2>
+      <h2 className="mt-8 text-xl font-semibold">Lifestyle</h2>
       <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <label className="flex items-center gap-2"><input type="checkbox" name="smoker" defaultChecked={profile?.smoker} /> I smoke</label>
         <label className="flex items-center gap-2"><input type="checkbox" name="has_pet" defaultChecked={profile?.has_pet} /> I have a pet</label>
@@ -85,13 +85,13 @@ export function ProfileForm({
 
       <InterestsPicker initial={profile?.interests ?? []} />
 
-      <h2 className="mt-8 font-serif text-xl font-semibold">Roommate preferences</h2>
+      <h2 className="mt-8 text-xl font-semibold">Roommate preferences</h2>
       <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <label className="flex items-center gap-2"><input type="checkbox" name="ok_with_smoker" defaultChecked={profile?.ok_with_smoker ?? true} /> OK living with a smoker</label>
         <label className="flex items-center gap-2"><input type="checkbox" name="ok_with_pets" defaultChecked={profile?.ok_with_pets ?? true} /> OK living with pets</label>
       </div>
 
-      <h2 className="mt-8 font-serif text-xl font-semibold">Apartment preferences</h2>
+      <h2 className="mt-8 text-xl font-semibold">Apartment preferences</h2>
       <div className="grid grid-cols-2 gap-3">
         <label className={label}>Budget min (₪)
           <input name="budget_min" type="number" min={0} defaultValue={profile?.budget_min ?? 0} className={input} />

@@ -83,7 +83,7 @@ export function ScheduleViewing({
         <input type="hidden" name="starts_at" value={startsAt} />
         <input type="hidden" name="time_zone" value={timeZone} />
 
-        <h2 id="viewing-title" className="font-serif text-2xl font-semibold">Schedule a viewing</h2>
+        <h2 id="viewing-title" className="text-2xl font-semibold">Schedule a viewing</h2>
         <p className="mt-1 text-sm text-muted">
           {conversation.listing_title}
           {where ? ` · ${where}` : ""}

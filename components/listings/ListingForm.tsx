@@ -17,7 +17,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
 
   return (
     <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
-      <h1 className="font-serif text-3xl font-semibold">
+      <h1 className="text-3xl font-semibold">
         {listing ? "Your listing" : "List your room"}
       </h1>
       <p className="mt-1 text-sm text-muted">
@@ -66,7 +66,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
         </label>
       </div>
 
-      <h2 className="mt-8 font-serif text-xl font-semibold">House rules & features</h2>
+      <h2 className="mt-8 text-xl font-semibold">House rules & features</h2>
       <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <label className="flex items-center gap-2"><input type="checkbox" name="pets_allowed" defaultChecked={listing?.pets_allowed} /> Pets allowed</label>
         <label className="flex items-center gap-2"><input type="checkbox" name="smoking_allowed" defaultChecked={listing?.smoking_allowed} /> Smoking allowed</label>

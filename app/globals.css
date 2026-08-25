@@ -32,7 +32,7 @@
   --color-hairline: var(--hairline);
   --color-muted: var(--muted);
   --color-danger: var(--danger);
-  --font-serif: var(--font-fraunces);
+  --font-serif: var(--font-inter);
   --font-sans: var(--font-inter);
 }
 

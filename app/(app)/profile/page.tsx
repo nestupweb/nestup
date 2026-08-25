@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getAuthContext, getOwnProfile } from "@/lib/auth";
-import { Avatar } from "@/components/ui/Avatar";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
 import type { Listing } from "@/lib/types";
@@ -59,7 +59,7 @@ export default async function ProfilePage({
   return (
     <main className="px-4 pb-8 pt-2 sm:px-6">
       <div className="flex items-start justify-between gap-4">
-        <h1 className="font-serif text-4xl font-semibold">Profile</h1>
+        <h1 className="text-4xl font-semibold">Profile</h1>
         <Link
           href="/listing"
           aria-label="List a room"
@@ -71,19 +71,16 @@ export default async function ProfilePage({
       </div>
 
       <div className="mt-5 flex items-center gap-4">
-        <Avatar url={profile.avatar_url} name={profile.full_name} size={16} />
+        <ProfileAvatar url={profile.avatar_url} name={profile.full_name} />
         <div className="min-w-0">
-          <p className="truncate font-serif text-xl font-semibold">
+          <p className="truncate text-xl font-semibold">
             {profile.full_name}, {profile.age}
           </p>
           <p className="truncate text-sm text-muted">{profile.occupation || "NestUp member"}</p>
+          {profile.bio ? (
+            <p className="mt-1.5 max-w-md whitespace-pre-line text-sm leading-5 text-ink">{profile.bio}</p>
+          ) : null}
         </div>
-        <Link
-          href="/profile/edit"
-          className="ml-auto shrink-0 rounded-xl border border-hairline px-4 py-2 font-serif text-lg text-accent transition-colors hover:border-accent"
-        >
-          Edit info
-        </Link>
       </div>
 
       <div className="mt-8">

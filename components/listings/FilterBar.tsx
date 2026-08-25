@@ -69,7 +69,7 @@ export function FilterBar() {
       >
         {open ? (
           <div className="mb-4 flex items-center justify-between lg:hidden">
-            <p className="font-serif text-lg font-semibold">Filters</p>
+            <p className="text-lg font-semibold">Filters</p>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -91,7 +91,7 @@ export function FilterBar() {
           </div>
         ) : null}
 
-        <p className="mb-4 hidden font-serif text-lg font-semibold lg:block">Filters</p>
+        <p className="mb-4 hidden text-lg font-semibold lg:block">Filters</p>
 
         <form action={apply} className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:gap-4">

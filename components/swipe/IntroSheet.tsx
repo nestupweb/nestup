@@ -58,7 +58,7 @@ export function IntroSheet({ entry, onClose }: { entry: DeckEntry; onClose: () =
         {status.kind === "sent" ? (
           <div className="py-4 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">Sent</p>
-            <p id="intro-title" className="mt-2 font-serif text-2xl font-semibold">
+            <p id="intro-title" className="mt-2 text-2xl font-semibold">
               Your hello is on its way to {who}.
             </p>
             <Link
@@ -78,7 +78,7 @@ export function IntroSheet({ entry, onClose }: { entry: DeckEntry; onClose: () =
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">You liked this room</p>
-                <h2 id="intro-title" className="truncate font-serif text-xl font-semibold leading-tight">
+                <h2 id="intro-title" className="truncate text-xl font-semibold leading-tight">
                   Say hi to {who}?
                 </h2>
               </div>

@@ -89,7 +89,7 @@ function EmptyDeck({ seenAny }: { seenAny: boolean }) {
   return (
     <div className="mx-auto mt-24 max-w-sm px-6 text-center">
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">Swipe</p>
-      <h1 className="mt-3 font-serif text-3xl font-semibold leading-tight">
+      <h1 className="mt-3 text-3xl font-semibold leading-tight">
         {seenAny ? "That's every strong match for now." : "No strong matches yet."}
       </h1>
       <p className="mt-3 text-sm leading-6 text-muted">

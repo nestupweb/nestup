@@ -33,7 +33,7 @@ export function PropertyTile({
           </span>
         ) : null}
       </div>
-      <p className="mt-2 truncate font-serif text-[15px] leading-tight text-ink sm:text-base">
+      <p className="mt-2 truncate text-[15px] leading-tight text-ink sm:text-base">
         {listing.title}
       </p>
       <p className="mt-0.5 truncate text-xs text-muted">

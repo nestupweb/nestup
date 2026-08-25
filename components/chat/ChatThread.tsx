@@ -120,11 +120,11 @@ export function ChatThread({
           ) : null}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-serif text-[15px] font-semibold">{conversation.listing_title}</span>
+          <span className="block truncate text-[15px] font-semibold">{conversation.listing_title}</span>
           <span className="block truncate text-xs text-muted">{where}</span>
         </span>
         <span className="shrink-0 text-right">
-          <span className="block font-serif text-base font-semibold">₪{conversation.listing_rent.toLocaleString()}</span>
+          <span className="block text-base font-semibold">₪{conversation.listing_rent.toLocaleString()}</span>
           <span className="block text-[10px] uppercase tracking-wider text-muted">per month</span>
         </span>
       </Link>
@@ -139,7 +139,7 @@ export function ChatThread({
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:px-6">
         {!mounted ? null : groups.length === 0 ? (
           <div className="mx-auto mt-10 max-w-xs rounded-2xl border border-hairline bg-surface px-6 py-8 text-center">
-            <p className="font-serif text-xl font-semibold">Say hello</p>
+            <p className="text-xl font-semibold">Say hello</p>
             <p className="mt-1 text-sm text-muted">Ask about the room, the roommates, or the move-in date.</p>
           </div>
         ) : (

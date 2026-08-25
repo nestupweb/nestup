@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh pb-28">
       <header className="border-b border-hairline">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
-          <Link href="/browse" className="font-serif text-xl font-semibold">
+          <Link href="/browse" className="text-xl font-semibold">
             Nest<span className="italic font-normal text-accent">Up</span>
           </Link>
           <div className="flex items-center gap-2">

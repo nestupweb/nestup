@@ -69,7 +69,7 @@ export default async function ListingDetailPage({
       ? "home"
       : "building";
 
-  const sectionHeading = "font-serif text-xl font-semibold";
+  const sectionHeading = "text-xl font-semibold";
   const sectionBody = "mt-3 text-base leading-relaxed";
   const itemRow = "mt-4 flex flex-wrap gap-x-7 gap-y-3 text-base";
   const item = "inline-flex items-center gap-2.5";
@@ -79,11 +79,11 @@ export default async function ListingDetailPage({
       <ListingGallery photos={listing.photo_urls} title={listing.title} />
 
       <div className="mt-6 flex items-baseline justify-between gap-3">
-        <h1 className="font-serif text-3xl font-semibold sm:text-4xl">
+        <h1 className="text-3xl font-semibold sm:text-4xl">
           {listing.city}, {listing.address || listing.neighborhood}
         </h1>
         <div className="flex shrink-0 items-center gap-3">
-          <p className="whitespace-nowrap font-serif text-2xl font-semibold sm:text-3xl">
+          <p className="whitespace-nowrap text-2xl font-semibold sm:text-3xl">
             ₪{listing.rent.toLocaleString()}<span className="text-sm font-normal text-muted"> /mo</span>
           </p>
           <SaveButton listingId={listing.id} signedIn={Boolean(user)} initialSaved={saved} />

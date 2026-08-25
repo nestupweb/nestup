@@ -12,7 +12,7 @@ export default async function PublicLayout({ children }: { children: React.React
     <div className={`min-h-dvh ${user ? "pb-28" : ""}`}>
       <header className="border-b border-hairline">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/" className="font-serif text-xl font-semibold">
+          <Link href="/" className="text-xl font-semibold">
             Nest<span className="italic font-normal text-accent">Up</span>
           </Link>
           <div className="flex items-center gap-2">
