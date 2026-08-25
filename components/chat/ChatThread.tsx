@@ -11,7 +11,9 @@ import { ViewingCard } from "@/components/chat/ViewingCard";
 import { ViewingScheduledChip } from "@/components/chat/ViewingDetails";
 import { groupByDay, timeLabel } from "@/lib/chat-format";
 import {
+  OPEN_VIEWING_MESSAGE,
   mergeMessages,
+  openViewing,
   settledClientIds,
   upcomingConfirmed,
   type OutboxMessage,
@@ -189,6 +191,12 @@ export function ChatThread({
 
   // Confirmed and still ahead — drives the header chip and the thumbnail ring.
   const nextViewing = useMemo(() => (now ? upcomingConfirmed(viewings, now)[0] ?? null : null), [viewings, now]);
+  // One open viewing per chat: a pending or confirmed one has to be cancelled before a new request.
+  const blocking = useMemo(() => (now ? openViewing(viewings, now) : null), [viewings, now]);
+  const requestViewing = () => {
+    if (blocking) setNotice(OPEN_VIEWING_MESSAGE[blocking.status]);
+    else setSheetOpen(true);
+  };
 
   const iAmSeeker = conversation.seeker_id === meId;
   const household = conversation.household ?? [];
@@ -313,7 +321,7 @@ export function ChatThread({
       </div>
 
       <div className="border-t border-hairline bg-paper px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:px-5">
-        <MessageComposer conversationId={conversation.id} onSend={send} onSchedule={() => setSheetOpen(true)} />
+        <MessageComposer conversationId={conversation.id} onSend={send} onSchedule={requestViewing} scheduleBlocked={Boolean(blocking)} />
       </div>
 
       {sheetOpen ? <ScheduleViewing conversation={conversation} meId={meId} google={google} onClose={closeSheet} /> : null}

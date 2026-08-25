@@ -11,6 +11,7 @@ import {
   viewingWindow,
   type ViewingDuration,
 } from "@/lib/calendar";
+import { OPEN_VIEWING_MESSAGE } from "@/lib/chat-outbox";
 import { createCalendarEvent, getGoogleConnection } from "@/lib/google";
 import type { ConversationSummary, Viewing, ViewingStatus } from "@/lib/types";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
@@ -68,6 +69,18 @@ export async function proposeViewingAction(
     }
   }
 
+  // One open viewing per chat (the viewings_one_open trigger enforces the same).
+  const { data: open } = await supabase
+    .from("viewings")
+    .select("status")
+    .eq("conversation_id", conversationId)
+    .in("status", ["proposed", "confirmed"])
+    .gt("ends_at", new Date().toISOString())
+    .order("starts_at")
+    .limit(1)
+    .maybeSingle();
+  if (open) return { error: OPEN_VIEWING_MESSAGE[(open as { status: "proposed" | "confirmed" }).status] };
+
   const { error } = await supabase.from("viewings").insert({
     conversation_id: conversationId,
     proposed_by: user.id,
@@ -75,7 +88,11 @@ export async function proposeViewingAction(
     ends_at: end.toISOString(),
     note,
   });
-  if (error) return { error: "Could not save the viewing. Please try again." };
+  if (error) {
+    return {
+      error: error.message.includes("already scheduled") ? OPEN_VIEWING_MESSAGE.confirmed : "Could not save the viewing. Please try again.",
+    };
+  }
 
   revalidatePath(`/chat/${conversationId}`);
   revalidatePath("/chat");
@@ -160,6 +177,7 @@ export async function respondViewingAction(
   }
 
   revalidatePath(`/chat/${conversationId}`);
+  revalidatePath("/chat");
   return { ok: true, warning };
 }
 

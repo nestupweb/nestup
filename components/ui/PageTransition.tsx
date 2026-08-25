@@ -7,7 +7,8 @@ const BY_TYPE = { "nav-forward": "nav-forward", "nav-back": "nav-back", default:
 
 /**
  * Animates route changes with the browser View Transitions API (via React's
- * `<ViewTransition>`). Keyed on the pathname so every navigation is an
+ * `<ViewTransition>`). Lives in the root layout and is keyed on the pathname
+ * so every navigation — including a (public) ↔ (app) layout swap — is one
  * exit/enter pair: tab-to-tab moves tagged by the bottom nav slide left or
  * right (`.nav-forward` / `.nav-back` in globals.css); anything else — a
  * listing card, the back button — crossfades (`.page-fade`). In-place updates

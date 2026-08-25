@@ -22,10 +22,13 @@ export function MessageComposer({
   conversationId,
   onSend,
   onSchedule,
+  scheduleBlocked = false,
 }: {
   conversationId: string;
   onSend: (payload: SendPayload) => void;
   onSchedule?: () => void;
+  /** A viewing is already open in this chat — the button explains instead of opening the sheet. */
+  scheduleBlocked?: boolean;
 }) {
   const [text, setText] = useState("");
   const [image, setImage] = useState<Attachment | null>(null);
@@ -133,8 +136,11 @@ export function MessageComposer({
             type="button"
             onClick={onSchedule}
             aria-label="Schedule a viewing"
-            title="Schedule a viewing"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline text-muted transition-colors hover:border-accent hover:text-accent"
+            aria-disabled={scheduleBlocked || undefined}
+            title={scheduleBlocked ? "A viewing is already scheduled — cancel it first" : "Schedule a viewing"}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline text-muted transition-colors ${
+              scheduleBlocked ? "opacity-50" : "hover:border-accent hover:text-accent"
+            }`}
           >
             <CalendarIcon />
           </button>

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { BottomNav } from "@/components/ui/BottomNav";
-import { PageTransition } from "@/components/ui/PageTransition";
 import { signOutAction } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/chat";
@@ -28,9 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-6xl">
-        <PageTransition>{children}</PageTransition>
-      </div>
+      <div className="mx-auto w-full max-w-6xl">{children}</div>
       <BottomNav unread={unread} />
     </div>
   );

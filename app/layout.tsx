@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 // One typeface everywhere: Inter for headings, body and UI alike.
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${inter.variable} antialiased`}>{children}</body>
+      <body className={`${inter.variable} antialiased`}>
+        <PageTransition>{children}</PageTransition>
+      </body>
     </html>
   );
 }
