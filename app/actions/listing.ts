@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { uploadImage } from "@/lib/storage";
 import { listingSchema, missingPhotoRooms, photoRoomSchema } from "@/lib/validation/listing";
@@ -55,9 +56,13 @@ export async function saveListingAction(
     return { error: field ? `${FIELD_NAMES[field] ?? field}: ${issue.message}` : issue.message };
   }
 
-  // Photos: kept existing ones (url + room label) followed by new uploads,
-  // each with the room it shows. Labels ride along in the same order.
-  const keptUrls = formData.getAll("existing_photos").map(String);
+  if (formData.get("photos_uploading")) {
+    return { error: "Your photos are still uploading — give it a moment and publish again." };
+  }
+
+  // Photos arrive as public URLs (uploaded from the browser) with a room label
+  // each; `photos` files are still accepted for older clients.
+  const keptUrls = formData.getAll("existing_photos").map(String).filter((u) => u.startsWith("https://"));
   const keptLabels = formData.getAll("existing_labels").map((l) => photoRoomSchema.parse(String(l)));
   const newFiles = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
   const newLabels = formData.getAll("new_labels").map((l) => photoRoomSchema.parse(String(l)));
@@ -108,5 +113,9 @@ export async function saveListingAction(
 
   revalidatePath("/listing");
   revalidatePath("/browse");
-  return { saved: true };
+  revalidatePath("/profile");
+  revalidatePath("/swipe");
+  if (listingId) return { saved: true };
+  // Freshly published: show it where it now lives (Listings, My Listings, seekers' decks).
+  redirect("/profile?tab=listings&published=1");
 }

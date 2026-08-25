@@ -14,10 +14,10 @@ function shortDate(iso: string): string {
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ onboarding?: string; next?: string; tab?: string }>;
+  searchParams: Promise<{ onboarding?: string; next?: string; tab?: string; published?: string }>;
 }) {
   const { profile, userId } = await getOwnProfile();
-  const { onboarding, next, tab } = await searchParams;
+  const { onboarding, next, tab, published } = await searchParams;
 
   // First-run (or explicit onboarding link): the form is the whole page.
   if (!profile || onboarding === "1") {
@@ -84,6 +84,12 @@ export default async function ProfilePage({
           ) : null}
         </div>
       </div>
+
+      {published === "1" ? (
+        <p role="status" className="mt-6 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
+          Your room is live — it&rsquo;s on Listings now, and seekers see it in Swipe when it&rsquo;s a good match.
+        </p>
+      ) : null}
 
       <div className="mt-8">
         <ProfileTabs

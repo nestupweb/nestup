@@ -14,5 +14,5 @@ export default async function MyListingPage() {
     .limit(1)
     .maybeSingle();
 
-  return <ListingForm listing={(data as Listing | null) ?? null} />;
+  return <ListingForm listing={(data as Listing | null) ?? null} userId={userId} />;
 }

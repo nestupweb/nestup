@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image-client";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, photoRoomLabel } from "@/lib/constants";
 import { REQUIRED_PHOTO_ROOMS } from "@/lib/validation/listing";
 import type { PhotoRoom } from "@/lib/types";
 
-type Existing = { kind: "existing"; url: string; label: PhotoRoom };
-type Added = { kind: "added"; id: string; file: File; preview: string; label: PhotoRoom };
-type Item = Existing | Added;
+type Item = {
+  id: string;
+  url: string | null; // public URL once uploaded
+  preview: string; // what the tile shows (object URL until uploaded)
+  label: PhotoRoom;
+  status: "uploading" | "ready" | "failed";
+  error?: string;
+};
 
 const select =
   "mt-1.5 w-full rounded-lg border border-hairline bg-surface px-2 py-1.5 text-xs text-ink outline-none focus:border-accent";
@@ -22,106 +29,136 @@ function guessRoom(fileName: string): PhotoRoom {
 }
 
 /**
- * 3–10 photos, each tagged with the room it shows. Kept photos submit as
- * `existing_photos` + `existing_labels`; new files travel in the `photos`
- * file input with `new_labels` in the same order.
+ * 3–10 photos, each tagged with the room it shows. Photos are compressed and
+ * uploaded straight from the browser to the `listing-photos` bucket the
+ * moment they're picked (the owner's folder — storage RLS), so the form
+ * itself only submits URLs: `existing_photos` + `existing_labels`. That keeps
+ * a 10-photo listing far below Vercel's request-body limit.
  */
-export function PhotoPicker({ initialUrls, initialLabels }: { initialUrls: string[]; initialLabels: string[] }) {
+export function PhotoPicker({
+  userId,
+  initialUrls,
+  initialLabels,
+}: {
+  userId: string;
+  initialUrls: string[];
+  initialLabels: string[];
+}) {
   const [items, setItems] = useState<Item[]>(() =>
     initialUrls.map((url, i) => ({
-      kind: "existing",
+      id: url,
       url,
+      preview: url,
       label: (PHOTO_ROOMS.some((r) => r.key === initialLabels[i]) ? initialLabels[i] : "other") as PhotoRoom,
+      status: "ready",
     }))
   );
   const fileInput = useRef<HTMLInputElement>(null);
-
-  // Mirror the "added" files into the real file input so the form submits them.
+  const itemsRef = useRef(items);
   useEffect(() => {
-    const input = fileInput.current;
-    if (!input || typeof DataTransfer === "undefined") return;
-    try {
-      const dt = new DataTransfer();
-      for (const it of items) if (it.kind === "added") dt.items.add(it.file);
-      input.files = dt.files;
-    } catch {
-      /* older browsers: the input keeps whatever the user picked */
-    }
+    itemsRef.current = items;
   }, [items]);
 
   useEffect(
     () => () => {
-      for (const it of items) if (it.kind === "added") URL.revokeObjectURL(it.preview);
+      for (const it of itemsRef.current) if (it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  const covered = new Set(items.map((i) => i.label));
   const count = items.length;
+  const covered = new Set(items.filter((i) => i.status === "ready").map((i) => i.label));
+  const uploading = items.some((i) => i.status === "uploading");
+
+  const update = (id: string, patch: Partial<Item>) =>
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+
+  const upload = async (id: string, file: File) => {
+    try {
+      const blob = await compressImage(file);
+      const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      const supabase = createClient();
+      const { error } = await supabase.storage
+        .from("listing-photos")
+        .upload(path, blob, { contentType: blob.type || "image/jpeg" });
+      if (error) throw new Error("Upload failed — check your connection and try again.");
+      const url = supabase.storage.from("listing-photos").getPublicUrl(path).data.publicUrl;
+      update(id, { url, status: "ready" });
+    } catch (e) {
+      update(id, { status: "failed", error: e instanceof Error ? e.message : "Upload failed." });
+    }
+  };
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
-    const room = MAX_LISTING_PHOTOS - count;
-    const fresh = Array.from(files)
-      .slice(0, Math.max(0, room))
-      .map<Added>((file) => ({
-        kind: "added",
-        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
-        file,
-        preview: URL.createObjectURL(file),
-        label: guessRoom(file.name),
-      }));
-    setItems((prev) => [...prev, ...fresh]);
+    const room = MAX_LISTING_PHOTOS - itemsRef.current.length;
+    const fresh = Array.from(files).slice(0, Math.max(0, room));
+    const next: Item[] = fresh.map((file) => ({
+      id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+      url: null,
+      preview: URL.createObjectURL(file),
+      label: guessRoom(file.name),
+      status: "uploading",
+    }));
+    setItems((prev) => [...prev, ...next]);
+    next.forEach((it, i) => void upload(it.id, fresh[i]));
+    if (fileInput.current) fileInput.current.value = "";
   };
 
-  const setLabel = (index: number, label: PhotoRoom) =>
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, label } : it)));
-  const remove = (index: number) =>
+  const remove = (id: string) =>
     setItems((prev) => {
-      const gone = prev[index];
-      if (gone?.kind === "added") URL.revokeObjectURL(gone.preview);
-      return prev.filter((_, i) => i !== index);
+      const gone = prev.find((it) => it.id === id);
+      if (gone?.preview.startsWith("blob:")) URL.revokeObjectURL(gone.preview);
+      return prev.filter((it) => it.id !== id);
     });
 
   return (
     <div>
-      {items.map((it) =>
-        it.kind === "existing" ? (
-          <span key={it.url}>
-            <input type="hidden" name="existing_photos" value={it.url} />
+      {items
+        .filter((it) => it.status === "ready" && it.url)
+        .map((it) => (
+          <span key={it.id}>
+            <input type="hidden" name="existing_photos" value={it.url!} />
             <input type="hidden" name="existing_labels" value={it.label} />
           </span>
-        ) : (
-          <input key={it.id} type="hidden" name="new_labels" value={it.label} />
-        )
-      )}
-      {/* Real file input: hidden, driven by the tile below and kept in sync with state. */}
+        ))}
+      {/* Picker only — never submitted (photos are already in storage by then). */}
       <input
         ref={fileInput}
-        name="photos"
         type="file"
         multiple
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*"
         aria-label="Add photos"
         onChange={(e) => addFiles(e.target.files)}
         className="sr-only"
       />
+      {uploading ? <input type="hidden" name="photos_uploading" value="1" /> : null}
 
       <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
         {items.map((it, i) => (
-          <figure key={it.kind === "existing" ? it.url : it.id} className="min-w-0">
+          <figure key={it.id} className="min-w-0">
             <div className="relative aspect-square overflow-hidden rounded-xl bg-hairline">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={it.kind === "existing" ? it.url : it.preview}
+                src={it.preview}
                 alt={`Photo ${i + 1}: ${photoRoomLabel(it.label)}`}
-                className="h-full w-full object-cover"
+                className={`h-full w-full object-cover transition-opacity ${it.status === "ready" ? "opacity-100" : "opacity-50"}`}
               />
+              {it.status === "uploading" ? (
+                <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[10px] font-semibold uppercase tracking-widest text-white">
+                  Uploading…
+                </span>
+              ) : null}
+              {it.status === "failed" ? (
+                <span role="alert" className="absolute inset-x-0 bottom-0 bg-danger/90 px-1 py-1 text-center text-[10px] font-semibold leading-tight text-white">
+                  {it.error ?? "Upload failed"}
+                </span>
+              ) : null}
               <button
                 type="button"
                 aria-label={`Remove photo ${i + 1}`}
-                onClick={() => remove(i)}
+                onClick={() => remove(it.id)}
                 className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-xs text-white backdrop-blur hover:bg-black/75"
               >
                 ×
@@ -133,7 +170,7 @@ export function PhotoPicker({ initialUrls, initialLabels }: { initialUrls: strin
             <select
               id={`photo-room-${i}`}
               value={it.label}
-              onChange={(e) => setLabel(i, e.target.value as PhotoRoom)}
+              onChange={(e) => update(it.id, { label: e.target.value as PhotoRoom })}
               className={select}
             >
               {PHOTO_ROOMS.map((r) => (
@@ -165,6 +202,7 @@ export function PhotoPicker({ initialUrls, initialLabels }: { initialUrls: strin
             {covered.has(room) ? "✓" : "○"} {photoRoomLabel(room)}
           </span>
         ))}
+        {uploading ? <span aria-live="polite">Uploading photos…</span> : null}
       </div>
     </div>
   );

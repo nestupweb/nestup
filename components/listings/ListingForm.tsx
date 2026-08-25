@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { saveListingAction, type ListingFormState } from "@/app/actions/listing";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { PhotoPicker } from "@/components/listings/PhotoPicker";
@@ -14,11 +14,16 @@ const section = "mt-9 border-t border-hairline pt-6";
 const heading = "text-lg font-semibold";
 const check = "flex items-center gap-2 text-sm";
 
-export function ListingForm({ listing }: { listing: Listing | null }) {
+export function ListingForm({ listing, userId }: { listing: Listing | null; userId: string }) {
   const [state, formAction, pending] = useActionState<ListingFormState, FormData>(
     saveListingAction,
     {}
   );
+  // A validation message lands next to the button, below a long form — bring it into view.
+  const alertRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (state.error) alertRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [state.error]);
 
   return (
     <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
@@ -36,7 +41,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
           {MIN_LISTING_PHOTOS}–{MAX_LISTING_PHOTOS} photos. Include the living room, a bedroom and the bathroom, and tag each
           photo with the room it shows.
         </p>
-        <PhotoPicker initialUrls={listing?.photo_urls ?? []} initialLabels={listing?.photo_labels ?? []} />
+        <PhotoPicker userId={userId} initialUrls={listing?.photo_urls ?? []} initialLabels={listing?.photo_labels ?? []} />
       </section>
 
       {/* ===== Address ===== */}
@@ -149,7 +154,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
         </label>
       ) : null}
 
-      {state.error ? <p role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
+      {state.error ? <p ref={alertRef} role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
       {state.saved ? <p role="status" className="mt-4 text-sm text-accent">Saved.</p> : null}
 
       <button
