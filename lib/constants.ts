@@ -13,6 +13,7 @@ export const INTERESTS = [
 
 export const MIN_INTERESTS = 3;
 export const MAX_INTERESTS = 10;
+export const MIN_LISTING_PHOTOS = 3; // the swipe deck shows every room as a photo story
 export const MAX_LISTING_PHOTOS = 5;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 

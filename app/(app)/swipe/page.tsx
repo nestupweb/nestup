@@ -1,20 +1,16 @@
-import { requireUser } from "@/lib/auth";
+import { getAuthContext, requireProfile } from "@/lib/auth";
+import { getSwipeDeck } from "@/lib/swipe";
+import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 
-// Interim signed-in destination: Task 16 replaces this with the real swipe deck.
 export default async function SwipePage() {
-  const { user } = await requireUser();
+  // Scores come from the questionnaire, so the deck needs a finished profile.
+  const { profile } = await requireProfile("/swipe");
+  const { supabase } = await getAuthContext();
+  const deck = await getSwipeDeck(supabase, profile);
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-16 text-center sm:px-6 md:py-24">
-      <p className="text-xs font-medium uppercase tracking-widest text-muted">
-        Signed in as {user.email}
-      </p>
-      <h1 className="mt-4 font-serif text-4xl font-semibold leading-tight">
-        You&rsquo;re in.
-      </h1>
-      <p className="mx-auto mt-5 max-w-md text-base leading-7 text-muted">
-        The swipe deck is being built next and will appear right here.
-      </p>
+    <main className="mx-auto w-full max-w-2xl pb-4 sm:px-6 sm:pt-5">
+      <SwipeDeck entries={deck} seeker={profile} />
     </main>
   );
 }

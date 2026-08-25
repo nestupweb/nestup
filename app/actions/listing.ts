@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { uploadImage } from "@/lib/storage";
 import { listingSchema } from "@/lib/validation/listing";
-import { MAX_LISTING_PHOTOS } from "@/lib/constants";
+import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS } from "@/lib/constants";
 
 export type ListingFormState = { error?: string; saved?: boolean };
 
@@ -40,8 +40,12 @@ export async function saveListingAction(
 
   const keptUrls = formData.getAll("existing_photos").map(String);
   const newFiles = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
-  if (keptUrls.length + newFiles.length > MAX_LISTING_PHOTOS) {
+  const photoCount = keptUrls.length + newFiles.length;
+  if (photoCount > MAX_LISTING_PHOTOS) {
     return { error: `Up to ${MAX_LISTING_PHOTOS} photos.` };
+  }
+  if (photoCount < MIN_LISTING_PHOTOS) {
+    return { error: `Add at least ${MIN_LISTING_PHOTOS} photos so the room shows well on Swipe.` };
   }
   const photo_urls = [...keptUrls];
   for (const file of newFiles) {

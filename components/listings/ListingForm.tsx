@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { saveListingAction, type ListingFormState } from "@/app/actions/listing";
-import { CITIES, FEATURES, MAX_LISTING_PHOTOS, PROPERTY_TYPES } from "@/lib/constants";
+import { CITIES, FEATURES, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
 const input =
@@ -77,7 +77,7 @@ export function ListingForm({ listing }: { listing: Listing | null }) {
         ))}
       </div>
 
-      <label className={label}>Photos (up to {MAX_LISTING_PHOTOS})
+      <label className={label}>Photos ({MIN_LISTING_PHOTOS}–{MAX_LISTING_PHOTOS})
         <input name="photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className={input} />
       </label>
       {listing && listing.photo_urls.length > 0 ? (
