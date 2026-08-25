@@ -1,9 +1,19 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, expect, test } from "vitest";
-import { ViewingScheduledChip, viewingParticipants } from "@/components/chat/ViewingDetails";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { ConversationSummary, Viewing } from "@/lib/types";
 
+const respondViewingAction = vi.fn(async (): Promise<{ ok: boolean; error?: string }> => ({ ok: true }));
+vi.mock("@/app/actions/viewing", () => ({
+  respondViewingAction: (...args: unknown[]) => respondViewingAction(...(args as [])),
+}));
+
+import { ViewingScheduledChip, viewingParticipants } from "@/components/chat/ViewingDetails";
+
 afterEach(cleanup);
+beforeEach(() => {
+  respondViewingAction.mockReset();
+  respondViewingAction.mockResolvedValue({ ok: true });
+});
 
 const conversation: ConversationSummary = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -74,6 +84,38 @@ test("participants are listed from each side's point of view", () => {
   expect(viewingParticipants(conversation, "seeker").map((p) => p.name)).toEqual(["You", "Noa Peretz", "Alona Berg"]);
   const hostView = { ...conversation, other_name: "Dana Levi", other_user_id: "seeker" };
   expect(viewingParticipants(hostView, "owner").map((p) => p.name)).toEqual(["You", "Dana Levi"]);
+});
+
+test("cancelling asks for confirmation first, then cancels and closes the details", async () => {
+  render(<ViewingScheduledChip viewing={viewing} conversation={conversation} meId="seeker" />);
+  fireEvent.click(screen.getByRole("button", { name: /viewing scheduled/i }));
+  const dialog = screen.getByRole("dialog");
+  const q = within(dialog);
+
+  // First tap only asks; nothing is sent yet and "Keep it" backs out.
+  fireEvent.click(q.getByRole("button", { name: "Cancel viewing" }));
+  expect(q.getByText(/cancel this viewing\?/i)).toHaveTextContent("Noa Peretz will see it as cancelled");
+  expect(respondViewingAction).not.toHaveBeenCalled();
+  fireEvent.click(q.getByRole("button", { name: "Keep it" }));
+  expect(q.queryByText(/cancel this viewing\?/i)).toBeNull();
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+  // Confirming cancels the viewing (either party may) and closes the sheet.
+  fireEvent.click(q.getByRole("button", { name: "Cancel viewing" }));
+  fireEvent.click(q.getByRole("button", { name: /yes, cancel viewing/i }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(respondViewingAction).toHaveBeenCalledWith(viewing.id, "cancelled", conversation.id);
+});
+
+test("a failed cancellation keeps the details open and explains", async () => {
+  respondViewingAction.mockResolvedValue({ ok: false, error: "This viewing is already closed." });
+  render(<ViewingScheduledChip viewing={viewing} conversation={conversation} meId="owner" />);
+  fireEvent.click(screen.getByRole("button", { name: /viewing scheduled/i }));
+  const q = within(screen.getByRole("dialog"));
+  fireEvent.click(q.getByRole("button", { name: "Cancel viewing" }));
+  fireEvent.click(q.getByRole("button", { name: /yes, cancel viewing/i }));
+  expect(await q.findByRole("status")).toHaveTextContent("This viewing is already closed.");
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
 });
 
 test("a viewing with no note says so", () => {

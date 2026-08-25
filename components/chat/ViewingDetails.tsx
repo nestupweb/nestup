@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { respondViewingAction } from "@/app/actions/viewing";
 import { CalendarIcon } from "@/components/chat/MessageComposer";
 import { Avatar } from "@/components/ui/Avatar";
 import { describeViewing, googleCalendarTemplateUrl } from "@/lib/calendar";
@@ -71,6 +72,10 @@ export function ViewingDetails({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const [confirming, setConfirming] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [notice, setNotice] = useState<string | null>(null);
+
   const start = new Date(viewing.starts_at);
   const longDate = start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const { time } = viewingLabel(viewing.starts_at, viewing.ends_at);
@@ -89,6 +94,15 @@ export function ViewingDetails({
     start,
     end: new Date(viewing.ends_at),
   });
+
+  // Either side may cancel a confirmed viewing; the server action revalidates the
+  // thread so the chip and rings disappear and the timeline card reads "Cancelled".
+  const cancel = () =>
+    startTransition(async () => {
+      const res = await respondViewingAction(viewing.id, "cancelled", viewing.conversation_id);
+      if (res.ok) onClose();
+      else setNotice(res.error ?? "Could not cancel the viewing.");
+    });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
@@ -169,6 +183,45 @@ export function ViewingDetails({
           <span className="rounded-full bg-accent/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
             Confirmed by both
           </span>
+        </div>
+
+        <div className="mt-4 border-t border-hairline pt-4">
+          {confirming ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="w-full text-sm text-ink">
+                Cancel this viewing? {withName} will see it as cancelled in the chat.
+              </p>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={cancel}
+                className="rounded-full border border-danger bg-danger/10 px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/15 disabled:opacity-60"
+              >
+                {pending ? "Cancelling…" : "Yes, cancel viewing"}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setConfirming(false)}
+                className="rounded-full border border-hairline px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-hairline/50 disabled:opacity-60"
+              >
+                Keep it
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className="text-sm font-semibold text-danger underline-offset-2 hover:underline"
+            >
+              Cancel viewing
+            </button>
+          )}
+          {notice ? (
+            <p role="status" className="mt-2 text-xs text-danger">
+              {notice}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

@@ -10,6 +10,8 @@ import type { ConversationSummary } from "@/lib/types";
 
 /** Accent ring on the chat thumbnail while a confirmed viewing is still ahead. */
 const VIEWING_RING = "outline-2 outline-offset-2 outline-accent";
+/** The word under the ringed thumbnail, in the same accent. */
+const VIEWING_LABEL = "text-[11px] font-semibold leading-none text-accent";
 
 export function ConversationList({
   conversations,
@@ -64,15 +66,17 @@ export function ConversationList({
                     active ? "bg-accent/10" : "hover:bg-hairline/40"
                   }`}
                 >
-                  <span
-                    title={viewingAhead ? "Viewing scheduled" : undefined}
-                    data-viewing-ring={viewingAhead ? "true" : undefined}
-                    className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-hairline ${viewingAhead ? VIEWING_RING : ""}`}
-                  >
-                    {c.listing_photo ? (
-                      <Image src={c.listing_photo} alt="" fill sizes="56px" className="object-cover" />
-                    ) : null}
-                    {viewingAhead ? <span className="sr-only">Viewing scheduled</span> : null}
+                  <span className="flex shrink-0 flex-col items-center gap-1.5">
+                    <span
+                      title={viewingAhead ? "Viewing scheduled" : undefined}
+                      data-viewing-ring={viewingAhead ? "true" : undefined}
+                      className={`relative h-14 w-14 overflow-hidden rounded-xl bg-hairline ${viewingAhead ? VIEWING_RING : ""}`}
+                    >
+                      {c.listing_photo ? (
+                        <Image src={c.listing_photo} alt="" fill sizes="56px" className="object-cover" />
+                      ) : null}
+                    </span>
+                    {viewingAhead ? <span className={VIEWING_LABEL}>Scheduled</span> : null}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">

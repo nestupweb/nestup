@@ -31,6 +31,8 @@ const NOTICES: Record<string, string> = {
 
 /** Accent ring on the chat thumbnail while a confirmed viewing is still ahead. */
 export const VIEWING_RING = "outline-2 outline-offset-2 outline-accent";
+/** The word under the ringed thumbnail, in the same accent. */
+export const VIEWING_LABEL = "text-[11px] font-semibold leading-none text-accent";
 
 export function ChatThread({
   meId,
@@ -185,17 +187,20 @@ export function ChatThread({
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </Link>
-        <Link
-          href={`/browse/${conversation.listing_id}`}
-          aria-label={conversation.listing_title}
-          title={nextViewing ? "Viewing scheduled" : undefined}
-          data-viewing-ring={nextViewing ? "true" : undefined}
-          className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-hairline ${nextViewing ? VIEWING_RING : ""}`}
-        >
-          {conversation.listing_photo ? (
-            <Image src={conversation.listing_photo} alt="" fill sizes="44px" className="object-cover" />
-          ) : null}
-        </Link>
+        <span className="flex shrink-0 flex-col items-center gap-1.5">
+          <Link
+            href={`/browse/${conversation.listing_id}`}
+            aria-label={conversation.listing_title}
+            title={nextViewing ? "Viewing scheduled" : undefined}
+            data-viewing-ring={nextViewing ? "true" : undefined}
+            className={`relative h-11 w-11 overflow-hidden rounded-xl bg-hairline ${nextViewing ? VIEWING_RING : ""}`}
+          >
+            {conversation.listing_photo ? (
+              <Image src={conversation.listing_photo} alt="" fill sizes="44px" className="object-cover" />
+            ) : null}
+          </Link>
+          {nextViewing ? <span className={VIEWING_LABEL}>Scheduled</span> : null}
+        </span>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-[16px] font-semibold">{other}</h1>
           <p className="truncate text-xs text-muted">{roleLine}</p>
