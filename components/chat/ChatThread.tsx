@@ -3,26 +3,34 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { CalendarIcon, MessageComposer } from "@/components/chat/MessageComposer";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { sendMessageAction } from "@/app/actions/chat";
+import { MessageComposer, type SendPayload } from "@/components/chat/MessageComposer";
 import { ScheduleViewing, type GoogleState } from "@/components/chat/ScheduleViewing";
 import { ViewingCard } from "@/components/chat/ViewingCard";
+import { ViewingScheduledChip } from "@/components/chat/ViewingDetails";
 import { groupByDay, householdLabel, timeLabel } from "@/lib/chat-format";
+import {
+  mergeMessages,
+  settledClientIds,
+  upcomingConfirmed,
+  type OutboxMessage,
+  type OutboxStatus,
+  type TimelineMessage,
+} from "@/lib/chat-outbox";
+import { useMounted, useNow } from "@/lib/hooks";
 import type { ConversationSummary, Message, Viewing } from "@/lib/types";
 
-type TimelineItem = ({ kind: "message" } & Message) | ({ kind: "viewing" } & Viewing);
-
-const noopSubscribe = () => () => {};
-/** False during SSR/hydration, true after — day labels depend on the viewer's clock. */
-function useMounted() {
-  return useSyncExternalStore(noopSubscribe, () => true, () => false);
-}
+type TimelineItem = ({ kind: "message" } & TimelineMessage) | ({ kind: "viewing" } & Viewing);
 
 const NOTICES: Record<string, string> = {
   connected: "Google Calendar connected — propose a viewing and the invite goes out automatically.",
   error: "Google Calendar could not be connected. Please try again.",
   unconfigured: "Google Calendar sync is not configured on this server.",
 };
+
+/** Accent ring on the chat thumbnail while a confirmed viewing is still ahead. */
+export const VIEWING_RING = "outline-2 outline-offset-2 outline-accent";
 
 export function ChatThread({
   meId,
@@ -41,10 +49,13 @@ export function ChatThread({
 }) {
   const router = useRouter();
   const mounted = useMounted();
+  const now = useNow();
   const [sheetOpen, setSheetOpen] = useState(calendarNotice === "connected");
   const [notice, setNotice] = useState(calendarNotice ? NOTICES[calendarNotice] : undefined);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [outbox, setOutbox] = useState<OutboxMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!lightbox) return;
     const onKey = (e: KeyboardEvent) => {
@@ -55,13 +66,81 @@ export function ChatThread({
   }, [lightbox]);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
+  // --- optimistic sending -------------------------------------------------
+  const patch = useCallback((clientId: string, changes: Partial<OutboxMessage>) => {
+    setOutbox((list) => list.map((o) => (o.client_id === clientId ? { ...o, ...changes } : o)));
+  }, []);
+
+  const deliver = useCallback(
+    async (entry: OutboxMessage) => {
+      patch(entry.client_id, { status: "sending", error: undefined });
+      try {
+        const res = await sendMessageAction({
+          conversationId: conversation.id,
+          clientId: entry.client_id,
+          content: entry.content,
+          imagePath: entry.image_path,
+        });
+        if (res.ok) patch(entry.client_id, { status: "sent" });
+        else patch(entry.client_id, { status: "failed", error: res.error });
+      } catch {
+        patch(entry.client_id, { status: "failed", error: "Not sent — check your connection." });
+      }
+    },
+    [conversation.id, patch]
+  );
+
+  const send = useCallback(
+    (payload: SendPayload) => {
+      const clientId = crypto.randomUUID();
+      const entry: OutboxMessage = {
+        id: clientId,
+        client_id: clientId,
+        conversation_id: conversation.id,
+        sender_id: meId,
+        content: payload.content,
+        image_path: payload.imagePath,
+        image_url: payload.imagePreview ?? undefined,
+        created_at: new Date().toISOString(),
+        status: "sending",
+      };
+      setOutbox((list) => {
+        // Optimistic copies the server already knows are hidden by mergeMessages;
+        // retire them (and their blob previews) here, on the next send.
+        const settled = new Set(settledClientIds(messages, list));
+        for (const o of list) if (settled.has(o.client_id) && o.image_url?.startsWith("blob:")) URL.revokeObjectURL(o.image_url);
+        return [...list.filter((o) => !settled.has(o.client_id)), entry];
+      });
+      void deliver(entry);
+    },
+    [conversation.id, meId, deliver, messages]
+  );
+
+  const retry = useCallback(
+    (clientId: string) => {
+      const entry = outbox.find((o) => o.client_id === clientId);
+      if (entry) void deliver(entry);
+    },
+    [outbox, deliver]
+  );
+
+  const dismiss = useCallback((clientId: string) => {
+    setOutbox((list) => {
+      const gone = list.find((o) => o.client_id === clientId);
+      if (gone?.image_url?.startsWith("blob:")) URL.revokeObjectURL(gone.image_url);
+      return list.filter((o) => o.client_id !== clientId);
+    });
+  }, []);
+
+  // --- timeline -----------------------------------------------------------
+  const merged = useMemo(() => mergeMessages(messages, outbox), [messages, outbox]);
   const timeline = useMemo<TimelineItem[]>(
     () =>
       [
-        ...messages.map((m) => ({ kind: "message" as const, ...m })),
+        ...merged.map((m) => ({ kind: "message" as const, ...m })),
         ...viewings.map((v) => ({ kind: "viewing" as const, ...v })),
       ].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)),
-    [messages, viewings]
+    [merged, viewings]
   );
   const groups = useMemo(() => (mounted ? groupByDay(timeline) : []), [timeline, mounted]);
 
@@ -75,6 +154,9 @@ export function ChatThread({
     if (conversation.unread_count > 0) router.refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Confirmed and still ahead — drives the header chip and the thumbnail ring.
+  const nextViewing = useMemo(() => (now ? upcomingConfirmed(viewings, now)[0] ?? null : null), [viewings, now]);
 
   const iAmSeeker = conversation.seeker_id === meId;
   const household = conversation.household ?? [];
@@ -106,7 +188,9 @@ export function ChatThread({
         <Link
           href={`/browse/${conversation.listing_id}`}
           aria-label={conversation.listing_title}
-          className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-hairline"
+          title={nextViewing ? "Viewing scheduled" : undefined}
+          data-viewing-ring={nextViewing ? "true" : undefined}
+          className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-hairline ${nextViewing ? VIEWING_RING : ""}`}
         >
           {conversation.listing_photo ? (
             <Image src={conversation.listing_photo} alt="" fill sizes="44px" className="object-cover" />
@@ -116,14 +200,7 @@ export function ChatThread({
           <h1 className="truncate text-[16px] font-semibold">{other}</h1>
           <p className="truncate text-xs text-muted">{roleLine}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          className="hidden items-center gap-2 rounded-full border border-hairline px-3.5 py-2 text-[12px] font-semibold uppercase tracking-wider text-ink transition-colors hover:border-accent hover:text-accent sm:flex"
-        >
-          <CalendarIcon className="h-4 w-4" />
-          Schedule a viewing
-        </button>
+        {nextViewing ? <ViewingScheduledChip viewing={nextViewing} conversation={conversation} meId={meId} /> : null}
       </header>
 
       <Link
@@ -182,6 +259,10 @@ export function ChatThread({
                         onOpenImage={setLightbox}
                         at={item.created_at}
                         sender={groupChat && item.sender_id !== meId && !grouped ? nameFor(item.sender_id) : undefined}
+                        status={item.status}
+                        error={item.error}
+                        onRetry={item.status === "failed" ? () => retry(item.id) : undefined}
+                        onDismiss={item.status === "failed" ? () => dismiss(item.id) : undefined}
                       />
                     </li>
                   );
@@ -193,7 +274,7 @@ export function ChatThread({
       </div>
 
       <div className="border-t border-hairline bg-paper px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:px-5">
-        <MessageComposer conversationId={conversation.id} onSchedule={() => setSheetOpen(true)} />
+        <MessageComposer conversationId={conversation.id} onSend={send} onSchedule={() => setSheetOpen(true)} />
       </div>
 
       {sheetOpen ? <ScheduleViewing conversation={conversation} meId={meId} google={google} onClose={closeSheet} /> : null}
@@ -225,6 +306,10 @@ function Bubble({
   onOpenImage,
   at,
   sender,
+  status,
+  error,
+  onRetry,
+  onDismiss,
 }: {
   mine: boolean;
   grouped: boolean;
@@ -233,16 +318,22 @@ function Bubble({
   onOpenImage: (url: string) => void;
   at: string;
   sender?: string;
+  status?: OutboxStatus;
+  error?: string;
+  onRetry?: () => void;
+  onDismiss?: () => void;
 }) {
+  const failed = status === "failed";
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
       {sender ? <span className="mb-0.5 ml-3 text-[11px] font-semibold uppercase tracking-wider text-muted">{sender}</span> : null}
       <div
-        className={`max-w-[78%] text-[16px] leading-snug shadow-sm ${image ? "p-1.5" : "px-3.5 py-2"} ${
+        data-status={status}
+        className={`max-w-[78%] text-[16px] leading-snug shadow-sm transition-opacity ${image ? "p-1.5" : "px-3.5 py-2"} ${
           mine
             ? `rounded-2xl rounded-br-md bg-accent text-accent-contrast ${grouped ? "rounded-tr-md" : ""}`
             : `rounded-2xl rounded-bl-md border border-hairline bg-surface text-ink ${grouped ? "rounded-tl-md" : ""}`
-        }`}
+        } ${failed ? "opacity-60" : status === "sending" ? "opacity-85" : ""}`}
       >
         {image ? (
           <button type="button" onClick={() => onOpenImage(image)} aria-label="Open photo" className="block overflow-hidden rounded-xl">
@@ -252,9 +343,16 @@ function Bubble({
         ) : null}
         {content ? <p className={`whitespace-pre-line break-words ${image ? "px-2 pt-1.5" : ""}`}>{content}</p> : null}
         <time dateTime={at} className={`mt-1 block text-right text-[11px] ${image ? "px-2 pb-0.5" : ""} ${mine ? "text-accent-contrast/70" : "text-muted"}`}>
-          {timeLabel(at)}
+          {status === "sending" ? "Sending…" : timeLabel(at)}
         </time>
       </div>
+      {failed ? (
+        <p role="alert" className="mt-1 mr-1 text-[11px] text-danger">
+          {error ?? "Not sent"} ·{" "}
+          <button type="button" onClick={onRetry} className="font-semibold underline underline-offset-2">Retry</button> ·{" "}
+          <button type="button" onClick={onDismiss} className="underline underline-offset-2">Dismiss</button>
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -31,6 +31,8 @@ const conversation: ConversationSummary = {
   created_at: "2026-08-25T10:00:00Z",
   household: [],
   listing_viewing_slots: [],
+  next_viewing_starts_at: null,
+  next_viewing_ends_at: null,
 };
 
 function viewing(overrides: Partial<Viewing> = {}): Viewing {

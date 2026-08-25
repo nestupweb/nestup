@@ -144,6 +144,7 @@ export interface Message {
   content: string;
   image_path: string | null; // `chat-images` bucket, `<conversation>/<uuid>.<ext>`
   image_url?: string; // short-lived signed URL, filled in by the page
+  client_id?: string | null; // browser-generated; makes sends idempotent (migration 0015)
   created_at: string;
 }
 
@@ -175,6 +176,9 @@ export interface ConversationSummary {
   created_at: string;
   household: HouseholdMember[];
   listing_viewing_slots: unknown; // jsonb → normalizeSlots()
+  /** Next confirmed viewing that hasn't ended (null when none) — ring + "Viewing scheduled". */
+  next_viewing_starts_at: string | null;
+  next_viewing_ends_at: string | null;
 }
 
 export type ViewingStatus = "proposed" | "confirmed" | "declined" | "cancelled";

@@ -4,7 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { householdLabel, previewTime } from "@/lib/chat-format";
+import { isUpcoming } from "@/lib/chat-outbox";
+import { useNow } from "@/lib/hooks";
 import type { ConversationSummary } from "@/lib/types";
+
+/** Accent ring on the chat thumbnail while a confirmed viewing is still ahead. */
+const VIEWING_RING = "outline-2 outline-offset-2 outline-accent";
 
 export function ConversationList({
   conversations,
@@ -14,6 +19,8 @@ export function ConversationList({
   meId: string;
 }) {
   const pathname = usePathname();
+  // The SQL already filters to viewings that haven't ended; re-check on the client clock once known.
+  const now = useNow();
 
   return (
     <div className="flex flex-col">
@@ -47,6 +54,7 @@ export function ConversationList({
               c.seeker_id === meId
                 ? householdLabel((c.household ?? []).map((h) => h.full_name), c.other_name ?? "NestUp member")
                 : c.other_name ?? "NestUp member";
+            const viewingAhead = now > 0 && isUpcoming(c.next_viewing_ends_at, now);
             return (
               <li key={c.id}>
                 <Link
@@ -56,10 +64,15 @@ export function ConversationList({
                     active ? "bg-accent/10" : "hover:bg-hairline/40"
                   }`}
                 >
-                  <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-hairline">
+                  <span
+                    title={viewingAhead ? "Viewing scheduled" : undefined}
+                    data-viewing-ring={viewingAhead ? "true" : undefined}
+                    className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-hairline ${viewingAhead ? VIEWING_RING : ""}`}
+                  >
                     {c.listing_photo ? (
                       <Image src={c.listing_photo} alt="" fill sizes="56px" className="object-cover" />
                     ) : null}
+                    {viewingAhead ? <span className="sr-only">Viewing scheduled</span> : null}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">

@@ -1,40 +1,62 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { sendMessageAction, type SendMessageState } from "@/app/actions/chat";
+import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-client";
 
 type Attachment = { preview: string; path: string | null; status: "uploading" | "ready" | "failed"; error?: string };
 
+export interface SendPayload {
+  content: string;
+  imagePath: string | null;
+  /** Object URL of the attached photo, shown until the server copy arrives. Ownership passes to the caller. */
+  imagePreview: string | null;
+}
+
+/**
+ * The "Write a message" box. Sending hands the payload to the thread (which
+ * shows it immediately) and clears the field without remounting it, so the
+ * cursor stays put and the user can keep typing.
+ */
 export function MessageComposer({
   conversationId,
+  onSend,
   onSchedule,
 }: {
   conversationId: string;
+  onSend: (payload: SendPayload) => void;
   onSchedule?: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<SendMessageState, FormData>(
-    sendMessageAction,
-    {}
-  );
-  const formRef = useRef<HTMLFormElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState("");
   const [image, setImage] = useState<Attachment | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  // A successful send remounts the form (key below); drop the attachment with it.
-  useEffect(() => {
-    setImage((img) => {
-      if (img?.preview.startsWith("blob:")) URL.revokeObjectURL(img.preview);
-      return null;
-    });
-  }, [state.sentNonce]);
+  const uploading = image?.status === "uploading";
+  const hasImage = image?.status === "ready" && Boolean(image.path);
+  const canSend = (text.trim().length > 0 || hasImage) && !uploading;
+
+  function submit() {
+    if (!canSend) return;
+    const ready = hasImage ? image! : null;
+    onSend({ content: text.trim(), imagePath: ready?.path ?? null, imagePreview: ready?.preview ?? null });
+    setText("");
+    if (image && !ready && image.preview.startsWith("blob:")) URL.revokeObjectURL(image.preview);
+    setImage(null);
+    // The field never remounts, so focus survives; re-assert it in case the Send button was clicked.
+    textareaRef.current?.focus();
+  }
+
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    submit();
+  }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     // Enter sends, Shift+Enter inserts a newline — messenger convention.
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (e.currentTarget.value.trim() || image?.status === "ready") formRef.current?.requestSubmit();
+      submit();
     }
   }
 
@@ -67,16 +89,8 @@ export function MessageComposer({
     setImage(null);
   };
 
-  const uploading = image?.status === "uploading";
-  const hasImage = image?.status === "ready" && image.path;
-
   return (
-    // key: a new sentNonce after a successful send remounts the form, clearing the
-    // textarea. On error the nonce is unchanged and defaultValue echoes the draft back
-    // (React 19 resets uncontrolled fields after every action).
-    <form ref={formRef} action={formAction} key={state.sentNonce ?? 0}>
-      <input type="hidden" name="conversation_id" value={conversationId} />
-      {hasImage ? <input type="hidden" name="image_path" value={image.path!} /> : null}
+    <form onSubmit={onSubmit}>
       <input
         ref={fileRef}
         type="file"
@@ -136,27 +150,27 @@ export function MessageComposer({
         </button>
         <label htmlFor="chat-message" className="sr-only">Message</label>
         <textarea
+          ref={textareaRef}
           id="chat-message"
           name="content"
-          required={!hasImage}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
           maxLength={2000}
           rows={1}
           autoComplete="off"
           placeholder={hasImage ? "Add a caption (optional)…" : "Write a message…"}
           onKeyDown={onKeyDown}
-          defaultValue={state.error ? state.content ?? "" : ""}
           className="max-h-40 min-h-11 flex-1 resize-none rounded-3xl border border-hairline bg-surface px-4 py-3 text-[16px] leading-5 text-ink outline-none focus:border-accent"
         />
         <button
           type="submit"
-          disabled={pending || uploading}
-          aria-label={pending ? "Sending" : "Send"}
+          disabled={!canSend}
+          aria-label="Send"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-contrast transition-opacity disabled:opacity-60"
         >
           <SendIcon />
         </button>
       </div>
-      {state.error ? <p role="alert" className="mt-2 text-sm text-danger">{state.error}</p> : null}
     </form>
   );
 }
