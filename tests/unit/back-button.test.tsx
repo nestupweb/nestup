@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { canGoBack, parentPath } from "@/lib/back";
 
@@ -58,10 +58,16 @@ describe("BackButton", () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  test("is not rendered on the landing page", () => {
-    pathname = "/";
+  test("is hidden on Listings (the front door) only when there is no history", async () => {
+    pathname = "/browse";
+    (window as unknown as { navigation: unknown }).navigation = { canGoBack: false };
+    const { unmount } = render(<BackButton />);
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Back" })).toBeNull());
+    unmount();
+
+    (window as unknown as { navigation: unknown }).navigation = { canGoBack: true };
     render(<BackButton />);
-    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
     pathname = "/browse/abc";
   });
 });
