@@ -100,7 +100,7 @@ export function ProfileAvatar({ url, name }: { url: string | null; name: string 
             src={fullSizeUrl(url)}
             alt={name}
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[90dvh] max-w-full rounded-2xl object-contain shadow-2xl"
+            className="aspect-square h-auto w-[min(80vw,80dvh,32rem)] rounded-full object-cover shadow-2xl ring-4 ring-surface/30"
           />
           <button
             type="button"

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { Avatar } from "@/components/ui/Avatar";
 import { upsertProfileAction, type ProfileFormState } from "@/app/actions/profile";
 import { InterestsPicker } from "@/components/profile/InterestsPicker";
 import { CityMultiPicker } from "@/components/profile/CityMultiPicker";
@@ -19,6 +20,8 @@ export function ProfileForm({
   onboarding: boolean;
   next?: string;
 }) {
+  const [preview, setPreview] = useState<string | null>(null);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
   const [state, formAction, pending] = useActionState<ProfileFormState, FormData>(
     upsertProfileAction,
     {}
@@ -40,9 +43,21 @@ export function ProfileForm({
         </p>
       ) : null}
 
-      <label className={label}>Photo
-        <input name="avatar" type="file" accept="image/jpeg,image/png,image/webp" className={input} />
-      </label>
+      <div className="mt-4 flex items-center gap-4">
+        <Avatar url={preview ?? profile?.avatar_url} name={profile?.full_name || "Your photo"} size={16} className="ring-2 ring-hairline" />
+        <label className="block min-w-0 flex-1 text-xs font-medium uppercase tracking-widest text-muted">Photo
+          <input
+            name="avatar"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              setPreview(f ? URL.createObjectURL(f) : null);
+            }}
+            className={input}
+          />
+        </label>
+      </div>
       <label className={label}>Full name
         <input name="full_name" required minLength={2} maxLength={60} defaultValue={profile?.full_name ?? ""} className={input} />
       </label>
