@@ -1,6 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
+import { setSavedAction } from "@/app/actions/saved";
 
 const STORAGE_KEY = "nestup:saved-listings";
 
@@ -29,18 +30,40 @@ function subscribe(callback: () => void) {
 }
 
 /**
- * Per-viewer favorite toggle, persisted in localStorage only (no DB table yet —
- * see docs/superpowers/notes/handoff-notes.md). Server snapshot is "unsaved",
- * so SSR and hydration agree; the real value syncs in on the client.
+ * Heart toggle. Signed-in users persist to `saved_listings` (shows under
+ * Profile › Liked on every device); visitors keep a per-browser localStorage
+ * list so the button still feels alive before sign-up.
  */
-export function SaveButton({ listingId, className = "" }: { listingId: string; className?: string }) {
-  const saved = useSyncExternalStore(
+export function SaveButton({
+  listingId,
+  signedIn = false,
+  initialSaved = false,
+  className = "",
+}: {
+  listingId: string;
+  signedIn?: boolean;
+  initialSaved?: boolean;
+  className?: string;
+}) {
+  const localSaved = useSyncExternalStore(
     subscribe,
     () => readSaved().includes(listingId),
     () => false
   );
+  const [serverSaved, setServerSaved] = useState(initialSaved);
+  const [, startTransition] = useTransition();
+  const saved = signedIn ? serverSaved : localSaved;
 
   function toggle() {
+    if (signedIn) {
+      const next = !serverSaved;
+      setServerSaved(next); // optimistic
+      startTransition(async () => {
+        const { ok } = await setSavedAction(listingId, next);
+        if (!ok) setServerSaved(!next);
+      });
+      return;
+    }
     try {
       const ids = new Set(readSaved());
       if (ids.has(listingId)) ids.delete(listingId);
@@ -57,7 +80,7 @@ export function SaveButton({ listingId, className = "" }: { listingId: string; c
       type="button"
       onClick={toggle}
       aria-pressed={saved}
-      aria-label={saved ? "Remove from saved rooms" : "Save this room"}
+      aria-label={saved ? "Remove from liked rooms" : "Like this room"}
       className={`flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-surface/90 backdrop-blur transition-colors ${
         saved ? "text-accent" : "text-muted hover:text-ink"
       } ${className}`}

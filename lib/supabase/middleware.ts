@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Page routes only — protected API routes must check auth inside their handler
 // (an API caller must get a JSON 401, not an HTML redirect).
-const PROTECTED_PREFIXES = ["/swipe", "/matches", "/listing", "/profile"];
+const PROTECTED_PREFIXES = ["/swipe", "/matches", "/listing", "/profile", "/chat"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

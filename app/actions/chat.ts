@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { markConversationRead } from "@/lib/chat";
 import { messageSchema } from "@/lib/validation/message";
 
 export type SendMessageState = { error?: string; content?: string; sentNonce?: number };
@@ -15,9 +16,8 @@ export async function sendMessageAction(
   const { supabase, user } = await requireUser();
 
   const conversationId = String(formData.get("conversation_id") ?? "");
-  const listingId = String(formData.get("listing_id") ?? "");
   const raw = String(formData.get("content") ?? "");
-  if (!UUID_RE.test(conversationId) || !UUID_RE.test(listingId)) {
+  if (!UUID_RE.test(conversationId)) {
     return { error: "Could not send the message. Please reload and try again.", content: raw };
   }
 
@@ -38,6 +38,16 @@ export async function sendMessageAction(
   });
   if (error) return { error: "Could not send the message. Please try again.", content: raw };
 
-  revalidatePath(`/browse/${listingId}/chat`);
+  await markConversationRead(supabase, conversationId);
+  revalidatePath(`/chat/${conversationId}`);
+  revalidatePath("/chat");
   return { sentNonce: Date.now() };
+}
+
+/** Called when a thread is opened so the unread badge clears. */
+export async function markReadAction(conversationId: string): Promise<void> {
+  if (!UUID_RE.test(conversationId)) return;
+  const { supabase, user } = await requireUser();
+  await markConversationRead(supabase, conversationId);
+  revalidatePath("/chat");
 }

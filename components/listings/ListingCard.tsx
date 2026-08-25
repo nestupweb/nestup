@@ -5,7 +5,15 @@ import { NoPhoto } from "@/components/listings/NoPhoto";
 import { SaveButton } from "@/components/listings/SaveButton";
 import type { Listing } from "@/lib/types";
 
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({
+  listing,
+  signedIn = false,
+  saved = false,
+}: {
+  listing: Listing;
+  signedIn?: boolean;
+  saved?: boolean;
+}) {
   const meta = [
     propertyTypeLabel(listing.property_type),
     `${listing.rooms} room${listing.rooms === 1 ? "" : "s"}`,
@@ -77,7 +85,12 @@ export function ListingCard({ listing }: { listing: Listing }) {
           </div>
         </div>
       </div>
-      <SaveButton listingId={listing.id} className="absolute right-3 top-3 z-[2]" />
+      <SaveButton
+        listingId={listing.id}
+        signedIn={signedIn}
+        initialSaved={saved}
+        className="absolute right-3 top-3 z-[2]"
+      />
     </article>
   );
 }

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FEATURES, propertyTypeLabel } from "@/lib/constants";
 import { ListingGallery } from "@/components/listings/ListingGallery";
+import { SaveButton } from "@/components/listings/SaveButton";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
 import { swipeAction } from "@/app/actions/swipe";
 import type { Listing, Profile } from "@/lib/types";
@@ -21,6 +22,21 @@ export default async function ListingDetailPage({
   const { data } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
   const listing = data as Listing | null;
   if (!listing) notFound();
+
+  // Signed-in extras: heart state + "recently viewed" for Profile › History.
+  let saved = false;
+  if (user) {
+    const [{ data: savedRow }] = await Promise.all([
+      supabase.from("saved_listings").select("listing_id").eq("user_id", user.id).eq("listing_id", listing.id).maybeSingle(),
+      supabase
+        .from("listing_views")
+        .upsert(
+          { user_id: user.id, listing_id: listing.id, viewed_at: new Date().toISOString() },
+          { onConflict: "user_id,listing_id" }
+        ),
+    ]);
+    saved = Boolean(savedRow);
+  }
 
   // RLS: this returns null for anonymous visitors — by design.
   const { data: ownerData } = await supabase
@@ -66,9 +82,12 @@ export default async function ListingDetailPage({
         <h1 className="font-serif text-3xl font-semibold sm:text-4xl">
           {listing.city}, {listing.address || listing.neighborhood}
         </h1>
-        <p className="whitespace-nowrap font-serif text-2xl font-semibold sm:text-3xl">
-          ₪{listing.rent.toLocaleString()}<span className="text-sm font-normal text-muted"> /mo</span>
-        </p>
+        <div className="flex shrink-0 items-center gap-3">
+          <p className="whitespace-nowrap font-serif text-2xl font-semibold sm:text-3xl">
+            ₪{listing.rent.toLocaleString()}<span className="text-sm font-normal text-muted"> /mo</span>
+          </p>
+          <SaveButton listingId={listing.id} signedIn={Boolean(user)} initialSaved={saved} />
+        </div>
       </div>
       <p className="mt-2 text-base text-muted">
         Available from {new Date(listing.available_from).toLocaleDateString("en-GB", { dateStyle: "long" })}

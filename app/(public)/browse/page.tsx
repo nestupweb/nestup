@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAuthContext } from "@/lib/auth";
 import { listingFiltersSchema } from "@/lib/validation/filters";
 import { queryListings } from "@/lib/listings";
 import { FilterBar } from "@/components/listings/FilterBar";
@@ -17,7 +18,16 @@ export default async function BrowsePage({
   searchParams: Promise<Record<string, string>>;
 }) {
   const filters = listingFiltersSchema.parse(await searchParams);
-  const { listings, total } = await queryListings(filters);
+  const [{ listings, total }, { supabase, user }] = await Promise.all([
+    queryListings(filters),
+    getAuthContext(),
+  ]);
+  // Signed-in hearts come from the account (Profile › Liked); visitors use localStorage.
+  const savedIds = new Set<string>();
+  if (user) {
+    const { data } = await supabase.from("saved_listings").select("listing_id").eq("user_id", user.id);
+    for (const row of (data as { listing_id: string }[] | null) ?? []) savedIds.add(row.listing_id);
+  }
   const filtersActive = FILTER_KEYS.some((k) => filters[k] !== undefined);
   const lastPage = Math.max(1, Math.ceil(total / filters.page_size));
 
@@ -79,7 +89,7 @@ export default async function BrowsePage({
           ) : (
             <div className="mt-4 flex flex-col gap-4">
               {listings.map((l) => (
-                <ListingCard key={l.id} listing={l} />
+                <ListingCard key={l.id} listing={l} signedIn={Boolean(user)} saved={savedIds.has(l.id)} />
               ))}
             </div>
           )}

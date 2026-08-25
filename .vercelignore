@@ -1,0 +1,18 @@
+# never upload secrets or local-only files
+.env
+.env*
+node_modules
+.next
+.superpowers
+.git
+
+# dev-only, not part of the served app (anchored to repo root)
+/docs
+/tests
+/scripts
+/supabase
+/*.pdf
+*.tsbuildinfo
+/vitest.config.mts
+/AGENTS.md
+/CLAUDE.md

@@ -94,3 +94,49 @@ export interface Message {
   content: string;
   created_at: string;
 }
+
+/** One inbox row — the shape returned by the `my_conversations()` SQL function. */
+export interface ConversationSummary {
+  id: string;
+  listing_id: string;
+  listing_title: string;
+  listing_city: string;
+  listing_address: string;
+  listing_rent: number;
+  listing_photo: string | null;
+  seeker_id: string;
+  owner_id: string;
+  other_user_id: string;
+  other_name: string | null;
+  other_avatar: string | null;
+  last_message: string | null;
+  last_message_at: string | null;
+  last_sender_id: string | null;
+  unread_count: number;
+  created_at: string;
+}
+
+export type ViewingStatus = "proposed" | "confirmed" | "declined" | "cancelled";
+
+/** A viewing proposed from inside a chat; optionally mirrored to Google Calendar. */
+export interface Viewing {
+  id: string;
+  conversation_id: string;
+  proposed_by: string;
+  starts_at: string;
+  ends_at: string;
+  status: ViewingStatus;
+  note: string;
+  google_event_id: string | null;
+  google_event_link: string | null;
+  created_at: string;
+}
+
+export interface GoogleToken {
+  user_id: string;
+  refresh_token: string;
+  access_token: string;
+  expires_at: string;
+  email: string;
+  updated_at: string;
+}

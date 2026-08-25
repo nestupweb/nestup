@@ -1,18 +1,94 @@
-import { getOwnProfile } from "@/lib/auth";
+import Link from "next/link";
+import { getAuthContext, getOwnProfile } from "@/lib/auth";
+import { Avatar } from "@/components/ui/Avatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
+import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
+import type { Listing } from "@/lib/types";
+
+type JoinedRow<K extends string> = { [P in K]: string } & { listings: Listing | null };
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
 
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ onboarding?: string; next?: string }>;
+  searchParams: Promise<{ onboarding?: string; next?: string; tab?: string }>;
 }) {
-  const { profile } = await getOwnProfile();
-  const { onboarding, next } = await searchParams;
+  const { profile, userId } = await getOwnProfile();
+  const { onboarding, next, tab } = await searchParams;
+
+  // First-run (or explicit onboarding link): the form is the whole page.
+  if (!profile || onboarding === "1") {
+    return (
+      <ProfileForm
+        profile={profile}
+        onboarding
+        next={typeof next === "string" ? next : ""}
+      />
+    );
+  }
+
+  const { supabase } = await getAuthContext();
+  const [mineRes, likedRes, historyRes] = await Promise.all([
+    supabase.from("listings").select("*").eq("owner_id", userId).order("created_at", { ascending: false }),
+    supabase
+      .from("saved_listings")
+      .select("created_at, listings(*)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("listing_views")
+      .select("viewed_at, listings(*)")
+      .eq("user_id", userId)
+      .order("viewed_at", { ascending: false })
+      .limit(30),
+  ]);
+
+  const mine: ProfileTabItem[] = ((mineRes.data as Listing[] | null) ?? []).map((listing) => ({ listing }));
+  const liked: ProfileTabItem[] = ((likedRes.data as unknown as JoinedRow<"created_at">[] | null) ?? [])
+    .filter((r) => r.listings)
+    .map((r) => ({ listing: r.listings as Listing, caption: `Liked ${shortDate(r.created_at)}` }));
+  const history: ProfileTabItem[] = ((historyRes.data as unknown as JoinedRow<"viewed_at">[] | null) ?? [])
+    .filter((r) => r.listings)
+    .map((r) => ({ listing: r.listings as Listing, caption: `Viewed ${shortDate(r.viewed_at)}` }));
+
+  const initial = tab === "liked" || tab === "history" ? tab : "listings";
+
   return (
-    <ProfileForm
-      profile={profile}
-      onboarding={onboarding === "1"}
-      next={typeof next === "string" ? next : ""}
-    />
+    <main className="px-4 pb-8 pt-2 sm:px-6">
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="font-serif text-4xl font-semibold">Profile</h1>
+        <Link
+          href="/listing"
+          aria-label="List a room"
+          title="List a room"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-hairline text-2xl font-light leading-none text-ink transition-colors hover:border-accent hover:text-accent"
+        >
+          +
+        </Link>
+      </div>
+
+      <div className="mt-5 flex items-center gap-4">
+        <Avatar url={profile.avatar_url} name={profile.full_name} size={16} />
+        <div className="min-w-0">
+          <p className="truncate font-serif text-xl font-semibold">
+            {profile.full_name}, {profile.age}
+          </p>
+          <p className="truncate text-sm text-muted">{profile.occupation || "NestUp member"}</p>
+        </div>
+        <Link
+          href="/profile/edit"
+          className="ml-auto shrink-0 rounded-xl border border-hairline px-4 py-2 font-serif text-lg text-accent transition-colors hover:border-accent"
+        >
+          Edit info
+        </Link>
+      </div>
+
+      <div className="mt-8">
+        <ProfileTabs mine={mine} liked={liked} history={history} initial={initial} />
+      </div>
+    </main>
   );
 }
