@@ -75,22 +75,22 @@ test("arrows move through the photos and wrap around", async () => {
   expect(screen.getByAltText(/photo 3 of 3/)).toBeInTheDocument();
 });
 
-test("information panel has three pages with address, home details and flatmates", async () => {
+test("information panel has three pages with address, home details and roommates", async () => {
   render(<SwipeDeck entries={entries} seeker={profile()} />);
   expect(screen.getByRole("heading", { name: "Florentin 12" })).toBeInTheDocument();
   expect(screen.getByText("1 Oct 2026")).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Essentials" })).toHaveAttribute("aria-selected", "true");
 
-  await userEvent.click(screen.getByRole("button", { name: /next page/i }));
+  await userEvent.click(screen.getByRole("tab", { name: "Home" }));
   expect(screen.getByText("House rules")).toBeInTheDocument();
   expect(screen.getByText("Balcony")).toBeInTheDocument();
   expect(screen.getByText("No smoking")).toBeInTheDocument();
 
-  await userEvent.click(screen.getByRole("tab", { name: "Flatmates" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Roommates" }));
   expect(screen.getByText("Dana, 29")).toBeInTheDocument();
   expect(screen.getByText("Noa, 24")).toBeInTheDocument();
   expect(screen.getByText("Cooking")).toBeInTheDocument(); // shared interest chip
-  expect(screen.getByRole("button", { name: /next page/i })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: /next page/i })).not.toBeInTheDocument(); // tabs only, no chevrons
 });
 
 test("liking records the swipe and loads the next room; the last rejection empties the deck", async () => {

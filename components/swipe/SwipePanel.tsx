@@ -11,7 +11,7 @@ import type { Profile } from "@/lib/types";
 const PAGES = [
   { key: "essentials", label: "Essentials" },
   { key: "home", label: "Home" },
-  { key: "flatmates", label: "Flatmates" },
+  { key: "roommates", label: "Roommates" },
 ] as const;
 
 const AMENITY_ICONS: Record<string, DetailIconName> = {
@@ -43,7 +43,7 @@ export function SwipePanel({
 
   return (
     <section aria-label="Room information" className="bg-surface">
-      <div className="flex items-center justify-between gap-4 border-b border-hairline px-5 pt-4">
+      <div className="border-b border-hairline px-5 pt-4">
         <div role="tablist" aria-label="Information pages" className="flex gap-4 sm:gap-6">
           {PAGES.map((p, i) => {
             const active = i === page;
@@ -64,14 +64,6 @@ export function SwipePanel({
               </button>
             );
           })}
-        </div>
-        <div className="mb-2 flex items-center gap-1.5">
-          <PagerButton label="Previous page" disabled={page === 0} onClick={() => go(page - 1)}>
-            <path d="M14.5 6 9 12l5.5 6" />
-          </PagerButton>
-          <PagerButton label="Next page" disabled={page === last} onClick={() => go(page + 1)}>
-            <path d="M9.5 6 15 12l-5.5 6" />
-          </PagerButton>
         </div>
       </div>
 
@@ -94,35 +86,9 @@ export function SwipePanel({
           go(dx < 0 ? page + 1 : page - 1);
         }}
       >
-        {page === 0 ? <Essentials entry={entry} /> : page === 1 ? <Home entry={entry} /> : <Flatmates entry={entry} seeker={seeker} />}
+        {page === 0 ? <Essentials entry={entry} /> : page === 1 ? <Home entry={entry} /> : <Roommates entry={entry} seeker={seeker} />}
       </div>
     </section>
-  );
-}
-
-function PagerButton({
-  label,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-default disabled:opacity-30 disabled:hover:border-hairline disabled:hover:text-ink"
-    >
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        {children}
-      </svg>
-    </button>
   );
 }
 
@@ -195,7 +161,7 @@ function Home({ entry }: { entry: DeckEntry }) {
       </Group>
       <Group title="House rules">
         <Item icon="users">
-          {listing.roommates_count} flatmate{listing.roommates_count === 1 ? "" : "s"}
+          {listing.roommates_count} roommate{listing.roommates_count === 1 ? "" : "s"}
         </Item>
         <Item icon="paw">{listing.pets_allowed ? "Pets welcome" : "No pets"}</Item>
         <Item icon={listing.smoking_allowed ? "smoking" : "no-smoking"}>
@@ -224,8 +190,8 @@ function Item({ icon, children }: { icon: DetailIconName; children: React.ReactN
   );
 }
 
-/* ---------- page 3: current flatmates ---------- */
-function Flatmates({ entry, seeker }: { entry: DeckEntry; seeker: Profile }) {
+/* ---------- page 3: current roommates ---------- */
+function Roommates({ entry, seeker }: { entry: DeckEntry; seeker: Profile }) {
   const people = [entry.owner, ...entry.residents];
   return (
     <ul className="space-y-5">
@@ -240,7 +206,7 @@ function Flatmates({ entry, seeker }: { entry: DeckEntry; seeker: Profile }) {
                 <p className="font-medium">
                   {p.full_name}, {p.age}
                 </p>
-                <span className={eyebrow}>{i === 0 ? "Host" : "Flatmate"}</span>
+                <span className={eyebrow}>{i === 0 ? "Host" : "Roommate"}</span>
               </div>
               {p.occupation ? <p className="mt-0.5 text-sm text-muted">{p.occupation}</p> : null}
               {p.bio ? <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-muted">{p.bio}</p> : null}
