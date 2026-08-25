@@ -19,6 +19,19 @@ test("renders the four destinations and marks the current one", () => {
   expect(screen.getByRole("link", { name: "Chat" })).not.toHaveAttribute("aria-current");
 });
 
+test("every destination navigates in the same tab through the client-side router", () => {
+  render(<BottomNav />);
+  const links = screen.getAllByRole("link");
+  expect(links).toHaveLength(4);
+  for (const link of links) {
+    // Internal, relative routes handled by next/link — never a new window.
+    expect(link.getAttribute("href")).toMatch(/^\/[a-z]/);
+    expect(link).not.toHaveAttribute("target");
+    expect(link).not.toHaveAttribute("rel");
+    expect(link).not.toHaveAttribute("onclick");
+  }
+});
+
 test("nested routes keep their tab active", () => {
   pathname.value = "/browse/some-listing";
   render(<BottomNav />);

@@ -12,7 +12,8 @@
     "lint": "eslint",
     "test": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest run",
     "test:watch": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest",
-    "seed": "node --env-file=.env.local scripts/seed.ts"
+    "seed": "node --env-file=.env.local scripts/seed.ts",
+    "check:nav": "node scripts/check-same-tab-nav.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
