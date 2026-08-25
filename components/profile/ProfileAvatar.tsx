@@ -55,7 +55,6 @@ export function ProfileAvatar({ url, name }: { url: string | null; name: string 
     <Link
       href="/profile/edit"
       aria-label="Edit profile"
-      title="Edit profile"
       className="absolute bottom-0.5 right-0.5 flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-surface/95 text-ink opacity-0 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.45)] backdrop-blur transition-opacity hover:text-accent focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
     >
       <PencilIcon />

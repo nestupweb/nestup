@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { BottomNav } from "@/components/ui/BottomNav";
@@ -14,9 +15,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh pb-28">
       <header className="border-b border-hairline" style={{ viewTransitionName: "site-header" }}>
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
-          <Link href="/browse" aria-label="NestUp home" className="flex items-center text-ink">
-            <Logo className="h-7" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <Link href="/browse" aria-label="NestUp home" className="flex items-center text-ink">
+              <Logo className="h-7" />
+            </Link>
+          </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <form action={signOutAction}>

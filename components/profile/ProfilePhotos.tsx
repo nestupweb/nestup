@@ -31,7 +31,6 @@ export function ProfilePhotos({ name, avatarUrl }: { name: string; avatarUrl: st
         type="button"
         onClick={() => input.current?.click()}
         aria-label={avatarUrl || preview ? "Change profile photo" : "Add profile photo"}
-        title="Profile photo"
         className="block rounded-full ring-2 ring-accent ring-offset-2 ring-offset-paper transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-4"
       >
         <Avatar url={preview ?? avatarUrl} name={name} size={20} />
