@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { previewTime } from "@/lib/chat-format";
+import { householdLabel, previewTime } from "@/lib/chat-format";
 import type { ConversationSummary } from "@/lib/types";
 
 export function ConversationList({
@@ -28,7 +28,7 @@ export function ConversationList({
       {conversations.length === 0 ? (
         <div className="mx-auto max-w-sm px-6 py-16 text-center">
           <p className="font-serif text-2xl font-semibold">No conversations yet</p>
-          <p className="mt-2 text-sm text-muted">Message an owner from any room to start one.</p>
+          <p className="mt-2 text-sm text-muted">Like a room on Swipe or message the roommates from any listing to start one.</p>
           <Link
             href="/browse"
             className="mt-5 inline-block rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-contrast"
@@ -43,6 +43,11 @@ export function ConversationList({
             const unread = c.unread_count;
             const mine = c.last_sender_id === meId;
             const stamp = c.last_message_at ?? c.created_at;
+            // Seekers chat with the whole household; the household sees the seeker.
+            const title =
+              c.seeker_id === meId
+                ? householdLabel((c.household ?? []).map((h) => h.full_name), c.other_name ?? "NestUp member")
+                : c.other_name ?? "NestUp member";
             return (
               <li key={c.id}>
                 <Link
@@ -53,7 +58,7 @@ export function ConversationList({
                   }`}
                 >
                   <span className="relative shrink-0">
-                    <Avatar url={c.other_avatar} name={c.other_name} size={12} />
+                    <Avatar url={c.other_avatar} name={title} size={12} />
                     <span className="absolute -bottom-1 -right-1 h-6 w-6 overflow-hidden rounded-md border-2 border-paper bg-hairline">
                       {c.listing_photo ? (
                         <Image src={c.listing_photo} alt="" fill sizes="24px" className="object-cover" />
@@ -63,7 +68,7 @@ export function ConversationList({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
                       <span className={`truncate text-[15px] ${unread ? "font-semibold" : "font-medium"}`}>
-                        {c.other_name ?? "NestUp member"}
+                        {title}
                       </span>
                       <time
                         suppressHydrationWarning

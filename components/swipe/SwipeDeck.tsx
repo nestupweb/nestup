@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { recordSwipeAction } from "@/app/actions/swipe";
+import { IntroSheet } from "@/components/swipe/IntroSheet";
 import { SwipeCard } from "@/components/swipe/SwipeCard";
 import type { DeckEntry } from "@/lib/swipe";
 import type { Profile, SwipeDirection } from "@/lib/types";
@@ -19,6 +20,8 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
   const [queue, setQueue] = useState(entries);
   const [leaving, setLeaving] = useState<SwipeDirection | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [intro, setIntro] = useState<DeckEntry | null>(null); // "say hi" sheet after a like
+  const closeIntro = useCallback(() => setIntro(null), []);
   const timer = useRef<number | null>(null);
 
   useEffect(
@@ -35,6 +38,7 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
     if (!current || leaving) return;
     setLeaving(direction);
     setError(null);
+    if (direction === "like") setIntro(current);
     recordSwipeAction(current.listing.id, direction)
       .then((r) => {
         if (!r.ok) setError("That one didn't save — check your connection and try the next room.");
@@ -47,7 +51,14 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
     }, EXIT_MS);
   };
 
-  if (!current) return <EmptyDeck seenAny={entries.length > 0} />;
+  if (!current) {
+    return (
+      <>
+        <EmptyDeck seenAny={entries.length > 0} />
+        {intro ? <IntroSheet key={`intro-${intro.listing.id}`} entry={intro} onClose={closeIntro} /> : null}
+      </>
+    );
+  }
 
   return (
     <div>
@@ -69,6 +80,7 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
           {error}
         </p>
       ) : null}
+      {intro ? <IntroSheet key={`intro-${intro.listing.id}`} entry={intro} onClose={closeIntro} /> : null}
     </div>
   );
 }

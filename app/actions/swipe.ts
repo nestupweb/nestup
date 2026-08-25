@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { findOrCreateConversation, markConversationRead } from "@/lib/chat";
+import { messageSchema } from "@/lib/validation/message";
 import type { SwipeDirection } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,6 +31,34 @@ export async function recordSwipeAction(
     // revalidation would refresh /swipe's props mid-deck.
   }
   return { ok: true };
+}
+
+/**
+ * The optional "say hi" after a like: opens (or reuses) the seeker's thread
+ * with the room's household and posts the message. RLS keeps this to active
+ * listings the seeker doesn't own.
+ */
+export async function sendIntroAction(
+  listingId: string,
+  content: string
+): Promise<{ ok: true; conversationId: string } | { ok: false; error: string }> {
+  if (!UUID.test(listingId)) return { ok: false, error: "This room is no longer available." };
+  const parsed = messageSchema.safeParse({ content });
+  if (!parsed.success) return { ok: false, error: "Write a short message first (up to 2000 characters)." };
+
+  const { supabase, user } = await requireUser();
+  const conversation = await findOrCreateConversation(supabase, listingId, user.id);
+  if (!conversation) return { ok: false, error: "This room can't receive messages right now." };
+
+  const { error } = await supabase.from("messages").insert({
+    conversation_id: conversation.id,
+    sender_id: user.id,
+    content: parsed.data.content,
+  });
+  if (error) return { ok: false, error: "Could not send the message. Please try again." };
+
+  await markConversationRead(supabase, conversation.id);
+  return { ok: true, conversationId: conversation.id };
 }
 
 /** Form-action variant used by the listing page's "I'm interested" button. */

@@ -67,3 +67,16 @@ export function viewingLabel(startsAt: string, endsAt: string): { date: string; 
     time: `${timeLabel(startsAt)}–${timeLabel(endsAt)}`,
   };
 }
+
+/**
+ * Inbox / thread title for a household chat: "Dana", "Dana & Noa",
+ * "Dana, Noa & Omer", "Dana, Noa +2". Falls back to `fallback` when empty.
+ */
+export function householdLabel(names: string[], fallback = "NestUp member"): string {
+  const firsts = names.map((n) => n.trim().split(" ")[0]).filter(Boolean);
+  if (firsts.length === 0) return fallback;
+  if (firsts.length === 1) return firsts[0];
+  if (firsts.length === 2) return `${firsts[0]} & ${firsts[1]}`;
+  if (firsts.length === 3) return `${firsts[0]}, ${firsts[1]} & ${firsts[2]}`;
+  return `${firsts[0]}, ${firsts[1]} +${firsts.length - 2}`;
+}

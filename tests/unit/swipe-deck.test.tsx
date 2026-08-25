@@ -15,8 +15,10 @@ vi.mock("next/image", () => ({
 }));
 
 const recordSwipeAction = vi.fn(async () => ({ ok: true }));
+const sendIntroAction = vi.fn(async () => ({ ok: true as const, conversationId: "33333333-3333-4333-8333-333333333333" }));
 vi.mock("@/app/actions/swipe", () => ({
   recordSwipeAction: (...args: unknown[]) => recordSwipeAction(...(args as [])),
+  sendIntroAction: (...args: unknown[]) => sendIntroAction(...(args as [])),
 }));
 
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
@@ -56,7 +58,10 @@ const entries: DeckEntry[] = [
   },
 ];
 
-beforeEach(() => recordSwipeAction.mockClear());
+beforeEach(() => {
+  recordSwipeAction.mockClear();
+  sendIntroAction.mockClear();
+});
 
 test("shows both compatibility scores and the first of three photos", () => {
   render(<SwipeDeck entries={entries} seeker={profile()} />);
@@ -98,12 +103,31 @@ test("liking records the swipe and loads the next room; the last rejection empti
   await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
   expect(recordSwipeAction).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", "like");
   await waitFor(() => expect(screen.getByRole("article", { name: "Quiet room by the park" })).toBeInTheDocument());
+  // The optional hello appears immediately; "Not now" dismisses it.
+  expect(screen.getByRole("dialog", { name: /say hi to dana & noa/i })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: /not now/i }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(sendIntroAction).not.toHaveBeenCalled();
   expect(screen.getByRole("img", { name: /social match unavailable/i })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /next photo/i })).not.toBeInTheDocument(); // single photo: no arrows
 
   await userEvent.click(screen.getByRole("button", { name: /not for me/i }));
   expect(recordSwipeAction).toHaveBeenLastCalledWith("22222222-2222-4222-8222-222222222222", "skip");
   await waitFor(() => expect(screen.getByText(/every strong match for now/i)).toBeInTheDocument());
+});
+
+test("the intro sheet sends a pre-written, editable hello to the household", async () => {
+  render(<SwipeDeck entries={entries} seeker={profile()} />);
+  await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
+  const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
+  expect(box.value).toMatch(/^Hi Dana and everyone! I just liked your room at Florentin 12, Tel Aviv/);
+  await userEvent.clear(box);
+  await userEvent.type(box, "Hello from the deck");
+  await userEvent.click(screen.getByRole("button", { name: /send message/i }));
+  expect(sendIntroAction).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", "Hello from the deck");
+  await waitFor(() =>
+    expect(screen.getByRole("link", { name: /open the chat/i })).toHaveAttribute("href", "/chat/33333333-3333-4333-8333-333333333333")
+  );
 });
 
 test("an empty deck explains itself", () => {

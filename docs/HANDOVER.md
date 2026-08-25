@@ -12,7 +12,7 @@ Paste this into a new chat to continue the project. Read `docs/superpowers/notes
 - Deployed on **Vercel: https://nestup-kappa.vercel.app** (project `nestup`, team `nu18`). Redeploy from Final-Project: `VERCEL_TOKEN_STORAGE=file vercel deploy --prod --yes` with `-b`/`-e` for the two NEXT_PUBLIC Supabase vars from `.env.local`. Never pass the service-role key to Vercel.
 - Tests: Vitest (49 passing, `npm test`); Playwright + Chromium installed (used for live browser probes; Task-19 E2E not written yet).
 - Git branch `feature/roommatch` (no GitHub remote yet — the assignment requires one). Some working-tree changes from parallel sessions may be uncommitted; check `git status` before assuming.
-- Demo data: 12 seed users `seed.user1..12@nestup.dev` / `Demo1234!` with listings, portraits, extra flatmates. `npm run seed` is idempotent.
+- Demo data: 92 seed owners `seed.user1..92@nestup.dev` / `Demo1234!` — 12 handcrafted + 80 generated deterministically in `scripts/seed-data.ts` — each with an active listing, a portrait and extra flatmates. `npm run seed` is idempotent (skips existing owners, backfills portraits, adds flatmates only where missing).
 
 ## What's built and live
 - Auth (signup → confirmation email → login), open-redirect-hardened `next` returns (`lib/redirect.ts sanitizeNextPath` — keep using it for any redirect target).

@@ -95,6 +95,13 @@ export interface Message {
   created_at: string;
 }
 
+/** Someone living in the room's home: the host first, then roommates. */
+export interface HouseholdMember {
+  user_id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
 /** One inbox row — the shape returned by the `my_conversations()` SQL function. */
 export interface ConversationSummary {
   id: string;
@@ -114,6 +121,7 @@ export interface ConversationSummary {
   last_sender_id: string | null;
   unread_count: number;
   created_at: string;
+  household: HouseholdMember[];
 }
 
 export type ViewingStatus = "proposed" | "confirmed" | "declined" | "cancelled";

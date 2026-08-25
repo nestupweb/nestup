@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { MIN_DECK_SCORE, buildDeck, formatMoveIn, sharedInterests } from "@/lib/swipe";
+import { MIN_DECK_SCORE, buildDeck, formatMoveIn, introMessage, sharedInterests } from "@/lib/swipe";
 import { sortKey } from "@/lib/compatibility";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -98,6 +98,14 @@ describe("buildDeck", () => {
 test("formatMoveIn renders the calendar date regardless of timezone", () => {
   expect(formatMoveIn("2026-10-01")).toBe("1 Oct 2026");
   expect(formatMoveIn("not-a-date")).toBe("not-a-date");
+});
+
+test("introMessage greets the household by first name and names the room", () => {
+  const owner = profile({ user_id: "o1", full_name: "Dana Levi" });
+  const entry = { listing: listing(), owner, residents: [], lifestyle: 80, social: 50 };
+  expect(introMessage(entry)).toMatch(/^Hi Dana! I just liked your room at Florentin 12, Tel Aviv on NestUp\./);
+  const withRoommates = { ...entry, residents: [profile({ user_id: "r1", full_name: "Noa" })] };
+  expect(introMessage(withRoommates)).toMatch(/^Hi Dana and everyone!/);
 });
 
 test("sharedInterests keeps the seeker's order", () => {

@@ -8,7 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { CalendarIcon, MessageComposer } from "@/components/chat/MessageComposer";
 import { ScheduleViewing, type GoogleState } from "@/components/chat/ScheduleViewing";
 import { ViewingCard } from "@/components/chat/ViewingCard";
-import { groupByDay, timeLabel } from "@/lib/chat-format";
+import { groupByDay, householdLabel, timeLabel } from "@/lib/chat-format";
 import type { ConversationSummary, Message, Viewing } from "@/lib/types";
 
 type TimelineItem = ({ kind: "message" } & Message) | ({ kind: "viewing" } & Viewing);
@@ -69,8 +69,18 @@ export function ChatThread({
   }, []);
 
   const iAmSeeker = conversation.seeker_id === meId;
-  const other = conversation.other_name ?? "NestUp member";
-  const roleLine = iAmSeeker ? `Owner · ${conversation.listing_title}` : `Interested in ${conversation.listing_title}`;
+  const household = conversation.household ?? [];
+  const other = iAmSeeker
+    ? householdLabel(household.map((h) => h.full_name), conversation.other_name ?? "NestUp member")
+    : conversation.other_name ?? "NestUp member";
+  const roleLine = iAmSeeker
+    ? `${household.length > 1 ? "Host & roommates" : "Host"} · ${conversation.listing_title}`
+    : `Interested in ${conversation.listing_title}`;
+  // Several people can reply from the household side, so label their bubbles.
+  const groupChat = household.length > 1;
+  const nameFor = (senderId: string) =>
+    household.find((h) => h.user_id === senderId)?.full_name.split(" ")[0] ??
+    (senderId === conversation.seeker_id ? conversation.other_name?.split(" ")[0] : undefined);
   const where = [conversation.listing_address, conversation.listing_city].filter(Boolean).join(" · ");
 
   return (
@@ -130,7 +140,7 @@ export function ChatThread({
         {!mounted ? null : groups.length === 0 ? (
           <div className="mx-auto mt-10 max-w-xs rounded-2xl border border-hairline bg-surface px-6 py-8 text-center">
             <p className="font-serif text-xl font-semibold">Say hello</p>
-            <p className="mt-1 text-sm text-muted">Ask about the room, the flatmates, or the move-in date.</p>
+            <p className="mt-1 text-sm text-muted">Ask about the room, the roommates, or the move-in date.</p>
           </div>
         ) : (
           groups.map((g) => (
@@ -153,7 +163,13 @@ export function ChatThread({
                   const grouped = prev?.kind === "message" && prev.sender_id === item.sender_id;
                   return (
                     <li key={item.id}>
-                      <Bubble mine={item.sender_id === meId} grouped={grouped} content={item.content} at={item.created_at} />
+                      <Bubble
+                        mine={item.sender_id === meId}
+                        grouped={grouped}
+                        content={item.content}
+                        at={item.created_at}
+                        sender={groupChat && item.sender_id !== meId && !grouped ? nameFor(item.sender_id) : undefined}
+                      />
                     </li>
                   );
                 })}
@@ -172,9 +188,22 @@ export function ChatThread({
   );
 }
 
-function Bubble({ mine, grouped, content, at }: { mine: boolean; grouped: boolean; content: string; at: string }) {
+function Bubble({
+  mine,
+  grouped,
+  content,
+  at,
+  sender,
+}: {
+  mine: boolean;
+  grouped: boolean;
+  content: string;
+  at: string;
+  sender?: string;
+}) {
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+    <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
+      {sender ? <span className="mb-0.5 ml-3 text-[10px] font-semibold uppercase tracking-wider text-muted">{sender}</span> : null}
       <div
         className={`max-w-[78%] px-3.5 py-2 text-[15px] leading-snug shadow-sm ${
           mine

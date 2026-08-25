@@ -11,7 +11,7 @@ export interface DeckEntry {
   social: number | null;
 }
 
-export const DECK_SIZE = 30;
+export const DECK_SIZE = 60;
 
 /**
  * Only high-matching rooms make the deck: the combined score (`sortKey`) must
@@ -72,6 +72,18 @@ export function formatMoveIn(iso: string): string {
   });
 }
 
+/**
+ * The ready-made hello offered right after a like. Addresses the household
+ * by first name and names the room, so it reads as written, not canned.
+ */
+export function introMessage(entry: DeckEntry): string {
+  const { listing, owner, residents } = entry;
+  const first = owner.full_name.split(" ")[0];
+  const greeting = residents.length > 0 ? `Hi ${first} and everyone` : `Hi ${first}`;
+  const where = [listing.address || listing.neighborhood, listing.city].filter(Boolean).join(", ");
+  return `${greeting}! I just liked your room${where ? ` at ${where}` : ""} on NestUp. I'd love to hear a bit more about the place and who lives there — could we set up a viewing?`;
+}
+
 /** Interests two people share, in the seeker's order. */
 export function sharedInterests(a: Profile, b: Profile): string[] {
   const theirs = new Set(b.interests);
@@ -92,7 +104,7 @@ export async function getSwipeDeck(supabase: SupabaseClient, seeker: Profile): P
       .eq("is_active", true)
       .neq("owner_id", seeker.user_id)
       .order("created_at", { ascending: false })
-      .limit(120),
+      .limit(300),
   ]);
   const seen = new Set((swiped ?? []).map((r) => r.listing_id as string));
   const listings = ((listingRows as Listing[] | null) ?? []).filter((l) => !seen.has(l.id));

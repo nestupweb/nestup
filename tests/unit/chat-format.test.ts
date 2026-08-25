@@ -49,3 +49,12 @@ describe("viewingLabel", () => {
     expect(time).toBe("18:00–18:45");
   });
 });
+
+test("householdLabel joins first names like a group chat title", async () => {
+  const { householdLabel } = await import("@/lib/chat-format");
+  expect(householdLabel([])).toBe("NestUp member");
+  expect(householdLabel(["Dana Levi"])).toBe("Dana");
+  expect(householdLabel(["Dana Levi", "Noa Bar"])).toBe("Dana & Noa");
+  expect(householdLabel(["Dana Levi", "Noa Bar", "Omer Katz"])).toBe("Dana, Noa & Omer");
+  expect(householdLabel(["Dana", "Noa", "Omer", "Tal"])).toBe("Dana, Noa +2");
+});
