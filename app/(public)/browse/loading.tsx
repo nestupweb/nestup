@@ -1,4 +1,50 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
+/**
+ * Loading boundary for /browse and /browse/[id]. It is the first boundary on
+ * this route so the bottom-nav prefetch stops here and a tap paints instantly;
+ * the pathname picks a skeleton shaped like the destination — the listings
+ * grid for the index, a gallery + details block for a room — so opening a
+ * card never flashes the filter sidebar under the room URL.
+ */
 export default function BrowseLoading() {
+  const pathname = usePathname();
+  return pathname.startsWith("/browse/") ? <ListingSkeleton /> : <BrowseSkeleton />;
+}
+
+const pulse = "animate-pulse rounded bg-hairline";
+
+function ListingSkeleton() {
+  return (
+    <main className="mx-auto max-w-3xl px-5 pb-20" aria-busy="true" aria-label="Loading room">
+      <div className="aspect-[16/10] w-full animate-pulse rounded-2xl border border-hairline bg-hairline" />
+      <div className="mt-6 flex items-baseline justify-between gap-3">
+        <div className={`h-9 w-2/3 ${pulse}`} />
+        <div className={`h-7 w-24 ${pulse}`} />
+      </div>
+      <div className={`mt-3 h-4 w-1/2 ${pulse}`} />
+      <div className="mt-10 space-y-9">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <section key={i} className="border-t border-hairline pt-7">
+            <div className={`h-3 w-32 ${pulse}`} />
+            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, j) => (
+                <div key={j}>
+                  <div className={`h-3 w-16 ${pulse}`} />
+                  <div className={`mt-2 h-4 w-24 ${pulse}`} />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+function BrowseSkeleton() {
   return (
     <main className="px-4 pb-16 sm:px-6" aria-busy="true" aria-label="Loading listings">
       <div className="h-9 w-44 animate-pulse rounded-lg bg-hairline" />

@@ -30,6 +30,8 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 
 - **Instant tab switching (2026-08-25):** measured on production, Profile/Chat/Swipe took 500–1700 ms from tap to any paint (fully dynamic pages, nothing to show until the server answered) while Listings took ~60 ms because `browse/loading.tsx` exists — Next prefetches nav links down to the first loading boundary. Fix: `app/(app)/loading.tsx`, a CLIENT loading boundary at the route-group level that picks a skeleton by `usePathname()` (swipe / chat / profile / generic). Keep it at the group level: a `chat/loading.tsx` would sit under `chat/layout.tsx` (which loads the inbox) and the prefetch would cache that layout for up to 5 min → stale inbox; at the group level only the (app) layout (header + unread badge) is prefetched. After: first paint 64–138 ms for all four tabs; content still streams in 0.5–3 s later (server render — unchanged). Transition CSS shortened to 0.2 s slide / 0.1 s old fade / 0.2 s pill. Timing probe pattern: Temp scratchpad `nav-timing.mjs` (click → `location.pathname` + `main/[aria-busy]` present; settled = no `[aria-busy=true]`).
 
+- **Room page skeleton (2026-08-25):** `app/(public)/browse/loading.tsx` is now a client component that switches on `usePathname()` — the listings grid skeleton for `/browse`, a gallery (16/10) + title + detail-grid skeleton for `/browse/[id]`. Before, opening a card showed the filter-sidebar/cards skeleton under the room URL for ~1.9 s (that boundary covers the child segment too, and a nested `[id]/loading.tsx` would only appear after a round trip). Same pattern as `app/(app)/loading.tsx`.
+
 ## For the scale doc
 
 - Unbounded page offsets in listing pagination (deep OFFSET scans).
