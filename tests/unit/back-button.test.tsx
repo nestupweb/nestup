@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { canGoBack, isMainPage, markGoingBack, pageName, parentPath, previousVisit, recordVisit, resetTrail } from "@/lib/back";
+import { canGoBack, isMainPage, markGoingBack, pageName, parentPath, previousVisit, recordVisit, resetTrail, showsBackLink } from "@/lib/back";
 
 const router = { back: vi.fn(), push: vi.fn() };
 let pathname = "/browse/abc";
@@ -89,11 +89,11 @@ describe("the in-app trail", () => {
 
 describe("BackButton", () => {
   test("names the page the tab came from and goes back through history", async () => {
-    recordVisit("/chat");
-    pathname = "/chat/123";
+    recordVisit("/profile");
+    pathname = "/browse/abc";
     (window as unknown as { navigation: unknown }).navigation = { canGoBack: true };
     render(<BackButton />);
-    const button = await screen.findByRole("button", { name: "Back to chats" });
+    const button = await screen.findByRole("button", { name: "Back to profile" });
     fireEvent.click(button);
     expect(router.back).toHaveBeenCalledTimes(1);
     expect(router.push).not.toHaveBeenCalled();
@@ -119,5 +119,15 @@ describe("BackButton", () => {
     }
     expect(isMainPage("/chat/123")).toBe(false);
     expect(isMainPage("/browse/abc")).toBe(false);
+  });
+
+  test("a chat thread shows no link either (inbox beside it on desktop, its own arrow on phones)", async () => {
+    expect(showsBackLink("/chat/123")).toBe(false);
+    expect(showsBackLink("/browse/abc")).toBe(true);
+    expect(showsBackLink("/profile/edit")).toBe(true);
+    recordVisit("/chat");
+    pathname = "/chat/123";
+    render(<BackButton />);
+    await waitFor(() => expect(screen.queryByRole("button")).toBeNull());
   });
 });

@@ -217,6 +217,16 @@ export function ChatThread({
   return (
     <>
       <header className="flex items-center gap-3 border-b border-hairline px-3 py-2.5 lg:px-5">
+        {/* Phones only: the bottom nav is hidden inside a thread and there is no "← Back to …" row on chat pages. */}
+        <Link
+          href="/chat"
+          aria-label="Back to chats"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-hairline/50 lg:hidden"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </Link>
         <span className="flex shrink-0 flex-col items-center gap-1.5">
           <Link
             href={`/browse/${conversation.listing_id}`}

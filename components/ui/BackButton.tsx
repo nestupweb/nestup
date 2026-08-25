@@ -2,12 +2,13 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { canGoBack, isMainPage, markGoingBack, pageName, parentPath, previousVisit, recordVisit, subscribeTrail } from "@/lib/back";
+import { canGoBack, markGoingBack, pageName, parentPath, previousVisit, recordVisit, showsBackLink, subscribeTrail } from "@/lib/back";
 
 /**
- * "← Back to chats" under the site header, top-left of every page *below* the
- * four main tabs (a room, a thread, edit profile, a member page, the listing
- * form) — the tabs themselves never show it. Names the page this tab came
+ * "← Back to listings" under the site header, top-left of every page *below*
+ * the four main tabs (a room, edit profile, a member page, the listing form) —
+ * the tabs themselves never show it, and neither does a chat thread (see
+ * showsBackLink). Names the page this tab came
  * from (the in-app trail in lib/back) and returns to it through the browser's
  * history; on a direct link there is no trail, so it names and opens the
  * page's parent instead. Styled like the Swipe panel's "Full listing →" link,
@@ -27,7 +28,7 @@ export function BackButton({ className = "" }: { className?: string }) {
   }, []);
 
   const prev = useSyncExternalStore(subscribeTrail, () => previousVisit(pathname), () => null);
-  if (isMainPage(pathname)) return null;
+  if (!showsBackLink(pathname)) return null;
 
   const target = prev ?? parentPath(pathname);
   const label = `Back to ${pageName(target)}`;

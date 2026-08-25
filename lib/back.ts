@@ -26,6 +26,15 @@ export function isMainPage(pathname: string): boolean {
   return (MAIN_PAGES as readonly string[]).includes(pathname);
 }
 
+/**
+ * Pages that show the "← Back to …" link: everything below a main tab except
+ * a chat thread, which has the inbox beside it on desktop and its own arrow on
+ * phones (user decision).
+ */
+export function showsBackLink(pathname: string): boolean {
+  return !isMainPage(pathname) && !pathname.startsWith("/chat/");
+}
+
 /** How a page is named in "Back to …". */
 export function pageName(pathname: string): string {
   const parts = pathname.split("/").filter(Boolean);
