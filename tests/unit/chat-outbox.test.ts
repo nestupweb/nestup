@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { isUpcoming, mergeMessages, settledClientIds, upcomingConfirmed, type OutboxMessage } from "@/lib/chat-outbox";
+import { isUpcoming, mergeMessages, openViewing, settledClientIds, upcomingConfirmed, type OutboxMessage } from "@/lib/chat-outbox";
 import type { Message, Viewing } from "@/lib/types";
 
 const msg = (id: string, at: string, extra: Partial<Message> = {}): Message => ({
@@ -39,6 +39,36 @@ describe("mergeMessages", () => {
     const merged = mergeMessages([], [optimistic("c1", "2026-08-25T10:01:00Z", "failed")]);
     expect(merged).toHaveLength(1);
     expect(merged[0].status).toBe("failed");
+  });
+});
+
+describe("openViewing (one open viewing per chat)", () => {
+  const now = Date.parse("2026-08-25T12:00:00Z");
+  const v = (id: string, status: Viewing["status"], startsAt: string): Viewing => ({
+    id,
+    conversation_id: "c",
+    proposed_by: "me",
+    starts_at: startsAt,
+    ends_at: new Date(Date.parse(startsAt) + 45 * 60_000).toISOString(),
+    status,
+    note: "",
+    google_event_id: null,
+    google_event_link: null,
+    created_at: "2026-08-20T00:00:00Z",
+  });
+
+  test("a confirmed or pending viewing that hasn't ended blocks a new request; closed or past ones don't", () => {
+    expect(openViewing([v("a", "confirmed", "2026-08-30T10:00:00Z")], now)?.id).toBe("a");
+    expect(openViewing([v("b", "proposed", "2026-08-30T10:00:00Z")], now)?.id).toBe("b");
+    expect(openViewing([v("c", "cancelled", "2026-08-30T10:00:00Z")], now)).toBeNull();
+    expect(openViewing([v("d", "declined", "2026-08-30T10:00:00Z")], now)).toBeNull();
+    expect(openViewing([v("e", "confirmed", "2026-08-20T10:00:00Z")], now)).toBeNull();
+    expect(openViewing([], now)).toBeNull();
+  });
+
+  test("the soonest open viewing wins", () => {
+    const list = [v("later", "proposed", "2026-09-02T10:00:00Z"), v("soon", "confirmed", "2026-08-27T10:00:00Z")];
+    expect(openViewing(list, now)?.id).toBe("soon");
   });
 });
 

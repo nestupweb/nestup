@@ -32,6 +32,26 @@ export function settledClientIds(server: Message[], outbox: OutboxMessage[]): st
   return outbox.filter((o) => known.has(o.client_id) || known.has(o.id)).map((o) => o.client_id);
 }
 
+/** Why a new viewing can't be requested right now, by the open viewing's status. */
+export const OPEN_VIEWING_MESSAGE = {
+  confirmed: "A viewing is already scheduled in this chat — cancel it first to pick a new time.",
+  proposed: "A viewing request is already waiting for approval — cancel it first to pick a new time.",
+} as const;
+
+/**
+ * The viewing that blocks a new request: a pending proposal or a confirmed
+ * viewing that hasn't ended yet (soonest first). One open viewing per chat.
+ */
+export function openViewing(viewings: Viewing[], now: number): (Viewing & { status: "proposed" | "confirmed" }) | null {
+  return (
+    viewings
+      .filter((v): v is Viewing & { status: "proposed" | "confirmed" } =>
+        (v.status === "proposed" || v.status === "confirmed") && Date.parse(v.ends_at) > now
+      )
+      .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))[0] ?? null
+  );
+}
+
 /** Confirmed viewings that haven't ended yet, soonest first. */
 export function upcomingConfirmed(viewings: Viewing[], now: number): Viewing[] {
   return viewings

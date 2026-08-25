@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { JSX } from "react";
+import { navTransitionTypes } from "@/lib/nav-direction";
 
 type IconName = "swipe" | "listings" | "chat" | "profile";
 
@@ -43,6 +44,10 @@ const ICONS: Record<IconName, JSX.Element> = {
 /**
  * Floating, pill-shaped primary navigation. Hidden on small screens while a
  * chat thread is open (the composer needs the bottom edge, WhatsApp-style).
+ * Each link carries a view-transition type (forward/back by tab order) so the
+ * page slides the matching way; the active highlight is a named element so
+ * the browser glides it between tabs. The nav itself is anchored in place
+ * during transitions (see `bottom-nav` in globals.css).
  */
 export function BottomNav({ unread = 0 }: { unread?: number }) {
   const pathname = usePathname();
@@ -52,6 +57,7 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
   return (
     <nav
       aria-label="Primary"
+      style={{ viewTransitionName: "bottom-nav" }}
       className={`pointer-events-none fixed inset-x-0 bottom-0 z-40 justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] ${
         inThread ? "hidden lg:flex" : "flex"
       }`}
@@ -64,10 +70,19 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-w-[4.5rem] flex-col items-center gap-1 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
-                active ? "bg-accent/10 text-accent" : "text-muted hover:text-ink"
+              transitionTypes={navTransitionTypes(pathname, item.href)}
+              className={`relative isolate flex min-w-[4.5rem] flex-col items-center gap-1 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                active ? "text-accent" : "text-muted hover:text-ink"
               }`}
             >
+              {active ? (
+                <span
+                  aria-hidden="true"
+                  data-testid="nav-active-pill"
+                  style={{ viewTransitionName: "nav-active-pill" }}
+                  className="absolute inset-0 -z-10 rounded-full bg-accent/10"
+                />
+              ) : null}
               <svg
                 viewBox="0 0 24 24"
                 fill="none"

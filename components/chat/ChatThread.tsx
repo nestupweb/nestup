@@ -9,7 +9,7 @@ import { MessageComposer, type SendPayload } from "@/components/chat/MessageComp
 import { ScheduleViewing, type GoogleState } from "@/components/chat/ScheduleViewing";
 import { ViewingCard } from "@/components/chat/ViewingCard";
 import { ViewingScheduledChip } from "@/components/chat/ViewingDetails";
-import { groupByDay, householdLabel, timeLabel } from "@/lib/chat-format";
+import { groupByDay, timeLabel } from "@/lib/chat-format";
 import {
   mergeMessages,
   settledClientIds,
@@ -22,6 +22,36 @@ import { useMounted, useNow } from "@/lib/hooks";
 import type { ConversationSummary, Message, Viewing } from "@/lib/types";
 
 type TimelineItem = ({ kind: "message" } & TimelineMessage) | ({ kind: "viewing" } & Viewing);
+type Person = { id: string; name: string };
+
+/** A member's name, linking to their public profile — same treatment as roommate names on listing pages. */
+function ProfileLink({ id, name }: Person) {
+  return (
+    <Link href={`/people/${id}`} aria-label={`${name}'s profile`} className="underline-offset-4 hover:text-accent hover:underline">
+      {name}
+    </Link>
+  );
+}
+
+/**
+ * The header line: "Dana", "Dana & Yossi", "Dana, Yossi & Noa", or "Dana, Yossi +2",
+ * with every name linked. Mirrors householdLabel() from chat-format so the
+ * thread header reads like its inbox row.
+ */
+function PeopleNames({ people }: { people: Person[] }) {
+  const shown = people.length > 3 ? people.slice(0, 2) : people;
+  return (
+    <>
+      {shown.map((p, i) => (
+        <span key={p.id}>
+          {i > 0 ? (i === shown.length - 1 && people.length <= 3 ? " & " : ", ") : null}
+          <ProfileLink {...p} />
+        </span>
+      ))}
+      {people.length > 3 ? ` +${people.length - 2}` : null}
+    </>
+  );
+}
 
 const NOTICES: Record<string, string> = {
   connected: "Google Calendar connected — propose a viewing and the invite goes out automatically.",
@@ -162,9 +192,10 @@ export function ChatThread({
 
   const iAmSeeker = conversation.seeker_id === meId;
   const household = conversation.household ?? [];
-  const other = iAmSeeker
-    ? householdLabel(household.map((h) => h.full_name), conversation.other_name ?? "NestUp member")
-    : conversation.other_name ?? "NestUp member";
+  // Who sits across the table: each entry links to that member's profile.
+  const people: Person[] = iAmSeeker && household.length > 0
+    ? household.map((h) => ({ id: h.user_id, name: h.full_name.split(" ")[0] || h.full_name }))
+    : [{ id: conversation.other_user_id, name: conversation.other_name ?? "NestUp member" }];
   const roleLine = iAmSeeker
     ? `${household.length > 1 ? "Host & roommates" : "Host"} · ${conversation.listing_title}`
     : `Interested in ${conversation.listing_title}`;
@@ -202,7 +233,9 @@ export function ChatThread({
           {nextViewing ? <span className={VIEWING_LABEL}>Scheduled</span> : null}
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[16px] font-semibold">{other}</h1>
+          <h1 className="truncate text-[16px] font-semibold">
+            <PeopleNames people={people} />
+          </h1>
           <p className="truncate text-xs text-muted">{roleLine}</p>
         </div>
         {nextViewing ? <ViewingScheduledChip viewing={nextViewing} conversation={conversation} meId={meId} /> : null}
@@ -264,6 +297,7 @@ export function ChatThread({
                         onOpenImage={setLightbox}
                         at={item.created_at}
                         sender={groupChat && item.sender_id !== meId && !grouped ? nameFor(item.sender_id) : undefined}
+                        senderId={item.sender_id}
                         status={item.status}
                         error={item.error}
                         onRetry={item.status === "failed" ? () => retry(item.id) : undefined}
@@ -311,6 +345,7 @@ function Bubble({
   onOpenImage,
   at,
   sender,
+  senderId,
   status,
   error,
   onRetry,
@@ -323,6 +358,7 @@ function Bubble({
   onOpenImage: (url: string) => void;
   at: string;
   sender?: string;
+  senderId?: string;
   status?: OutboxStatus;
   error?: string;
   onRetry?: () => void;
@@ -331,7 +367,11 @@ function Bubble({
   const failed = status === "failed";
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
-      {sender ? <span className="mb-0.5 ml-3 text-[11px] font-semibold uppercase tracking-wider text-muted">{sender}</span> : null}
+      {sender ? (
+        <span className="mb-0.5 ml-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+          {senderId ? <ProfileLink id={senderId} name={sender} /> : sender}
+        </span>
+      ) : null}
       <div
         data-status={status}
         className={`max-w-[78%] text-[16px] leading-snug shadow-sm transition-opacity ${image ? "p-1.5" : "px-3.5 py-2"} ${

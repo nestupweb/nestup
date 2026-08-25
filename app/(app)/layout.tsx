@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { BottomNav } from "@/components/ui/BottomNav";
+import { PageTransition } from "@/components/ui/PageTransition";
 import { signOutAction } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/chat";
@@ -12,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-dvh pb-28">
-      <header className="border-b border-hairline">
+      <header className="border-b border-hairline" style={{ viewTransitionName: "site-header" }}>
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
           <Link href="/browse" aria-label="NestUp home" className="flex items-center text-ink">
             <Logo className="h-7" />
@@ -27,7 +28,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-6xl">{children}</div>
+      <div className="mx-auto w-full max-w-6xl">
+        <PageTransition>{children}</PageTransition>
+      </div>
       <BottomNav unread={unread} />
     </div>
   );
