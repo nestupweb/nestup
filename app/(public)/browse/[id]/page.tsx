@@ -170,18 +170,25 @@ export default async function ListingDetailPage({
           {owner ? (
             <div className="mt-4 space-y-5">
               {[owner, ...residents].map((p) => (
-                <div key={p.user_id} className="flex items-center gap-4">
+                <Link
+                  key={p.user_id}
+                  href={`/people/${p.user_id}`}
+                  className="group flex items-center gap-4"
+                  aria-label={`${p.full_name}'s profile`}
+                >
                   {p.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.avatar_url} alt={p.full_name} className="h-14 w-14 rounded-full object-cover" />
+                    <img src={p.avatar_url} alt="" className="h-14 w-14 rounded-full object-cover" />
                   ) : (
                     <div className="h-14 w-14 rounded-full bg-hairline" />
                   )}
                   <div>
-                    <p className="text-base font-medium">{p.full_name}, {p.age}</p>
+                    <p className="text-base font-medium underline-offset-4 group-hover:text-accent group-hover:underline">
+                      {p.full_name}, {p.age}
+                    </p>
                     <p className="mt-0.5 text-sm text-muted">{p.occupation}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
