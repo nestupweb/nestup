@@ -2,6 +2,8 @@ export type SleepSchedule = "early" | "late" | "flexible";
 export type GuestsFreq = "rare" | "sometimes" | "often";
 export type SwipeDirection = "like" | "skip";
 export type ListerResponse = "pending" | "liked" | "skipped";
+export type SafeRoom = "none" | "apartment" | "building";
+export type PhotoRoom = "living_room" | "bedroom" | "bathroom" | "kitchen" | "balcony" | "exterior" | "other";
 export type PropertyType =
   | "apartment"
   | "garden_apartment"
@@ -40,7 +42,9 @@ export interface Listing {
   description: string;
   city: string;
   neighborhood: string;
-  address: string;
+  address: string; // display string: "{street} {house_number}"
+  street: string;
+  house_number: string;
   rent: number;
   available_from: string; // ISO date
   property_type: PropertyType;
@@ -54,7 +58,10 @@ export interface Listing {
   parking: boolean;
   elevator: boolean;
   furnished: boolean;
+  safe_room: SafeRoom;
+  food_restrictions: string;
   photo_urls: string[];
+  photo_labels: string[]; // PhotoRoom per photo, same order as photo_urls
   is_active: boolean;
   created_at: string;
   updated_at: string;

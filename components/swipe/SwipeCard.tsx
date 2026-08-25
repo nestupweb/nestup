@@ -5,6 +5,7 @@ import { useState } from "react";
 import { NoPhoto } from "@/components/listings/NoPhoto";
 import { SwipePanel } from "@/components/swipe/SwipePanel";
 import { scoreLabel } from "@/lib/compatibility";
+import { photoRoomLabel } from "@/lib/constants";
 import type { DeckEntry } from "@/lib/swipe";
 import type { Profile, SwipeDirection } from "@/lib/types";
 
@@ -125,6 +126,12 @@ export function SwipeCard({
               <Chevron direction="right" />
             </button>
           </>
+        ) : null}
+
+        {listing.photo_labels?.[photo] ? (
+          <span className="absolute bottom-7 left-5 rounded-full bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/90 backdrop-blur-md">
+            {photoRoomLabel(listing.photo_labels[photo])}
+          </span>
         ) : null}
 
         {/* Decisions, centred on the bottom edge. */}

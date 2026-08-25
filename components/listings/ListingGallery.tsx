@@ -3,11 +3,12 @@
 import Image from "next/image";
 import { useState } from "react";
 import { NoPhoto } from "@/components/listings/NoPhoto";
+import { photoRoomLabel } from "@/lib/constants";
 
 const arrowButton =
   "absolute top-1/2 z-[1] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-hairline bg-surface/80 text-ink backdrop-blur transition-colors hover:border-accent hover:text-accent";
 
-export function ListingGallery({ photos, title }: { photos: string[]; title: string }) {
+export function ListingGallery({ photos, labels = [], title }: { photos: string[]; labels?: string[]; title: string }) {
   const [index, setIndex] = useState(0);
   const total = photos.length;
 
@@ -92,6 +93,7 @@ export function ListingGallery({ photos, title }: { photos: string[]; title: str
       </div>
       <p aria-live="polite" className="mt-2 text-center text-xs text-muted">
         {index + 1}/{total}
+        {labels[index] ? ` · ${photoRoomLabel(labels[index])}` : ""}
       </p>
     </div>
   );

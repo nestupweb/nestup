@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CITIES, FEATURES } from "@/lib/constants";
+import { FEATURES } from "@/lib/constants";
+import { CityCombobox } from "@/components/ui/CityCombobox";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent";
@@ -95,11 +96,8 @@ export function FilterBar() {
 
         <form action={apply} className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:gap-4">
-            <label className={label}>City
-              <select name="city" defaultValue={params.get("city") ?? "any"} className={input}>
-                <option value="any">Any city</option>
-                {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+            <label className={label} htmlFor="filter-city">City
+              <CityCombobox id="filter-city" name="city" defaultValue={params.get("city") ?? ""} placeholder="Any city" className={input} />
             </label>
             <label className={label}>Min rent (₪)
               <input name="rent_min" type="number" min={0} defaultValue={params.get("rent_min") ?? ""} className={input} />

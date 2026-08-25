@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { upsertProfileAction, type ProfileFormState } from "@/app/actions/profile";
 import { InterestsPicker } from "@/components/profile/InterestsPicker";
-import { CITIES } from "@/lib/constants";
+import { CityMultiPicker } from "@/components/profile/CityMultiPicker";
 import type { Profile } from "@/lib/types";
 
 const input =
@@ -105,13 +105,8 @@ export function ProfileForm({
       </label>
       <fieldset className="mt-4">
         <legend className="text-xs font-medium uppercase tracking-widest text-muted">Preferred cities</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {CITIES.map((c) => (
-            <label key={c} className="flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5 text-xs">
-              <input type="checkbox" name="preferred_cities" value={c} defaultChecked={profile?.preferred_cities.includes(c)} />
-              {c}
-            </label>
-          ))}
+        <div className="mt-2">
+          <CityMultiPicker name="preferred_cities" initial={profile?.preferred_cities ?? []} />
         </div>
       </fieldset>
 

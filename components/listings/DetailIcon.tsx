@@ -13,7 +13,9 @@ export type DetailIconName =
   | "snowflake"
   | "parking"
   | "elevator"
-  | "sofa";
+  | "sofa"
+  | "shield"
+  | "food";
 
 const PATHS: Record<DetailIconName, JSX.Element> = {
   building: (
@@ -102,6 +104,18 @@ const PATHS: Record<DetailIconName, JSX.Element> = {
       <rect x="4.5" y="3" width="15" height="18" rx="2" />
       <path d="M9.5 10.5v-4M7.75 8 9.5 6.25 11.25 8" />
       <path d="M14.5 13.5v4M12.75 16l1.75 1.75L16.25 16" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9V6l-7-2.5Z" />
+      <path d="m9.25 12 2 2 3.5-4" />
+    </>
+  ),
+  food: (
+    <>
+      <path d="M7 3.5v7M5 3.5v4.5a2 2 0 0 0 4 0V3.5M7 10.5v10" />
+      <path d="M16.5 3.5c-1.7 1.2-2.5 3-2.5 5.5 0 1.6.8 2.5 2.5 2.5v9" />
     </>
   ),
   sofa: (

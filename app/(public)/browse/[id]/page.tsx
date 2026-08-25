@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { FEATURES, propertyTypeLabel } from "@/lib/constants";
+import { FEATURES, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { SaveButton } from "@/components/listings/SaveButton";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
@@ -76,7 +76,7 @@ export default async function ListingDetailPage({
 
   return (
     <main className="mx-auto max-w-3xl px-5 pb-20">
-      <ListingGallery photos={listing.photo_urls} title={listing.title} />
+      <ListingGallery photos={listing.photo_urls} labels={listing.photo_labels ?? []} title={listing.title} />
 
       <div className="mt-6 flex items-baseline justify-between gap-3">
         <h1 className="text-3xl font-semibold sm:text-4xl">
@@ -111,6 +111,12 @@ export default async function ListingDetailPage({
                 {listing.size_sqm} m²
               </span>
             ) : null}
+            {listing.safe_room && listing.safe_room !== "none" ? (
+              <span className={item}>
+                <DetailIcon name="shield" />
+                Mamad {safeRoomLabel(listing.safe_room).toLowerCase()}
+              </span>
+            ) : null}
           </div>
         </section>
 
@@ -129,6 +135,12 @@ export default async function ListingDetailPage({
               <DetailIcon name={listing.smoking_allowed ? "smoking" : "no-smoking"} />
               {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
             </span>
+            {listing.food_restrictions ? (
+              <span className={item}>
+                <DetailIcon name="food" />
+                {listing.food_restrictions}
+              </span>
+            ) : null}
           </div>
         </section>
 

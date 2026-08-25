@@ -13,8 +13,8 @@ const PROPERTY_KEYS = new Set<string>(PROPERTY_TYPES.map((p) => p.key));
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 describe("seed data", () => {
-  test("duplicated constant lists match lib/constants", () => {
-    expect([...SEED_CITIES]).toEqual([...CITIES]);
+  test("duplicated constant lists agree with lib/constants", () => {
+    for (const c of SEED_CITIES) expect(CITIES).toContain(c); // seeds cover the 12 launch cities of a national list
     expect([...SEED_INTERESTS]).toEqual([...INTERESTS]);
   });
 
@@ -85,7 +85,7 @@ describe("seed data", () => {
   test("covers every city and skews toward the centre with affordable rooms", () => {
     const byCity = new Map<string, number>();
     for (const { listing } of SEEDS) byCity.set(listing.city, (byCity.get(listing.city) ?? 0) + 1);
-    for (const c of CITIES) expect(byCity.get(c) ?? 0).toBeGreaterThanOrEqual(2);
+    for (const c of SEED_CITIES) expect(byCity.get(c) ?? 0).toBeGreaterThanOrEqual(2);
     expect(byCity.get("Tel Aviv")).toBeGreaterThanOrEqual(25);
     const affordable = SEEDS.filter((s) => s.listing.rent <= 4000).length;
     expect(affordable).toBeGreaterThanOrEqual(45);

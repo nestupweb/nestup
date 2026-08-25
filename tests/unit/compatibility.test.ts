@@ -23,7 +23,8 @@ function listing(overrides: Partial<Listing> = {}): Listing {
     roommates_count: 2,
     pets_allowed: true, smoking_allowed: false,
     balcony: false, air_conditioning: false, parking: false, elevator: false, furnished: false,
-    photo_urls: [], is_active: true, created_at: "", updated_at: "",
+    safe_room: "none", food_restrictions: "", street: "Florentin", house_number: "12",
+    photo_urls: [], photo_labels: [], is_active: true, created_at: "", updated_at: "",
     ...overrides,
   };
 }

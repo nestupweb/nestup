@@ -40,8 +40,8 @@ describe("profileSchema", () => {
 
 describe("listingSchema", () => {
   const validListing = {
-    title: "Sunlit room in Florentin", description: "Great flat", city: "Tel Aviv",
-    neighborhood: "Florentin", rent: 2800, available_from: "2026-10-01",
+    description: "Great flat", city: "Tel Aviv", neighborhood: "Florentin",
+    street: "Florentin", house_number: "12", rent: 2800, available_from: "2026-10-01",
     roommates_count: 2, pets_allowed: true, smoking_allowed: false,
     balcony: true, air_conditioning: true, parking: false, elevator: false, furnished: true,
   };
@@ -54,8 +54,15 @@ describe("listingSchema", () => {
   test("rejects a city outside the list", () => {
     expect(listingSchema.safeParse({ ...validListing, city: "Paris" }).success).toBe(false);
   });
-  test("rejects a 3-character title", () => {
-    expect(listingSchema.safeParse({ ...validListing, title: "abc" }).success).toBe(false);
+  test("requires street and house number, area stays optional", () => {
+    expect(listingSchema.safeParse({ ...validListing, street: "" }).success).toBe(false);
+    expect(listingSchema.safeParse({ ...validListing, house_number: "" }).success).toBe(false);
+    expect(listingSchema.safeParse({ ...validListing, neighborhood: "" }).success).toBe(true);
+  });
+  test("accepts safe room and food restrictions", () => {
+    const r = listingSchema.safeParse({ ...validListing, safe_room: "building", food_restrictions: "Kosher only" });
+    expect(r.success).toBe(true);
+    expect(listingSchema.safeParse({ ...validListing, safe_room: "basement" }).success).toBe(false);
   });
 });
 

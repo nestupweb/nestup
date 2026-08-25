@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
-import { FEATURES, propertyTypeLabel } from "@/lib/constants";
+import { FEATURES, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
 import { formatMoveIn, sharedInterests, type DeckEntry } from "@/lib/swipe";
 import type { Profile } from "@/lib/types";
 
@@ -158,6 +158,9 @@ function Home({ entry }: { entry: DeckEntry }) {
           {listing.rooms} room{listing.rooms === 1 ? "" : "s"}
         </Item>
         {listing.size_sqm ? <Item icon="ruler">{listing.size_sqm} m²</Item> : null}
+        {listing.safe_room && listing.safe_room !== "none" ? (
+          <Item icon="shield">Mamad {safeRoomLabel(listing.safe_room).toLowerCase()}</Item>
+        ) : null}
       </Group>
       <Group title="House rules">
         <Item icon="users">
@@ -167,6 +170,7 @@ function Home({ entry }: { entry: DeckEntry }) {
         <Item icon={listing.smoking_allowed ? "smoking" : "no-smoking"}>
           {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
         </Item>
+        {listing.food_restrictions ? <Item icon="food">{listing.food_restrictions}</Item> : null}
       </Group>
     </div>
   );

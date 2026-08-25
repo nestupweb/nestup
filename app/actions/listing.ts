@@ -3,10 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { uploadImage } from "@/lib/storage";
-import { listingSchema } from "@/lib/validation/listing";
-import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS } from "@/lib/constants";
+import { listingSchema, missingPhotoRooms, photoRoomSchema } from "@/lib/validation/listing";
+import { buildListingTitle } from "@/lib/listing-title";
+import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/constants";
 
 export type ListingFormState = { error?: string; saved?: boolean };
+
+const FIELD_NAMES: Record<string, string> = {
+  city: "City",
+  street: "Street",
+  house_number: "House number",
+  rent: "Rent",
+  available_from: "Available from",
+  rooms: "Rooms",
+  size_sqm: "Size",
+  roommates_count: "Current roommates",
+};
 
 export async function saveListingAction(
   _prev: ListingFormState,
@@ -15,10 +27,11 @@ export async function saveListingAction(
   const { supabase, user } = await requireUser();
 
   const parsed = listingSchema.safeParse({
-    title: formData.get("title"),
     description: formData.get("description") ?? "",
     city: formData.get("city"),
     neighborhood: formData.get("neighborhood") ?? "",
+    street: formData.get("street") ?? "",
+    house_number: formData.get("house_number") ?? "",
     rent: formData.get("rent"),
     available_from: formData.get("available_from"),
     property_type: formData.get("property_type"),
@@ -32,21 +45,38 @@ export async function saveListingAction(
     parking: formData.get("parking") === "on",
     elevator: formData.get("elevator") === "on",
     furnished: formData.get("furnished") === "on",
+    safe_room: formData.get("safe_room") ?? "none",
+    food_restrictions: formData.get("food_restrictions") ?? "",
   });
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
-    return { error: issue ? (issue.path.length ? String(issue.path[0]) + ": " + issue.message : issue.message) : "Please check the form." };
+    if (!issue) return { error: "Please check the form." };
+    const field = issue.path.length ? String(issue.path[0]) : "";
+    return { error: field ? `${FIELD_NAMES[field] ?? field}: ${issue.message}` : issue.message };
   }
 
+  // Photos: kept existing ones (url + room label) followed by new uploads,
+  // each with the room it shows. Labels ride along in the same order.
   const keptUrls = formData.getAll("existing_photos").map(String);
+  const keptLabels = formData.getAll("existing_labels").map((l) => photoRoomSchema.parse(String(l)));
   const newFiles = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
+  const newLabels = formData.getAll("new_labels").map((l) => photoRoomSchema.parse(String(l)));
+
   const photoCount = keptUrls.length + newFiles.length;
-  if (photoCount > MAX_LISTING_PHOTOS) {
-    return { error: `Up to ${MAX_LISTING_PHOTOS} photos.` };
-  }
+  if (photoCount > MAX_LISTING_PHOTOS) return { error: `Up to ${MAX_LISTING_PHOTOS} photos.` };
   if (photoCount < MIN_LISTING_PHOTOS) {
-    return { error: `Add at least ${MIN_LISTING_PHOTOS} photos so the room shows well on Swipe.` };
+    return { error: `Add at least ${MIN_LISTING_PHOTOS} photos — the living room, a bedroom and the bathroom.` };
   }
+  const photo_labels = [
+    ...keptUrls.map((_, i) => keptLabels[i] ?? "other"),
+    ...newFiles.map((_, i) => newLabels[i] ?? "other"),
+  ];
+  const missing = missingPhotoRooms(photo_labels);
+  if (missing.length > 0) {
+    const names = missing.map((r) => photoRoomLabel(r).toLowerCase());
+    return { error: `Add a photo of the ${names.join(", the ")} — and tag each photo with the room it shows.` };
+  }
+
   const photo_urls = [...keptUrls];
   for (const file of newFiles) {
     try {
@@ -58,7 +88,18 @@ export async function saveListingAction(
 
   const listingId = String(formData.get("listing_id") ?? "");
   const is_active = formData.get("is_active") !== null ? formData.get("is_active") === "on" : true;
-  const row = { ...parsed.data, photo_urls, is_active, owner_id: user.id, updated_at: new Date().toISOString() };
+  const address = `${parsed.data.street} ${parsed.data.house_number}`.trim();
+  const title = buildListingTitle(parsed.data);
+  const row = {
+    ...parsed.data,
+    title,
+    address,
+    photo_urls,
+    photo_labels,
+    is_active,
+    owner_id: user.id,
+    updated_at: new Date().toISOString(),
+  };
 
   const { error } = listingId
     ? await supabase.from("listings").update(row).eq("id", listingId).eq("owner_id", user.id)

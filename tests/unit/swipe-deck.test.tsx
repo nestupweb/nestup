@@ -41,6 +41,7 @@ function listing(overrides: Partial<Listing> = {}): Listing {
     rent: 2800, available_from: "2026-10-01", property_type: "apartment", rooms: 3, size_sqm: 80,
     roommates_count: 2, pets_allowed: true, smoking_allowed: false,
     balcony: true, air_conditioning: false, parking: false, elevator: false, furnished: true,
+    safe_room: "apartment", food_restrictions: "Kosher kitchen", street: "Florentin", house_number: "12", photo_labels: [],
     photo_urls: ["https://example.com/a.jpg", "https://example.com/b.jpg", "https://example.com/c.jpg"],
     is_active: true, created_at: "", updated_at: "", ...overrides,
   };
