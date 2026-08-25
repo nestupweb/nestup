@@ -32,9 +32,15 @@ export const getOwnProfile = cache(async (): Promise<{ profile: Profile | null; 
   return { profile: (data as Profile | null) ?? null, userId: user.id };
 });
 
-/** For pages that require a completed profile (swipe, listing, matches). */
-export async function requireProfile(): Promise<{ profile: Profile; userId: string }> {
+/**
+ * For pages that require a completed profile (swipe, listing, chat).
+ * Pass `next` so onboarding explains the detour and returns the user
+ * to the page they were trying to reach after saving.
+ */
+export async function requireProfile(next?: string): Promise<{ profile: Profile; userId: string }> {
   const { profile, userId } = await getOwnProfile();
-  if (!profile) redirect("/profile?onboarding=1");
+  if (!profile) {
+    redirect(next ? `/profile?onboarding=1&next=${encodeURIComponent(next)}` : "/profile?onboarding=1");
+  }
   return { profile, userId };
 }

@@ -4,7 +4,7 @@ import { ListingForm } from "@/components/listings/ListingForm";
 import type { Listing } from "@/lib/types";
 
 export default async function MyListingPage() {
-  const { userId } = await requireProfile();
+  const { userId } = await requireProfile("/listing");
   const supabase = await createClient();
   const { data } = await supabase
     .from("listings")
