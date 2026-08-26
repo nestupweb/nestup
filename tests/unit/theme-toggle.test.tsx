@@ -8,19 +8,24 @@ beforeEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-test("toggles dark theme on <html> and persists to localStorage", async () => {
+test("is a switch that flips dark theme on <html> and persists to localStorage", async () => {
   render(<ThemeToggle />);
-  const button = screen.getByRole("button", { name: /switch to dark mode/i });
-  await userEvent.click(button);
+  const sw = screen.getByRole("switch", { name: /dark mode/i });
+  expect(sw).toHaveAttribute("aria-checked", "false");
+  expect(sw).toHaveAttribute("title", "Switch to dark mode");
+  await userEvent.click(sw);
+  expect(sw).toHaveAttribute("aria-checked", "true");
+  expect(sw).toHaveAttribute("title", "Switch to light mode");
   expect(document.documentElement.dataset.theme).toBe("dark");
   expect(localStorage.theme).toBe("dark");
-  await userEvent.click(screen.getByRole("button", { name: /switch to light mode/i }));
+  await userEvent.click(sw);
+  expect(sw).toHaveAttribute("aria-checked", "false");
   expect(document.documentElement.dataset.theme).toBeUndefined();
   expect(localStorage.theme).toBe("light");
 });
 
-test("syncs its label when the page loads already in dark mode", async () => {
+test("syncs its state when the page loads already in dark mode", async () => {
   document.documentElement.dataset.theme = "dark";
   render(<ThemeToggle />);
-  expect(await screen.findByRole("button", { name: /switch to light mode/i })).toBeInTheDocument();
+  expect(await screen.findByRole("switch", { checked: true })).toBeInTheDocument();
 });
