@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 
 export type DetailIconName =
   | "building"
@@ -18,7 +18,35 @@ export type DetailIconName =
   | "food"
   | "calendar";
 
-const PATHS: Record<DetailIconName, JSX.Element> = {
+/**
+ * The balcony glyph is the owner's own artwork (`my listing-guy/Balcony-icon.jpeg`,
+ * extracted to a transparent mask in `public/icons/balcony.png`, 320×180) — a
+ * wrought-iron railing on a slab. Rendered as a CSS mask filled with the current
+ * colour so it follows the theme like every stroked icon here.
+ */
+const BALCONY_MASK = "url(/icons/balcony.png)";
+const balconyStyle: CSSProperties = {
+  WebkitMaskImage: BALCONY_MASK,
+  maskImage: BALCONY_MASK,
+  WebkitMaskSize: "contain",
+  maskSize: "contain",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "center",
+  maskPosition: "center",
+};
+
+function BalconyIcon() {
+  return (
+    <span
+      style={balconyStyle}
+      className="inline-block h-[18px] w-[18px] shrink-0 bg-current text-muted"
+      aria-hidden="true"
+    />
+  );
+}
+
+const PATHS: Record<Exclude<DetailIconName, "balcony">, JSX.Element> = {
   calendar: (
     <>
       <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
@@ -82,16 +110,6 @@ const PATHS: Record<DetailIconName, JSX.Element> = {
       <path d="m5.65 5.65 12.7 12.7" />
     </>
   ),
-  // French door above a railing on a floor slab — reads as a balcony even at 18px.
-  balcony: (
-    <>
-      <path d="M8 12V5a1.5 1.5 0 0 1 1.5-1.5h5A1.5 1.5 0 0 1 16 5v7" />
-      <path d="M12 3.5V12" />
-      <path d="M3.5 12h17" />
-      <path d="M6 12v5M10 12v5M14 12v5M18 12v5" />
-      <rect x="3.5" y="17" width="17" height="3" rx="1" />
-    </>
-  ),
   snowflake: (
     <>
       <path d="M2.5 12h19" />
@@ -138,6 +156,7 @@ const PATHS: Record<DetailIconName, JSX.Element> = {
 
 /** Minimal line icon for listing detail items — consistent stroke, muted tone. */
 export function DetailIcon({ name }: { name: DetailIconName }) {
+  if (name === "balcony") return <BalconyIcon />;
   return (
     <svg
       viewBox="0 0 24 24"
