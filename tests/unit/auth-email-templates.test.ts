@@ -28,6 +28,7 @@ describe("auth e-mail templates", () => {
     for (const html of Object.values(templates)) {
       expect(html).toMatch(/^<!doctype html>/i);
       expect(html).toContain("#2e7d5e");
+      expect(html).toContain('<img src="{{ .SiteURL }}/brand/nestup-wordmark-email.png"');
       expect(html).not.toMatch(/<script/i);
     }
   });
