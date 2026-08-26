@@ -53,7 +53,7 @@ test("About me is the first tab, shows the editable section, and hides it on oth
   );
   const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
   expect(tabs[0]).toBe("About me");
-  expect(tabs[1]).toContain("My Listings");
+  expect(tabs[1]).toBe("My listing");
   expect(screen.getByRole("tab", { name: "About me" })).toHaveAttribute("aria-selected", "true");
 
   const intro = screen.getByRole("textbox", { name: /about me/i });
@@ -63,10 +63,10 @@ test("About me is the first tab, shows the editable section, and hides it on oth
   expect(screen.getByLabelText(/shabbat observance/i)).toBeInTheDocument();
   expect(screen.getByLabelText(/budget max/i)).toHaveValue(5000);
 
-  await userEvent.click(screen.getByRole("tab", { name: /my listings/i }));
+  await userEvent.click(screen.getByRole("tab", { name: /my listing/i }));
   expect(screen.queryByRole("textbox", { name: /about me/i })).not.toBeInTheDocument();
   expect(screen.queryByLabelText(/phone number/i)).not.toBeInTheDocument();
-  expect(screen.getByText(/no listings yet/i)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /add listing/i })).toHaveAttribute("href", "/listing");
 });
 
 test("read-only mode shows the About me section as other members see it — no inputs, no contact info", () => {

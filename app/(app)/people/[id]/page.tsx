@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { Avatar } from "@/components/ui/Avatar";
@@ -94,11 +93,6 @@ export default async function PersonPage({
         </section>
       ) : null}
 
-      <p className="mt-10 text-sm text-muted">
-        <Link href="/swipe" className="text-accent underline-offset-2 hover:underline">
-          Back to Swipe
-        </Link>
-      </p>
     </main>
   );
 }

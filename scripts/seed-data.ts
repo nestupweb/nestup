@@ -193,7 +193,7 @@ export const HANDCRAFTED: Seed[] = [
     },
     listing: {
       title: "Garden room on a leafy Borochov street",
-      description: "Ground-floor garden apartment with a real garden — herbs, lemon tree, a hammock. My golden retriever approves of tidy, calm flatmates.",
+      description: "Ground-floor garden apartment with a real garden — herbs, lemon tree, a hammock. My golden retriever approves of tidy, calm roommates.",
       city: "Givatayim", neighborhood: "Borochov", address: "Borochov 34", rent: 4800, available_from: "2026-10-15",
       property_type: "garden_apartment", rooms: 3.5, size_sqm: 85, roommates_count: 2,
       pets_allowed: true, smoking_allowed: false,
@@ -259,7 +259,7 @@ export const HANDCRAFTED: Seed[] = [
     },
     listing: {
       title: "Renovated room near the West station",
-      description: "Freshly renovated flat, two sane flatmates, direct train to Tel Aviv. Kitchen is the heart of the house.",
+      description: "Freshly renovated flat, two sane roommates, direct train to Tel Aviv. Kitchen is the heart of the house.",
       city: "Rishon LeZion", neighborhood: "HaRakevet", address: "Sderot Nim 3", rent: 3400, available_from: "2026-10-01",
       property_type: "apartment", rooms: 4, size_sqm: 105, roommates_count: 2,
       pets_allowed: false, smoking_allowed: false,
@@ -538,7 +538,7 @@ const BIOS = [
   "Works long hours, so the flat is calm on weekdays.",
   "Board games, big salads, a very organised fridge.",
   "Music always on, never too loud. Loves a balcony evening.",
-  "New to the city and looking for flatmates who feel like friends.",
+  "New to the city and looking for roommates who feel like friends.",
   "Studio-to-gym-to-couch kind of routine. Easy to live with.",
   "Sunday-night cleaner, Friday-morning shuk shopper.",
   "Early to bed, early to swim. Vegetarian kitchen.",

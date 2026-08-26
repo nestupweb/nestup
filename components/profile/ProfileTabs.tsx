@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PropertyTile } from "@/components/listings/PropertyTile";
 import { AboutMe } from "@/components/profile/AboutMe";
 import { AboutView } from "@/components/profile/AboutView";
+import { MyListing } from "@/components/profile/MyListing";
 import type { Listing, Profile, ProfileDetails } from "@/lib/types";
 
 export type TabKey = "about" | "listings" | "liked" | "history";
@@ -30,10 +31,11 @@ export function ProfileTabs({
 }) {
   const [tab, setTab] = useState<TabKey>(initial);
 
-  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null }[] =
+  // "My listing" carries no count: a member has one listing, and the tab itself says what is there.
+  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null; count?: boolean }[] =
     [
       { key: "about", label: "About me", items: null },
-      { key: "listings", label: "My Listings", items: mine },
+      { key: "listings", label: "My listing", items: mine, count: false },
       { key: "liked", label: "Liked", items: liked },
       { key: "history", label: "History", items: history },
     ];
@@ -66,7 +68,7 @@ export function ProfileTabs({
                 }`}
               >
                 {t.label}
-                {t.items ? (
+                {t.items && t.count !== false ? (
                   <span
                     className={`text-[11px] tracking-normal ${active ? "text-accent" : "text-muted"}`}
                   >
@@ -91,23 +93,15 @@ export function ProfileTabs({
           ) : (
             <AboutMe profile={about.profile} details={about.details} email={about.email} />
           )
+        ) : current.key === "listings" ? (
+          <MyListing listings={mine.map((m) => m.listing)} />
         ) : current.items.length === 0 ? (
-          <Empty tab={current.key as Exclude<TabKey, "about">} />
+          <Empty tab={current.key as Exclude<TabKey, "listings" | "about">} />
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5">
             {current.items.map(({ listing, caption }) => (
-              <PropertyTile
-                key={listing.id}
-                listing={listing}
-                badge={
-                  current.key === "listings" && !listing.is_active
-                    ? "Paused"
-                    : undefined
-                }
-                caption={caption}
-              />
+              <PropertyTile key={listing.id} listing={listing} caption={caption} />
             ))}
-            {current.key === "listings" ? <AddTile /> : null}
           </div>
         )}
       </div>
@@ -115,28 +109,8 @@ export function ProfileTabs({
   );
 }
 
-function AddTile() {
-  return (
-    <Link
-      href="/listing"
-      className="flex aspect-[4/5] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-hairline text-muted transition-colors hover:border-accent hover:text-accent"
-    >
-      <span className="text-3xl font-light leading-none">+</span>
-      <span className="text-[11px] font-semibold uppercase tracking-widest">
-        Edit listing
-      </span>
-    </Link>
-  );
-}
-
-function Empty({ tab }: { tab: Exclude<TabKey, "about"> }) {
+function Empty({ tab }: { tab: Exclude<TabKey, "listings" | "about"> }) {
   const copy = {
-    listings: {
-      title: "No listings yet",
-      hint: "Post a room and interested seekers will find you.",
-      href: "/listing",
-      cta: "List a room",
-    },
     liked: {
       title: "Nothing liked yet",
       hint: "Tap the heart on any room to keep it here.",

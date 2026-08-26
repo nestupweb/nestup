@@ -127,7 +127,7 @@ export default async function ListingDetailPage({
           <div className={itemRow}>
             <span className={item}>
               <DetailIcon name="users" />
-              {listing.roommates_count} flatmate{listing.roommates_count === 1 ? "" : "s"}
+              {listing.roommates_count} roommate{listing.roommates_count === 1 ? "" : "s"}
             </span>
             <span className={item}>
               <DetailIcon name="paw" />

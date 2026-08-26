@@ -38,7 +38,7 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
       {listing ? <input type="hidden" name="listing_id" value={listing.id} /> : null}
 
       {/* ===== Photos ===== */}
-      <section className={section}>
+      <section id="photos" className={`${section} scroll-mt-24`}>
         <h2 className={heading}>Photos</h2>
         <p className="mt-1 text-sm text-muted">
           {MIN_LISTING_PHOTOS}–{MAX_LISTING_PHOTOS} photos. Include the living room, a bedroom and the bathroom, and tag each
