@@ -95,8 +95,8 @@ test("information panel has three pages with address, home details and roommates
   expect(screen.getByText("No smoking")).toBeInTheDocument();
 
   await userEvent.click(screen.getByRole("tab", { name: "Roommates" }));
-  expect(screen.getByRole("link", { name: "Dana's profile" })).toHaveAttribute("href", "/people/o1");
-  expect(screen.getByRole("link", { name: "Noa's profile" })).toHaveAttribute("href", "/people/r1");
+  expect(screen.getByRole("link", { name: "Dana's profile" })).toHaveAttribute("href", "/people/o1?listing=11111111-1111-4111-8111-111111111111");
+  expect(screen.getByRole("link", { name: "Noa's profile" })).toHaveAttribute("href", "/people/r1?listing=11111111-1111-4111-8111-111111111111");
   expect(screen.getByText("Cooking")).toBeInTheDocument(); // shared interest chip
   expect(screen.queryByRole("button", { name: /next page/i })).not.toBeInTheDocument(); // tabs only, no chevrons
 });

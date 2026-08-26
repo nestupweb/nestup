@@ -209,7 +209,7 @@ function Roommates({ entry, seeker }: { entry: DeckEntry; seeker: Profile }) {
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <p className="font-medium">
                   <Link
-                    href={`/people/${p.user_id}`}
+                    href={`/people/${p.user_id}?listing=${entry.listing.id}`}
                     className="underline-offset-4 hover:text-accent hover:underline"
                     aria-label={`${p.full_name}'s profile`}
                   >

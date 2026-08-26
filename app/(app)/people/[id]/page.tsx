@@ -15,8 +15,17 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * groups as their own Profile page, read-only, without phone / e-mail.
  * Linked from roommate names on listing pages and the Swipe deck.
  */
-export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PersonPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  /** `?listing=<id>`: the post the visitor came from (Roommates tab / "Who lives here"). */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const { listing: fromParam } = await searchParams;
+  const fromListing = typeof fromParam === "string" && UUID.test(fromParam) ? fromParam : null;
   if (!UUID.test(id)) notFound();
   const { supabase, user } = await requireUser();
   if (id === user.id) redirect("/profile");
@@ -44,8 +53,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   const { data: livedRows } = livedIds.length
     ? await supabase.from("listings").select("*").in("id", livedIds).eq("is_active", true).order("created_at", { ascending: false })
     : { data: [] as Listing[] };
-  // The household the visitor came from (Roommates tab) is the room this member lives in — show it first.
-  const listings = [...((livedRows as Listing[] | null) ?? []), ...owned];
+  // Exactly one room per member, the same for the whole household: the post the
+  // visitor came from when it belongs to this member, else the room they live in,
+  // else the room they host. Seed users are both hosts and flatmates elsewhere.
+  const lived = (livedRows as Listing[] | null) ?? [];
+  const listing = [...lived, ...owned].find((l) => l.id === fromListing) ?? lived[0] ?? owned[0] ?? null;
+  const photo = listing ? roomPhoto(listing) : null;
   const first = profile.full_name.split(" ")[0] || profile.full_name;
 
   return (
@@ -71,17 +84,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         <AboutView profile={profile} details={details} />
       </div>
 
-      {listings.length > 0 ? (
+      {listing ? (
         <section className="mt-10 border-t border-hairline pt-5">
-          <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-accent">
-            {first}&rsquo;s {listings.length === 1 ? "listing" : "listings"}
-          </h3>
-          {/* Same photo tiles as the owner's own "My Listings" tab, but showing the room for rent (the photo tagged "bedroom") rather than the cover. */}
-          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5">
-            {listings.map((l) => {
-              const photo = roomPhoto(l);
-              return <PropertyTile key={l.id} listing={l} cover={photo?.url ?? null} badge={photo?.isBedroom ? "The room" : undefined} />;
-            })}
+          <h3 className="text-[15px] font-bold uppercase tracking-[0.18em] text-accent">{first}&rsquo;s listing</h3>
+          {/* One tile, showing the room for rent (the photo tagged "bedroom") rather than the cover — identical on every member of the household. */}
+          <div className="mt-4 max-w-[13rem]">
+            <PropertyTile listing={listing} cover={photo?.url ?? null} badge={photo?.isBedroom ? "The room" : undefined} />
           </div>
         </section>
       ) : null}

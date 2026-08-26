@@ -189,7 +189,7 @@ export default async function ListingDetailPage({
               {[owner, ...residents].map((p) => (
                 <Link
                   key={p.user_id}
-                  href={`/people/${p.user_id}`}
+                  href={`/people/${p.user_id}?listing=${listing.id}`}
                   className="group flex items-center gap-4"
                   aria-label={`${p.full_name}'s profile`}
                 >
