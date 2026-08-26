@@ -95,6 +95,11 @@ test("read-only mode shows the About me section as other members see it — no i
   // Social links live in the page header's ContactRow now, not in the About panel.
   expect(screen.queryByRole("link", { name: /instagram|@noa/i })).toBeNull();
   expect(screen.getByRole("table", { name: "Daily life" })).toBeInTheDocument();
+  // "Looking for" (budget / move-in / cities) sits above the Daily life table (user request).
+  const lookingFor = screen.getByRole("heading", { name: "Looking for" });
+  const dailyLife = screen.getByRole("heading", { name: "Daily life" });
+  expect(lookingFor.compareDocumentPosition(dailyLife) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByText("₪3,000–₪5,000 / month")).toBeInTheDocument();
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument();
   expect(screen.queryByText("050-1234567")).not.toBeInTheDocument();

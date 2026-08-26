@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { profileGroups, type PublicDetails } from "@/lib/people";
+import { profileGroups, type ProfileGroup, type PublicDetails } from "@/lib/people";
 import { DailyLifeView } from "@/components/profile/DailyLifeView";
 import type { Profile } from "@/lib/types";
 
@@ -22,6 +22,9 @@ export function AboutView({
   self?: boolean;
 }) {
   const groups = profileGroups(profile, details);
+  // "Looking for" (budget, move-in, cities) reads first, above Daily life (user request); the rest follow the chores.
+  const lookingFor = groups.find((g) => g.title === "Looking for");
+  const rest = groups.filter((g) => g !== lookingFor);
   const about = details?.about?.trim() ?? "";
   const first = profile.full_name.split(" ")[0] || profile.full_name;
   const chores = profile.chores ?? [];
@@ -55,6 +58,12 @@ export function AboutView({
         <p className="mt-5 text-sm text-muted">{first} hasn&rsquo;t written an introduction yet.</p>
       )}
 
+      {lookingFor ? (
+        <div className="mt-7">
+          <Group group={lookingFor} />
+        </div>
+      ) : null}
+
       <section className="mt-7 border-t border-hairline pt-5">
         <h3 className={h3}>Daily life</h3>
         <div className="mt-4">
@@ -77,28 +86,35 @@ export function AboutView({
       ) : null}
 
       <div className="mt-7 space-y-7">
-        {groups.map((g) => (
-          <section key={g.title} className="border-t border-hairline pt-5">
-            <h3 className={h3}>{g.title}</h3>
-            <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-              {g.rows.map((r) => (
-                <div key={r.label} className="min-w-0">
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{r.label}</dt>
-                  <dd className="mt-0.5 break-words text-sm text-ink">
-                    {r.href ? (
-                      <a href={r.href} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
-                        {r.value}
-                      </a>
-                    ) : (
-                      r.value
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </section>
+        {rest.map((g) => (
+          <Group key={g.title} group={g} />
         ))}
       </div>
     </div>
+  );
+}
+
+/** One titled group of label/value rows (two columns on wider screens). */
+function Group({ group: g }: { group: ProfileGroup }) {
+  return (
+    <section className="border-t border-hairline pt-5">
+      <h3 className={h3}>{g.title}</h3>
+      <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+        {g.rows.map((r) => (
+          <div key={r.label} className="min-w-0">
+            <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{r.label}</dt>
+            <dd className="mt-0.5 break-words text-sm text-ink">
+              {r.href ? (
+                <a href={r.href} target="_blank" rel="noopener noreferrer" className="text-accent underline-offset-2 hover:underline">
+                  {r.value}
+                </a>
+              ) : (
+                r.value
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
