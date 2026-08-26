@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { FEATURES, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
+import { FEATURES, leaseTermLabel, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
 import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { SaveButton } from "@/components/listings/SaveButton";
@@ -90,9 +90,19 @@ export default async function ListingDetailPage({
           <SaveButton listingId={listing.id} signedIn={Boolean(user)} initialSaved={saved} />
         </div>
       </div>
-      <p className="mt-2 text-base text-muted">
-        Available from {new Date(listing.available_from).toLocaleDateString("en-GB", { dateStyle: "long" })}
-      </p>
+      {/* Entrance date and a rough duration — never an end date (user decision). */}
+      <dl className="mt-3 flex flex-wrap gap-x-7 gap-y-2 text-base">
+        <div className="flex items-baseline gap-2">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Entrance date</dt>
+          <dd className="font-semibold text-ink">
+            {new Date(listing.available_from).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+          </dd>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">For how long</dt>
+          <dd className="font-semibold text-ink">{leaseTermLabel(listing.lease_term ?? "flexible")}</dd>
+        </div>
+      </dl>
 
       <div className="mt-10 space-y-9">
         <section className="border-t border-hairline pt-7">

@@ -7,7 +7,7 @@ import { PhotoPicker } from "@/components/listings/PhotoPicker";
 import { ViewingHoursEditor } from "@/components/listings/ViewingHoursEditor";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { normalizeSlots } from "@/lib/availability";
-import { FEATURES, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
+import { FEATURES, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
 const input =
@@ -103,12 +103,21 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
             <input name="rent" type="number" required min={1} defaultValue={listing?.rent ?? ""} className={input} />
           </label>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <label className={label}>
-            Available from
+            Entrance date
             <DatePicker name="available_from" defaultValue={listing?.available_from ?? ""} placeholder="Pick a date" />
           </label>
           <label className={label}>
+            For how long
+            {/* A rough duration, never an end date (user decision). */}
+            <select name="lease_term" defaultValue={listing?.lease_term ?? "flexible"} className={input}>
+              {LEASE_TERMS.map((t) => (
+                <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className={`${label} col-span-2 sm:col-span-1`}>
             Current roommates
             <input name="roommates_count" type="number" required min={0} max={10} defaultValue={listing?.roommates_count ?? 1} className={input} />
           </label>

@@ -54,7 +54,7 @@ async function main() {
       // bedroom → bathroom, each tagged) — the deck relies on the tags.
       const { error: photoErr } = await admin
         .from("listings")
-        .update({ photo_urls: s.listing.photo_urls, photo_labels: s.listing.photo_labels })
+        .update({ photo_urls: s.listing.photo_urls, photo_labels: s.listing.photo_labels, lease_term: s.listing.lease_term })
         .eq("owner_id", existingId);
       if (photoErr) throw new Error(`photos(${s.email}): ${photoErr.message}`);
       if (s.profile.noise_level || s.profile.chores) {

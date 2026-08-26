@@ -36,6 +36,7 @@ export async function saveListingAction(
     house_number: formData.get("house_number") ?? "",
     rent: formData.get("rent"),
     available_from: formData.get("available_from"),
+    lease_term: formData.get("lease_term") ?? undefined, // older forms: schema default
     property_type: formData.get("property_type"),
     rooms: formData.get("rooms"),
     size_sqm: formData.get("size_sqm"),

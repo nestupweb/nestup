@@ -14,6 +14,8 @@ export type PrefShabbat = "any" | "observant" | "traditional" | "not_observant";
 export type SwipeDirection = "like" | "skip";
 export type ListerResponse = "pending" | "liked" | "skipped";
 export type SafeRoom = "none" | "apartment" | "building";
+/** How long the room is offered for — a rough duration, never an end date. */
+export type LeaseTerm = "flexible" | "month" | "two_months" | "three_months" | "half_year" | "year" | "two_years" | "long_term";
 export type PhotoRoom = "living_room" | "bedroom" | "bathroom" | "kitchen" | "balcony" | "exterior" | "other";
 export type PropertyType =
   | "apartment"
@@ -90,7 +92,8 @@ export interface Listing {
   street: string;
   house_number: string;
   rent: number;
-  available_from: string; // ISO date
+  available_from: string; // ISO date — the entrance date
+  lease_term: LeaseTerm; // for how long (rough duration)
   property_type: PropertyType;
   rooms: number; // halves allowed, e.g. 3.5
   size_sqm: number | null;

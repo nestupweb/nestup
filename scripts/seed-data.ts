@@ -12,6 +12,7 @@
 
 export type SleepSchedule = "early" | "late" | "flexible";
 export type GuestsFreq = "rare" | "sometimes" | "often";
+export type LeaseTerm = "flexible" | "month" | "two_months" | "three_months" | "half_year" | "year" | "two_years" | "long_term";
 export type PropertyType =
   | "apartment"
   | "garden_apartment"
@@ -62,6 +63,7 @@ export interface SeedListing {
   address: string;
   rent: number;
   available_from: string;
+  lease_term?: LeaseTerm; // for how long (DB default: flexible)
   property_type: PropertyType;
   rooms: number;
   size_sqm: number | null;
@@ -132,7 +134,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Sunlit room in a Florentin loft",
       description: "Bright corner room in a renovated loft above the workshops. We're two easygoing designers; balcony dinners on Fridays, quiet weekday mornings.",
-      city: "Tel Aviv", neighborhood: "Florentin", address: "Florentin 12", rent: 5400, available_from: "2026-10-01",
+      city: "Tel Aviv", neighborhood: "Florentin", address: "Florentin 12", rent: 5400, available_from: "2026-10-01", lease_term: "year",
       property_type: "apartment", rooms: 3, size_sqm: 78, roommates_count: 2,
       pets_allowed: true, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: false, elevator: false, furnished: true,
@@ -153,7 +155,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Stone-house room near Machane Yehuda",
       description: "High ceilings and thick Jerusalem stone walls, two minutes from the shuk. Flat of three — calm on weekdays, hosting on Fridays.",
-      city: "Jerusalem", neighborhood: "Nachlaot", address: "Agripas 88", rent: 3600, available_from: "2026-09-15",
+      city: "Jerusalem", neighborhood: "Nachlaot", address: "Agripas 88", rent: 3600, available_from: "2026-09-15", lease_term: "half_year",
       property_type: "apartment", rooms: 4, size_sqm: 95, roommates_count: 3,
       pets_allowed: false, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: false, elevator: false, furnished: true,
@@ -174,7 +176,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Bay-view room on the Carmel slope",
       description: "Wake up to the bay from your window. Big shared kitchen, plants everywhere, ten minutes downhill to the beach.",
-      city: "Haifa", neighborhood: "Hadar", address: "Masada 21", rent: 2800, available_from: "2026-09-01",
+      city: "Haifa", neighborhood: "Hadar", address: "Masada 21", rent: 2800, available_from: "2026-09-01", lease_term: "flexible",
       property_type: "apartment", rooms: 3.5, size_sqm: 88, roommates_count: 2,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: false, parking: false, elevator: false, furnished: true,
@@ -195,7 +197,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Quiet room steps from the Bursa",
       description: "Spacious flat with a friendly cat and a serious coffee corner. Looking for someone chill about occasional game nights.",
-      city: "Ramat Gan", neighborhood: "Diamond District", address: "Tuval 9", rent: 4200, available_from: "2026-09-15",
+      city: "Ramat Gan", neighborhood: "Diamond District", address: "Tuval 9", rent: 4200, available_from: "2026-09-15", lease_term: "year",
       property_type: "apartment", rooms: 3, size_sqm: 70, roommates_count: 1,
       pets_allowed: true, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: true, elevator: true, furnished: false,
@@ -216,7 +218,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Garden room on a leafy Borochov street",
       description: "Ground-floor garden apartment with a real garden — herbs, lemon tree, a hammock. My golden retriever approves of tidy, calm roommates.",
-      city: "Givatayim", neighborhood: "Borochov", address: "Borochov 34", rent: 4800, available_from: "2026-10-15",
+      city: "Givatayim", neighborhood: "Borochov", address: "Borochov 34", rent: 4800, available_from: "2026-10-15", lease_term: "two_years",
       property_type: "garden_apartment", rooms: 3.5, size_sqm: 85, roommates_count: 2,
       pets_allowed: true, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: false, elevator: false, furnished: true,
@@ -237,7 +239,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Penthouse room near the marina",
       description: "Top-floor penthouse with a wraparound terrace and sea air. Two of us, both busy professionals — the flat stays quiet and spotless.",
-      city: "Herzliya", neighborhood: "Marina", address: "HaShunit 5", rent: 9500, available_from: "2026-11-01",
+      city: "Herzliya", neighborhood: "Marina", address: "HaShunit 5", rent: 9500, available_from: "2026-11-01", lease_term: "three_months",
       property_type: "penthouse", rooms: 5, size_sqm: 140, roommates_count: 2,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: true, elevator: true, furnished: true,
@@ -258,7 +260,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Student room five minutes from BGU",
       description: "Classic student flat in the Old City — big living room, projector wall, cheap rent. Third roommate just graduated.",
-      city: "Beer Sheva", neighborhood: "Old City", address: "HaAvot 17", rent: 2900, available_from: "2026-09-01",
+      city: "Beer Sheva", neighborhood: "Old City", address: "HaAvot 17", rent: 2900, available_from: "2026-09-01", lease_term: "year",
       property_type: "apartment", rooms: 4, size_sqm: 100, roommates_count: 3,
       pets_allowed: true, smoking_allowed: true,
       balcony: true, air_conditioning: true, parking: false, elevator: false, furnished: true,
@@ -279,7 +281,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Renovated room near the West station",
       description: "Freshly renovated flat, two sane roommates, direct train to Tel Aviv. Kitchen is the heart of the house.",
-      city: "Rishon LeZion", neighborhood: "HaRakevet", address: "Sderot Nim 3", rent: 3400, available_from: "2026-10-01",
+      city: "Rishon LeZion", neighborhood: "HaRakevet", address: "Sderot Nim 3", rent: 3400, available_from: "2026-10-01", lease_term: "half_year",
       property_type: "apartment", rooms: 4, size_sqm: 105, roommates_count: 2,
       pets_allowed: false, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: true, elevator: true, furnished: false,
@@ -300,7 +302,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Bright duplex room by Em HaMoshavot park",
       description: "Upper floor of a duplex — your room has a slanted ceiling and a park view. Three of us keep it neat and friendly.",
-      city: "Petah Tikva", neighborhood: "Em HaMoshavot", address: "HaShoshanim 12", rent: 3200, available_from: "2026-11-15",
+      city: "Petah Tikva", neighborhood: "Em HaMoshavot", address: "HaShoshanim 12", rent: 3200, available_from: "2026-11-15", lease_term: "long_term",
       property_type: "duplex", rooms: 4.5, size_sqm: 120, roommates_count: 3,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: true, elevator: false, furnished: false,
@@ -321,7 +323,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Sea-breeze studio near Ir Yamim",
       description: "Compact, quiet studio with a sliver of sea from the balcony. Fully furnished — bring a suitcase and you're home.",
-      city: "Netanya", neighborhood: "Ir Yamim", address: "Bnei Berman 8", rent: 3800, available_from: "2026-09-15",
+      city: "Netanya", neighborhood: "Ir Yamim", address: "Bnei Berman 8", rent: 3800, available_from: "2026-09-15", lease_term: "year",
       property_type: "studio", rooms: 1.5, size_sqm: 42, roommates_count: 0,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: false, elevator: true, furnished: true,
@@ -342,7 +344,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "Garden flat room near the Institute",
       description: "Green, quiet garden apartment ten minutes from Weizmann. We cook together most nights; the garden hosts our herb empire.",
-      city: "Rehovot", neighborhood: "Weizmann", address: "Herzl 210", rent: 3100, available_from: "2026-10-01",
+      city: "Rehovot", neighborhood: "Weizmann", address: "Herzl 210", rent: 3100, available_from: "2026-10-01", lease_term: "two_months",
       property_type: "garden_apartment", rooms: 4, size_sqm: 110, roommates_count: 2,
       pets_allowed: true, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: true, elevator: false, furnished: true,
@@ -363,7 +365,7 @@ const HANDCRAFTED_BASE: HandcraftedSeed[] = [
     listing: {
       title: "House room with a garden off Ahuza",
       description: "Room in a proper house — garden, grill, a lazy dog named Biscuit. Two of us, both settled professionals who like hosting.",
-      city: "Raanana", neighborhood: "Ahuza", address: "Ahuza 156", rent: 5200, available_from: "2026-12-01",
+      city: "Raanana", neighborhood: "Ahuza", address: "Ahuza 156", rent: 5200, available_from: "2026-12-01", lease_term: "flexible",
       property_type: "private_house", rooms: 6, size_sqm: 210, roommates_count: 1,
       pets_allowed: true, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: true, elevator: false, furnished: false,
@@ -776,6 +778,7 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
         address: `${pick(STREETS[city])} ${int(2, 140)}`,
         rent,
         available_from: pick(MOVE_IN_DATES),
+        lease_term: pick(["year", "year", "year", "half_year", "half_year", "flexible", "flexible", "two_years", "three_months", "long_term"] as const),
         property_type,
         rooms,
         size_sqm: studio ? int(28, 45) : Math.round(rooms * int(22, 30)),

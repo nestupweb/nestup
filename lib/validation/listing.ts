@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { CITIES, PHOTO_ROOMS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
-import type { PhotoRoom, PropertyType, SafeRoom } from "@/lib/types";
+import { CITIES, LEASE_TERMS, PHOTO_ROOMS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
+import type { LeaseTerm, PhotoRoom, PropertyType, SafeRoom } from "@/lib/types";
 
 const propertyTypeKeys = PROPERTY_TYPES.map((p) => p.key) as [PropertyType, ...PropertyType[]];
 const safeRoomKeys = SAFE_ROOM_OPTIONS.map((o) => o.key) as [SafeRoom, ...SafeRoom[]];
+const leaseTermKeys = LEASE_TERMS.map((o) => o.key) as [LeaseTerm, ...LeaseTerm[]];
 const photoRoomKeys = PHOTO_ROOMS.map((r) => r.key) as [PhotoRoom, ...PhotoRoom[]];
 
 export const listingSchema = z.object({
@@ -14,6 +15,7 @@ export const listingSchema = z.object({
   house_number: z.string().trim().min(1, "House number is required.").max(10),
   rent: z.coerce.number().int().positive(),
   available_from: z.iso.date(),
+  lease_term: z.enum(leaseTermKeys).default("flexible"),
   property_type: z.enum(propertyTypeKeys).default("apartment"),
   rooms: z.coerce.number().min(1).max(12).multipleOf(0.5).default(3),
   size_sqm: z.preprocess(

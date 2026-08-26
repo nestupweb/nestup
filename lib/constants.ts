@@ -1,6 +1,7 @@
 import type {
   Diet,
   GuestsFreq,
+  LeaseTerm,
   NoiseLevel,
   PhotoRoom,
   PrefDiet,
@@ -146,6 +147,22 @@ export const SAFE_ROOM_OPTIONS = [
 
 export function safeRoomLabel(key: SafeRoom): string {
   return SAFE_ROOM_OPTIONS.find((o) => o.key === key)?.label ?? "None";
+}
+
+/** For how long the room is offered — rough durations only, never an end date. */
+export const LEASE_TERMS = [
+  { key: "flexible", label: "Flexible" },
+  { key: "month", label: "A month" },
+  { key: "two_months", label: "2 months" },
+  { key: "three_months", label: "3 months" },
+  { key: "half_year", label: "Half a year" },
+  { key: "year", label: "A year" },
+  { key: "two_years", label: "2 years" },
+  { key: "long_term", label: "Long-term" },
+] as const satisfies readonly { key: LeaseTerm; label: string }[];
+
+export function leaseTermLabel(key: LeaseTerm): string {
+  return LEASE_TERMS.find((o) => o.key === key)?.label ?? "Flexible";
 }
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 
