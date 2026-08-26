@@ -54,9 +54,14 @@ export default async function ProfilePage({
   const liked: ProfileTabItem[] = ((likedRes.data as unknown as JoinedRow<"created_at">[] | null) ?? [])
     .filter((r) => r.listings)
     .map((r) => ({ listing: r.listings as Listing, caption: `Liked ${shortDate(r.created_at)}` }));
+  const likedIds = new Set(liked.map((i) => i.listing.id));
   const history: ProfileTabItem[] = ((historyRes.data as unknown as JoinedRow<"viewed_at">[] | null) ?? [])
     .filter((r) => r.listings)
-    .map((r) => ({ listing: r.listings as Listing, caption: `Viewed ${shortDate(r.viewed_at)}` }));
+    .map((r) => ({
+      listing: r.listings as Listing,
+      caption: `Viewed ${shortDate(r.viewed_at)}`,
+      saved: likedIds.has((r.listings as Listing).id),
+    }));
 
   const initial = tab === "liked" || tab === "history" || tab === "listings" ? tab : "about";
 

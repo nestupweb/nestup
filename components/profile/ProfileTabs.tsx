@@ -13,6 +13,8 @@ export type TabKey = "about" | "listings" | "liked" | "history";
 export interface ProfileTabItem {
   listing: Listing;
   caption?: string;
+  /** History only: whether this room is currently in Liked (fills the heart). */
+  saved?: boolean;
 }
 
 export function ProfileTabs({
@@ -99,13 +101,20 @@ export function ProfileTabs({
           <Empty tab={current.key as Exclude<TabKey, "listings" | "about">} />
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5">
-            {current.items.map(({ listing, caption }) => (
+            {current.items.map(({ listing, caption, saved }) => (
               <PropertyTile
                 key={listing.id}
                 listing={listing}
                 caption={caption}
                 // Liked: a filled heart on each tile — tap to unlike, tap again to like back.
-                heart={current.key === "liked" ? { signedIn: true, saved: true } : undefined}
+                // History: the same heart, filled only for rooms that are also in Liked.
+                heart={
+                  current.key === "liked"
+                    ? { signedIn: true, saved: true }
+                    : current.key === "history"
+                      ? { signedIn: true, saved: saved ?? false }
+                      : undefined
+                }
               />
             ))}
           </div>
