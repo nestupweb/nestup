@@ -971,7 +971,7 @@ import type { Listing } from "@/lib/types";
 
 export function ListingCard({ listing }: { listing: Listing }) {
   const specs = [
-    `${listing.roommates_count} flatmate${listing.roommates_count === 1 ? "" : "s"}`,
+    `${listing.roommates_count} roommate${listing.roommates_count === 1 ? "" : "s"}`,
     listing.pets_allowed ? "Pets welcome" : "No pets",
     listing.smoking_allowed ? "Smoking OK" : "No smoking",
   ].join("  ·  ");
@@ -1120,7 +1120,7 @@ export default async function ListingDetailPage({
       </p>
 
       <p className="mt-4 border-y border-hairline py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-        {listing.roommates_count} flatmate{listing.roommates_count === 1 ? "" : "s"} ·{" "}
+        {listing.roommates_count} roommate{listing.roommates_count === 1 ? "" : "s"} ·{" "}
         {listing.pets_allowed ? "Pets welcome" : "No pets"} ·{" "}
         {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
       </p>

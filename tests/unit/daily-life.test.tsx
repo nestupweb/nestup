@@ -64,7 +64,8 @@ test("both tables head the answer columns only: nothing above the habit names", 
   expect(heads[0]).toHaveAttribute("aria-label", "Habit");
   expect(heads[0]).toHaveClass("hidden", "sm:block"); // present only once the habit column exists
   expect(screen.getByText("Traditional or observant")).toBeInTheDocument();
-  expect(screen.queryByText("Flatmates")).toBeNull(); // no per-cell captions, no "flatmates" anywhere
+  expect(screen.queryByText("Roommates")).toBeNull(); // the old per-cell "Me" / "Roommates" captions are gone
+  expect(screen.queryByText("Me")).toBeNull();
 });
 
 test("ChoresPicker submits every ticked chore under `chores`", () => {

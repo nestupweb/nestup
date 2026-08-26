@@ -33,7 +33,7 @@ export const MAX_INTERESTS = 12;
 export const BUDGET_CAP = 15000;
 export const BUDGET_STEP = 100;
 
-// --- Daily life: how I live (left column) vs. what I want in flatmates (right) ---
+// --- Daily life: how I live (left column) vs. what I want in roommates (right) ---
 export const SLEEP_SCHEDULES = [
   { key: "early", label: "Early riser" },
   { key: "late", label: "Night owl" },

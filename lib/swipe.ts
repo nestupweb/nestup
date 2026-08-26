@@ -46,13 +46,13 @@ export function buildDeck(
   for (const listing of listings) {
     const owner = ownerById.get(listing.owner_id);
     if (!owner) continue;
-    const flatmates = (residentsByListing.get(listing.id) ?? []).filter(
+    const roommates = (residentsByListing.get(listing.id) ?? []).filter(
       (p) => p.user_id !== owner.user_id
     );
     const lifestyle = lifestyleScore(seeker, listing, owner, "seeker");
     const social = socialScore(seeker, owner);
     if (sortKey(lifestyle, social) < MIN_DECK_SCORE) continue;
-    entries.push({ listing, owner, residents: flatmates, lifestyle, social });
+    entries.push({ listing, owner, residents: roommates, lifestyle, social });
   }
   return entries.sort(
     (a, b) => sortKey(b.lifestyle, b.social) - sortKey(a.lifestyle, a.social)
@@ -90,7 +90,7 @@ export function sharedInterests(a: Profile, b: Profile): string[] {
 /**
  * Active rooms the seeker hasn't swiped on yet (and doesn't own), limited to
  * high matches (see `MIN_DECK_SCORE`) and ranked by compatibility. Owners and
- * extra flatmates come along for the third panel.
+ * extra roommates come along for the third panel.
  */
 export async function getSwipeDeck(supabase: SupabaseClient, seeker: Profile): Promise<DeckEntry[]> {
   const [{ data: swiped }, { data: listingRows }] = await Promise.all([

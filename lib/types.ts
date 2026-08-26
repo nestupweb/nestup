@@ -4,7 +4,7 @@ export type SleepSchedule = "early" | "late" | "flexible";
 export type GuestsFreq = "rare" | "sometimes" | "often";
 export type NoiseLevel = "quiet" | "moderate" | "lively";
 export type Diet = "none" | "kosher" | "vegetarian" | "vegan" | "halal" | "gluten_free" | "other";
-/** "What I want in flatmates" — `any` means no requirement. */
+/** "What I want in roommates" — `any` means no requirement. */
 export type PrefSleep = "any" | "early" | "late";
 export type PrefGuests = "any" | "rare" | "sometimes"; // the most guests I'm fine with
 export type PrefNoise = "any" | "quiet" | "moderate"; // the most noise I'm fine with

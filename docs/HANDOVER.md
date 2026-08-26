@@ -22,7 +22,7 @@ Next.js 16.3.2 App Router (Turbopack; `proxy.ts` replaces `middleware.ts`; `para
 - Handy one-off Playwright probes against production live in Temp; pattern: log in as a seed user, assert, screenshot. Screenshots as proof are appreciated.
 
 ## Demo data
-92 seed owners `seed.user1..92@nestup.dev` / `Demo1234!` (12 handcrafted + 80 generated deterministically in `scripts/seed-data.ts`), each with an active listing (31 in Tel Aviv, ≤4k rent for most), a portrait and flatmates. One demo chat with a **confirmed upcoming viewing**: seed.user1 (seeker) ↔ seed.user2's Jerusalem room — shows the "Viewing scheduled" chip and the ring. Real accounts: lichtguy@gmail.com (mine), daniellevy0008@gmail.com (friend).
+92 seed owners `seed.user1..92@nestup.dev` / `Demo1234!` (12 handcrafted + 80 generated deterministically in `scripts/seed-data.ts`), each with an active listing (31 in Tel Aviv, ≤4k rent for most), a portrait and roommates. One demo chat with a **confirmed upcoming viewing**: seed.user1 (seeker) ↔ seed.user2's Jerusalem room — shows the "Viewing scheduled" chip and the ring. Real accounts: lichtguy@gmail.com (mine), daniellevy0008@gmail.com (friend).
 
 ## What's built and live (all verified on production)
 - Auth, onboarding, open-redirect-hardened `next` handling (`lib/redirect.ts sanitizeNextPath` — keep using it).

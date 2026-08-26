@@ -46,7 +46,7 @@ export default async function ListingDetailPage({
     .maybeSingle();
   const owner = ownerData as Profile | null;
 
-  // Extra flatmates beyond the owner (RLS: signed-in only, like profiles).
+  // Extra roommates beyond the owner (RLS: signed-in only, like profiles).
   const { data: residentRows } = await supabase
     .from("listing_residents")
     .select("profiles(*)")

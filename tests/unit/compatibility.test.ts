@@ -6,10 +6,10 @@ function profile(overrides: Partial<Profile> = {}): Profile {
   return {
     user_id: "u1", full_name: "Test User", age: 25, occupation: "", bio: "",
     avatar_url: null, smoker: false, has_pet: false, cleanliness: 3,
-    sleep_schedule: "flexible", guests_freq: "sometimes", noise_level: "moderate", diet: "none",
-    interests: ["Music", "Cooking", "Travel"],
+    sleep_schedule: "flexible", guests_freq: "sometimes", noise_level: "moderate", diet: "none", shabbat: "",
+    interests: ["Music", "Cooking", "Travel"], chores: [],
     ok_with_smoker: true, ok_with_pets: true,
-    pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any",
+    pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", pref_shabbat: "any",
     budget_min: 0, budget_max: 3000, preferred_cities: ["Tel Aviv"],
     earliest_move_in: "2026-10-01", created_at: "", updated_at: "",
     ...overrides,
@@ -44,8 +44,8 @@ describe("lifestyleScore", () => {
     const inBudget = score(profile(), other(), "seeker", listing({ rent: 3000 }));
     const nearBudget = score(profile(), other(), "seeker", listing({ rent: 3200 }));
     const farOver = score(profile(), other(), "seeker", listing({ rent: 4000 }));
-    expect(inBudget - nearBudget).toBe(11); // 22 -> 11
-    expect(nearBudget - farOver).toBe(11); // 11 -> 0
+    expect(inBudget - nearBudget).toBe(10); // 20 -> 10
+    expect(nearBudget - farOver).toBe(10); // 10 -> 0
   });
 
   test("unset budget is neutral, not zero", () => {
@@ -73,26 +73,46 @@ describe("lifestyleScore", () => {
     expect(at("2026-10-31")).toBeGreaterThan(at("2026-12-30"));
   });
 
-  // --- Daily life: "what I want in flatmates" is judged from the viewer's side ---
+  // --- Daily life: "what I want in roommates" is judged from the viewer's side ---
 
-  test("asking for quiet flatmates: a lively one scores 0 on noise, a moderate one keeps full points", () => {
+  test("asking for quiet roommates: a lively one scores 0 on noise, a moderate one keeps full points", () => {
     const wantsQuiet = profile({ noise_level: "quiet", pref_noise: "quiet" });
     const quiet = score(wantsQuiet, other({ noise_level: "quiet" }));
     const moderate = score(wantsQuiet, other({ noise_level: "moderate" }));
     const lively = score(wantsQuiet, other({ noise_level: "lively" }));
     expect(quiet - lively).toBe(4); // whole noise weight
     expect(moderate).toBe(lively); // moderate is over the "quiet" tolerance too
-    // Without a requirement, a moderate flatmate only loses a little for living differently.
+    // Without a requirement, a moderate roommate only loses a little for living differently.
     const relaxed = profile({ noise_level: "quiet" });
     expect(score(relaxed, other({ noise_level: "moderate" }))).toBeGreaterThan(score(relaxed, other({ noise_level: "lively" })));
   });
 
-  test("keeping kosher: only a kosher flatmate satisfies the diet requirement; vegetarian accepts vegan", () => {
+  test("keeping kosher: only a kosher roommate satisfies the diet requirement; vegetarian accepts vegan", () => {
     const kosher = profile({ diet: "kosher", pref_diet: "kosher" });
     expect(score(kosher, other({ diet: "kosher" })) - score(kosher, other({ diet: "none" }))).toBe(4);
     const veg = profile({ pref_diet: "vegetarian" });
     expect(score(veg, other({ diet: "vegan" }))).toBe(score(veg, other({ diet: "vegetarian" })));
     expect(score(veg, other({ diet: "none" }))).toBeLessThan(score(veg, other({ diet: "vegan" })));
+  });
+
+  test("Shabbat: the requirement is checked against how the other person keeps it; 'prefer not to say' is neutral", () => {
+    const observant = profile({ shabbat: "observant", pref_shabbat: "observant" });
+    expect(score(observant, other({ shabbat: "observant" })) - score(observant, other({ shabbat: "not_observant" }))).toBe(4);
+    expect(score(observant, other({ shabbat: "traditional" }))).toBe(score(observant, other({ shabbat: "not_observant" })));
+    const unknown = score(observant, other({ shabbat: "" }));
+    expect(unknown).toBeGreaterThan(score(observant, other({ shabbat: "not_observant" })));
+    expect(unknown).toBeLessThan(score(observant, other({ shabbat: "observant" })));
+
+    const traditional = profile({ pref_shabbat: "traditional" });
+    expect(score(traditional, other({ shabbat: "observant" }))).toBe(score(traditional, other({ shabbat: "traditional" })));
+    expect(score(traditional, other({ shabbat: "not_observant" }))).toBeLessThan(score(traditional, other({ shabbat: "traditional" })));
+
+    const secular = profile({ pref_shabbat: "not_observant" });
+    const s = (v: Profile["shabbat"]) => score(secular, other({ shabbat: v }));
+    expect(s("not_observant")).toBeGreaterThan(s("traditional"));
+    expect(s("traditional")).toBeGreaterThan(s("observant"));
+    // No preference: the row is full points whatever the other person answered.
+    expect(score(profile(), other({ shabbat: "observant" }))).toBe(score(profile(), other({ shabbat: "not_observant" })));
   });
 
   test("guest tolerance: 'rarely, please' zeroes the guests row for a host who often has people over", () => {
@@ -102,7 +122,7 @@ describe("lifestyleScore", () => {
     expect(same - often).toBe(6);
   });
 
-  test("tidiness expectation: a flatmate below the level I ask for loses the requirement points", () => {
+  test("tidiness expectation: a roommate below the level I ask for loses the requirement points", () => {
     const neat = profile({ cleanliness: 4, pref_cleanliness: 4 });
     const meets = score(neat, other({ cleanliness: 4 }));
     const oneBelow = score(neat, other({ cleanliness: 3 }));

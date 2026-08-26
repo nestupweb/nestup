@@ -5,7 +5,7 @@
  * Idempotent — safe to re-run:
  *  - a seed user whose email already exists is left alone (its portrait is
  *    backfilled if missing);
- *  - flatmates ("Who lives here") are added only to seed rooms that have none.
+ *  - roommates ("Who lives here") are added only to seed rooms that have none.
  *
  * Run: npm run seed   (Node >= 22.18 runs the TS directly; --env-file loads .env.local)
  * Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.
@@ -99,23 +99,23 @@ async function main() {
   }
   console.log(`\nOwners: ${seeded} seeded, ${skipped} already existed.`);
 
-  await addFlatmates(idByEmail);
+  await addRoommates(idByEmail);
   console.log(`Demo accounts sign in with password ${PASSWORD}`);
 }
 
 /**
- * "Who lives here": give every seed room without flatmates up to two extra
+ * "Who lives here": give every seed room without roommates up to two extra
  * residents drawn from other seed owners in the same city. Rotates through
  * the candidates so the same faces don't appear in every flat.
  */
-async function addFlatmates(idByEmail: Map<string, string>) {
+async function addRoommates(idByEmail: Map<string, string>) {
   const seedIds = [...idByEmail.values()];
   const { data: listingRows, error: lErr } = await admin
     .from("listings")
     .select("id, owner_id, city, roommates_count")
     .in("owner_id", seedIds)
     .eq("is_active", true);
-  if (lErr) throw new Error(`listings for flatmates: ${lErr.message}`);
+  if (lErr) throw new Error(`listings for roommates: ${lErr.message}`);
   const listings = (listingRows ?? []) as { id: string; owner_id: string; city: string; roommates_count: number }[];
 
   const { data: residentRows, error: rErr } = await admin
@@ -123,7 +123,7 @@ async function addFlatmates(idByEmail: Map<string, string>) {
     .select("listing_id")
     .in("listing_id", listings.map((l) => l.id));
   if (rErr) throw new Error(`listing_residents: ${rErr.message}`);
-  const hasFlatmates = new Set((residentRows ?? []).map((r) => r.listing_id as string));
+  const hasRoommates = new Set((residentRows ?? []).map((r) => r.listing_id as string));
 
   const ownersByCity = new Map<string, string[]>();
   for (const l of listings) {
@@ -132,7 +132,7 @@ async function addFlatmates(idByEmail: Map<string, string>) {
 
   const rows: { listing_id: string; resident_id: string }[] = [];
   listings.forEach((l, i) => {
-    if (hasFlatmates.has(l.id)) return;
+    if (hasRoommates.has(l.id)) return;
     const candidates = (ownersByCity.get(l.city) ?? []).filter((id) => id !== l.owner_id);
     const want = Math.min(l.roommates_count, 2, candidates.length);
     for (let k = 0; k < want; k++) {
@@ -140,14 +140,14 @@ async function addFlatmates(idByEmail: Map<string, string>) {
     }
   });
   if (rows.length === 0) {
-    console.log("Flatmates: nothing to add.");
+    console.log("Roommates: nothing to add.");
     return;
   }
   const { error } = await admin
     .from("listing_residents")
     .upsert(rows, { onConflict: "listing_id,resident_id", ignoreDuplicates: true });
-  if (error) throw new Error(`insert flatmates: ${error.message}`);
-  console.log(`Flatmates: linked ${rows.length} resident(s) across ${new Set(rows.map((r) => r.listing_id)).size} room(s).`);
+  if (error) throw new Error(`insert roommates: ${error.message}`);
+  console.log(`Roommates: linked ${rows.length} resident(s) across ${new Set(rows.map((r) => r.listing_id)).size} room(s).`);
 }
 
 main().catch((e) => {

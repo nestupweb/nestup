@@ -201,7 +201,7 @@ export function SwipeCard({
           {new Date(listing.available_from).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
         </p>
         <p className="mt-3 border-y border-hairline py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-          {listing.roommates_count} flatmate{listing.roommates_count === 1 ? "" : "s"} ·{" "}
+          {listing.roommates_count} roommate{listing.roommates_count === 1 ? "" : "s"} ·{" "}
           {listing.pets_allowed ? "Pets welcome" : "No pets"} ·{" "}
           {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
         </p>

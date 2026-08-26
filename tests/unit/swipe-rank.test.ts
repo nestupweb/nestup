@@ -78,14 +78,14 @@ describe("buildDeck", () => {
     expect(deck[0].social).toBeNull();
   });
 
-  test("attaches extra flatmates and never repeats the host", () => {
-    const flatmate = profile({ user_id: "r1", full_name: "Noa" });
+  test("attaches extra roommates and never repeats the host", () => {
+    const roommate = profile({ user_id: "r1", full_name: "Noa" });
     const deck = buildDeck(
       seeker,
       [listing()],
       [goodOwner],
       [
-        { listing_id: "l1", profile: flatmate },
+        { listing_id: "l1", profile: roommate },
         { listing_id: "l1", profile: goodOwner },
         { listing_id: "l1", profile: null },
       ]
