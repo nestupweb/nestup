@@ -6,7 +6,6 @@ import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { SaveButton } from "@/components/listings/SaveButton";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
-import { swipeAction } from "@/app/actions/swipe";
 import type { Listing, Profile } from "@/lib/types";
 
 export default async function ListingDetailPage({
