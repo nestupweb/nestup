@@ -34,7 +34,6 @@ export function shabbatLabel(key: string): string {
 }
 
 export { socialHref } from "@/lib/social";
-import { socialHref } from "@/lib/social";
 
 function shekels(n: number): string {
   return `₪${n.toLocaleString("en-US")}`;
@@ -56,21 +55,21 @@ function moveInLabel(iso: string | null): string {
 
 /**
  * The read-only view of a member's profile, grouped the same way they filled
- * it in on their About me tab. Empty fields are dropped; empty groups too.
+ * it in. Smoking / pets / tidiness / schedule / guests / noise / diet /
+ * Shabbat are the Daily life table (lib/daily-life.ts), the social links are
+ * the header's ContactRow — these are the remaining details. Empty fields are
+ * dropped; empty groups too.
  */
 export function profileGroups(profile: Profile, details: PublicDetails | null): ProfileGroup[] {
   const d = details;
   const groups: ProfileGroup[] = [
     {
-      // Smoking / pets / tidiness / schedule / guests / noise / diet live in the
-      // Daily life table (DailyLifeView) — these are the free-text extras.
       title: "My day",
       rows: [
         { label: "Occupation", value: profile.occupation },
         { label: "Daily lifestyle", value: d?.lifestyle ?? "" },
         { label: "Wake-up time", value: formatClock(d?.wake_time ?? "") },
         { label: "Bedtime", value: formatClock(d?.bed_time ?? "") },
-        { label: "Shabbat", value: shabbatLabel(d?.shabbat ?? "") },
         { label: "Cooking", value: d?.cooking ?? "" },
       ],
     },
@@ -79,14 +78,6 @@ export function profileGroups(profile: Profile, details: PublicDetails | null): 
       rows: [
         { label: "Languages", value: (d?.languages ?? []).join(", ") },
         { label: "Pet", value: profile.has_pet ? (d?.pet_details?.trim() ?? "") : "" },
-      ],
-    },
-    {
-      title: "Social",
-      rows: [
-        { label: "Instagram", value: d?.instagram ?? "", href: socialHref("instagram", d?.instagram ?? "") },
-        { label: "Facebook", value: d?.facebook ?? "", href: socialHref("facebook", d?.facebook ?? "") },
-        { label: "LinkedIn", value: d?.linkedin ?? "", href: socialHref("linkedin", d?.linkedin ?? "") },
       ],
     },
     {

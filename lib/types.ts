@@ -9,6 +9,8 @@ export type PrefSleep = "any" | "early" | "late";
 export type PrefGuests = "any" | "rare" | "sometimes"; // the most guests I'm fine with
 export type PrefNoise = "any" | "quiet" | "moderate"; // the most noise I'm fine with
 export type PrefDiet = "any" | "kosher" | "vegetarian" | "vegan";
+export type Shabbat = "" | "observant" | "traditional" | "not_observant"; // "" = prefer not to say
+export type PrefShabbat = "any" | "observant" | "traditional" | "not_observant"; // traditional = traditional or observant
 export type SwipeDirection = "like" | "skip";
 export type ListerResponse = "pending" | "liked" | "skipped";
 export type SafeRoom = "none" | "apartment" | "building";
@@ -35,8 +37,10 @@ export interface Profile {
   guests_freq: GuestsFreq;
   noise_level: NoiseLevel;
   diet: Diet;
+  shabbat: Shabbat;
   interests: string[];
-  // What I want in flatmates (the right-hand column of Daily life)
+  chores: string[]; // household chores I'm happy to take on (CHORES)
+  // What I want in roommates (the right-hand column of Daily life)
   ok_with_smoker: boolean;
   ok_with_pets: boolean;
   pref_cleanliness: number; // 1..5 — at least this tidy
@@ -44,6 +48,7 @@ export interface Profile {
   pref_guests: PrefGuests;
   pref_noise: PrefNoise;
   pref_diet: PrefDiet;
+  pref_shabbat: PrefShabbat;
   budget_min: number;
   budget_max: number; // 0 = not set
   preferred_cities: string[];

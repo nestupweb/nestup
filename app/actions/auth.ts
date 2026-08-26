@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/redirect";
@@ -42,4 +43,60 @@ export async function signOutAction(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+/**
+ * Public origin the reset link should come back to. `NEXT_PUBLIC_SITE_URL`
+ * wins; otherwise the request's own host. A spoofed Host header can't send
+ * the link anywhere harmful: Supabase only honours `redirectTo` values on its
+ * allow-list and falls back to the project's Site URL for anything else.
+ */
+async function requestOrigin(): Promise<string> {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  if (env) return env.replace(/\/$/, "");
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+/**
+ * "Forgot my password": email a recovery link that lands on /auth/confirm and
+ * from there on /reset-password. Always reports "sent" (except when throttled)
+ * so the form can't be used to find out which addresses have an account.
+ */
+export async function requestPasswordResetAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!emailOk(email)) return { error: "Please enter a valid email address." };
+
+  const supabase = await createClient();
+  const origin = await requestOrigin();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/confirm?next=/reset-password`,
+  });
+  if (error && error.status === 429) {
+    return { error: "Too many requests — please wait a few minutes and try again." };
+  }
+  return { sent: true };
+}
+
+/** Second half of the reset: the recovery link signed the user in, now set the new password. */
+export async function updatePasswordAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password !== confirm) return { error: "The two passwords don't match." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login?error=recovery");
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    if (error.code === "same_password") return { error: "Choose a password you haven't used before." };
+    return { error: "Could not update the password. Request a new reset link and try again." };
+  }
+  redirect("/swipe");
 }

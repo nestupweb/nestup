@@ -42,6 +42,9 @@ export interface SeedProfile {
   pref_guests?: "any" | "rare" | "sometimes";
   pref_noise?: "any" | "quiet" | "moderate";
   pref_diet?: "any" | "kosher" | "vegetarian" | "vegan";
+  shabbat?: "" | "observant" | "traditional" | "not_observant";
+  pref_shabbat?: "any" | "observant" | "traditional" | "not_observant";
+  chores?: string[];
   budget_min: number;
   budget_max: number;
   preferred_cities: string[];
@@ -87,6 +90,12 @@ export const seedEmail = (n: number) => `seed.user${n}@${SEED_EMAIL_DOMAIN}`;
 export const CITIES = [
   "Tel Aviv", "Jerusalem", "Haifa", "Ramat Gan", "Givatayim", "Herzliya",
   "Beer Sheva", "Rishon LeZion", "Petah Tikva", "Netanya", "Rehovot", "Raanana",
+] as const;
+
+/** Mirrors CHORES in lib/constants.ts. */
+export const CHORES = [
+  "Dishes", "Cooking", "Sweeping & vacuuming", "Mopping", "Bathroom cleaning", "Kitchen cleaning",
+  "Laundry", "Taking out the trash", "Grocery shopping", "Tidying shared spaces", "Watering plants", "Recycling",
 ] as const;
 
 export const INTERESTS = [
@@ -447,8 +456,17 @@ export function roomPhotos(i: number, withExtra: boolean): { photo_urls: string[
   return { photo_urls, photo_labels };
 }
 
+const HANDCRAFTED_SHABBAT = ["not_observant", "traditional", "observant", "not_observant", "traditional", "not_observant"] as const;
+
 export const HANDCRAFTED: Seed[] = HANDCRAFTED_BASE.map((s, i) => ({
   ...s,
+  profile: {
+    ...s.profile,
+    shabbat: HANDCRAFTED_SHABBAT[i % HANDCRAFTED_SHABBAT.length],
+    pref_shabbat: i % 4 === 2 ? "traditional" : "any",
+    // A stable spread of chores per member: every other one, offset by index.
+    chores: CHORES.filter((_, k) => (k + i) % 3 !== 0).slice(0, 4 + (i % 3)),
+  },
   listing: { ...s.listing, ...roomPhotos(i, i % 3 === 0) },
 }));
 
@@ -736,6 +754,9 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
         pref_guests: chance(0.3) ? pick(["rare", "sometimes"] as const) : "any",
         pref_noise: chance(0.35) ? pick(["quiet", "moderate"] as const) : "any",
         pref_diet: chance(0.15) ? pick(["kosher", "vegetarian"] as const) : "any",
+        shabbat: pick(["not_observant", "not_observant", "traditional", "traditional", "observant", ""] as const),
+        pref_shabbat: chance(0.2) ? pick(["traditional", "observant", "not_observant"] as const) : "any",
+        chores: shuffle(CHORES).slice(0, int(3, 6)),
         cleanliness: int(2, 5),
         sleep_schedule: pick(["early", "late", "flexible", "flexible"] as const),
         guests_freq: pick(["rare", "sometimes", "sometimes", "often"] as const),

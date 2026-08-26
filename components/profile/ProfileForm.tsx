@@ -4,19 +4,22 @@ import { useActionState } from "react";
 import { ProfilePhotos } from "@/components/profile/ProfilePhotos";
 import { upsertProfileAction, type ProfileFormState } from "@/app/actions/profile";
 import { InterestsPicker } from "@/components/profile/InterestsPicker";
+import { ChoresPicker } from "@/components/profile/ChoresPicker";
 import { CityMultiPicker } from "@/components/profile/CityMultiPicker";
 import { BudgetRange } from "@/components/profile/BudgetRange";
 import { DailyLifeFields } from "@/components/profile/DailyLifeFields";
 import { SocialLinkInput } from "@/components/profile/SocialLinkInput";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { Select, TimeSelect } from "@/components/ui/Select";
-import { SHABBAT_OPTIONS } from "@/lib/validation/about";
+import { TimeSelect } from "@/components/ui/Select";
+import { hourChoices, nearestHour } from "@/lib/clock";
+import { BED_TIMES, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
 const label = "block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted";
+const note = "font-normal normal-case tracking-normal";
 
 function Section({
   step,
@@ -44,8 +47,9 @@ function Section({
 /**
  * The one profile form (onboarding and the pencil page). Sections in the
  * order a member reads them: who I am → how to reach me → the home I want →
- * how I live (and want to live) → what I'm into. `about` is present on the
- * pencil page only, and adds the private details (`profile_details`).
+ * how I live (and want to live) → the chores I take on → what I'm into.
+ * Every section is always open — nothing folds away. `about` is present on
+ * the pencil page only, and adds the private details (`profile_details`).
  */
 export function ProfileForm({
   profile,
@@ -64,6 +68,11 @@ export function ProfileForm({
     {}
   );
   const d = about?.details ?? null;
+  const wake = nearestHour(d?.wake_time ?? "");
+  const bed = nearestHour(d?.bed_time ?? "");
+  // Sections are numbered in reading order; the Contact and Swipe sections exist on the pencil page only.
+  let step = 0;
+  const stepNo = () => ++step;
 
   return (
     <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
@@ -99,7 +108,7 @@ export function ProfileForm({
         </div>
       </div>
 
-      <Section step={1} title="Bio & About me" hint="The short line goes under your name; the longer text is your introduction on your profile.">
+      <Section step={stepNo()} title="Bio & About me" hint="The short line goes under your name; the longer text is your introduction on your profile.">
         <label className={label}>Bio · one line
           <input name="bio" maxLength={500} defaultValue={profile?.bio ?? ""} placeholder="e.g. Early riser, plant person, cooks a mean shakshuka." className={input} />
         </label>
@@ -118,7 +127,7 @@ export function ProfileForm({
       </Section>
 
       {about ? (
-        <Section step={2} title="Contact" hint="Phone and e-mail stay private. Social usernames show on your profile as links.">
+        <Section step={stepNo()} title="Contact" hint="Phone and e-mail stay private. Social usernames show on your profile as links.">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className={label}>Phone number
               <input name="phone" type="tel" maxLength={30} defaultValue={d?.phone ?? ""} className={input} />
@@ -133,7 +142,7 @@ export function ProfileForm({
         </Section>
       ) : null}
 
-      <Section step={about ? 3 : 2} title="Apartment preferences" hint="Powers the budget, city and move-in parts of your Lifestyle match.">
+      <Section step={stepNo()} title="Apartment preferences" hint="Powers the budget, city and move-in parts of your Lifestyle match.">
         <div className="rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5">
           <p className={label}>Monthly budget</p>
           <div className="mt-2">
@@ -153,30 +162,20 @@ export function ProfileForm({
         </div>
       </Section>
 
-      <Section step={about ? 4 : 3} title="Daily life" hint="How you live on the left, what you're looking for in flatmates on the right — both count toward the Lifestyle match.">
+      <Section step={stepNo()} title="Daily life" hint="How you live on the left, what you're looking for in roommates on the right — both count toward the Lifestyle match.">
         <DailyLifeFields profile={profile} />
         {about ? (
-          <details className="group mt-4 rounded-2xl border border-hairline bg-surface px-4 sm:px-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between py-3 text-[13px] font-semibold text-ink">
-              More about my day
-              <span className="text-muted transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
-            </summary>
-            <div className="grid grid-cols-1 gap-3 border-t border-hairline py-4 sm:grid-cols-2">
+          <div className="mt-6">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink">More about my day</p>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className={label}>Wake-up time <span className={note}>· around, optional</span>
+                <TimeSelect name="wake_time" options={hourChoices(WAKE_TIMES, wake)} allowEmpty emptyLabel="Not set" defaultValue={wake} />
+              </label>
+              <label className={label}>Bedtime <span className={note}>· around, optional</span>
+                <TimeSelect name="bed_time" options={hourChoices(BED_TIMES, bed)} allowEmpty emptyLabel="Not set" defaultValue={bed} />
+              </label>
               <label className={label}>Languages
                 <input name="languages" defaultValue={(d?.languages ?? []).join(", ")} placeholder="Hebrew, English, …" className={input} />
-              </label>
-              <label className={label}>Shabbat observance
-                <Select name="shabbat" defaultValue={d?.shabbat ?? ""}>
-                  {SHABBAT_OPTIONS.map((o) => (
-                    <option key={o.key} value={o.key}>{o.label}</option>
-                  ))}
-                </Select>
-              </label>
-              <label className={label}>Wake-up time
-                <TimeSelect name="wake_time" step={15} allowEmpty defaultValue={d?.wake_time ?? ""} />
-              </label>
-              <label className={label}>Bedtime
-                <TimeSelect name="bed_time" step={15} allowEmpty defaultValue={d?.bed_time ?? ""} />
               </label>
               <label className={label}>Daily lifestyle
                 <input name="lifestyle" maxLength={200} defaultValue={d?.lifestyle ?? ""} placeholder="e.g. work from home, gym in the evenings" className={input} />
@@ -188,16 +187,20 @@ export function ProfileForm({
                 <input name="pet_details" maxLength={120} defaultValue={d?.pet_details ?? ""} placeholder="Which pet? (if you have one)" className={input} />
               </label>
             </div>
-          </details>
+          </div>
         ) : null}
       </Section>
 
-      <Section step={about ? 5 : 4} title="Interests" hint="Pick what you're into — shared interests power your Social match.">
+      <Section step={stepNo()} title="Household chores" hint="Tick the chores you're happy to take on — roommates see these on your profile.">
+        <ChoresPicker initial={profile?.chores ?? []} />
+      </Section>
+
+      <Section step={stepNo()} title="Interests" hint="Pick what you're into — shared interests power your Social match.">
         <InterestsPicker initial={profile?.interests ?? []} />
       </Section>
 
       {about ? (
-        <Section step={6} title="Swipe" hint="Your default hello when you like a room — you can still edit it before sending.">
+        <Section step={stepNo()} title="Swipe" hint="Your default hello when you like a room — you can still edit it before sending.">
           <label className={label}>Default hello message
             <textarea
               name="intro_template"

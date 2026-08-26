@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAuthContext, getOwnProfile } from "@/lib/auth";
+import { ContactRow } from "@/components/profile/ContactRow";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
@@ -71,9 +72,10 @@ export default async function ProfilePage({
         </Link>
       </div>
 
-      <div className="mt-5 flex items-center gap-4">
+      {/* General information: portrait, name, occupation, bio — and my contact details (phone / e-mail are mine to see only). */}
+      <div className="mt-5 flex items-start gap-4">
         <ProfileAvatar url={profile.avatar_url} name={profile.full_name} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-xl font-semibold">
             {profile.full_name}, {profile.age}
           </p>
@@ -81,6 +83,13 @@ export default async function ProfilePage({
           {profile.bio ? (
             <p className="mt-1.5 max-w-md whitespace-pre-line text-sm leading-5 text-ink">{profile.bio}</p>
           ) : null}
+          <ContactRow
+            instagram={details?.instagram}
+            facebook={details?.facebook}
+            linkedin={details?.linkedin}
+            phone={details?.phone}
+            email={details?.contact_email || user?.email || ""}
+          />
         </div>
       </div>
 

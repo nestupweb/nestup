@@ -3,11 +3,14 @@ import { profileGroups, type PublicDetails } from "@/lib/people";
 import { DailyLifeView } from "@/components/profile/DailyLifeView";
 import type { Profile } from "@/lib/types";
 
+const h3 = "text-[15px] font-bold uppercase tracking-[0.18em] text-accent";
+
 /**
  * A member's About-me, read-only, exactly as other members see it: interest
- * chips (the green bubbles from the swipe Roommates page), the introduction, then the details in groups (never phone / e-mail —
- * `profileGroups` leaves those out). Used on `/people/[id]` and, when
- * `PROFILE_EDIT_ON_PENCIL_PAGE` is on, on the owner's own Profile tab.
+ * chips, the introduction, the Daily life table, the chores they take on,
+ * then the remaining details in groups (never phone / e-mail — those and the
+ * social links live in the header's ContactRow). Used on `/people/[id]` and,
+ * when `PROFILE_EDIT_ON_PENCIL_PAGE` is on, on the owner's own Profile tab.
  */
 export function AboutView({
   profile,
@@ -21,6 +24,7 @@ export function AboutView({
   const groups = profileGroups(profile, details);
   const about = details?.about?.trim() ?? "";
   const first = profile.full_name.split(" ")[0] || profile.full_name;
+  const chores = profile.chores ?? [];
 
   return (
     <div>
@@ -51,17 +55,31 @@ export function AboutView({
         <p className="mt-5 text-sm text-muted">{first} hasn&rsquo;t written an introduction yet.</p>
       )}
 
-      <section className="mt-6 border-t border-hairline pt-5">
-        <h3 className="text-[15px] font-bold uppercase tracking-[0.18em] text-accent">Daily life</h3>
-        <div className="mt-3">
+      <section className="mt-7 border-t border-hairline pt-5">
+        <h3 className={h3}>Daily life</h3>
+        <div className="mt-4">
           <DailyLifeView profile={profile} />
         </div>
       </section>
 
-      <div className="mt-6 space-y-6">
+      {chores.length > 0 ? (
+        <section className="mt-7 border-t border-hairline pt-5">
+          <h3 className={h3}>Household chores</h3>
+          <p className="mt-1 text-sm text-muted">{self ? "What you're happy to take on." : `What ${first} is happy to take on.`}</p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {chores.map((c) => (
+              <li key={c} className="rounded-full border border-hairline bg-surface px-3 py-1 text-[12px] font-semibold text-ink">
+                {c}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <div className="mt-7 space-y-7">
         {groups.map((g) => (
           <section key={g.title} className="border-t border-hairline pt-5">
-            <h3 className="text-[15px] font-bold uppercase tracking-[0.18em] text-accent">{g.title}</h3>
+            <h3 className={h3}>{g.title}</h3>
             <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
               {g.rows.map((r) => (
                 <div key={r.label} className="min-w-0">

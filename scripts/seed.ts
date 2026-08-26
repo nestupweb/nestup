@@ -57,11 +57,13 @@ async function main() {
         .update({ photo_urls: s.listing.photo_urls, photo_labels: s.listing.photo_labels })
         .eq("owner_id", existingId);
       if (photoErr) throw new Error(`photos(${s.email}): ${photoErr.message}`);
-      if (s.profile.noise_level) {
-        const { noise_level, diet, pref_cleanliness, pref_sleep, pref_guests, pref_noise, pref_diet } = s.profile;
+      if (s.profile.noise_level || s.profile.chores) {
+        // Undefined fields are dropped from the JSON body, so a handcrafted
+        // member (Shabbat + chores only) keeps their other Daily life answers.
+        const { noise_level, diet, shabbat, chores, pref_cleanliness, pref_sleep, pref_guests, pref_noise, pref_diet, pref_shabbat } = s.profile;
         const { error: dailyErr } = await admin
           .from("profiles")
-          .update({ noise_level, diet, pref_cleanliness, pref_sleep, pref_guests, pref_noise, pref_diet })
+          .update({ noise_level, diet, shabbat, chores, pref_cleanliness, pref_sleep, pref_guests, pref_noise, pref_diet, pref_shabbat })
           .eq("user_id", existingId);
         if (dailyErr) throw new Error(`daily life(${s.email}): ${dailyErr.message}`);
       }

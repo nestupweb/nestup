@@ -6,9 +6,11 @@ import type {
   PrefDiet,
   PrefGuests,
   PrefNoise,
+  PrefShabbat,
   PrefSleep,
   PropertyType,
   SafeRoom,
+  Shabbat,
   SleepSchedule,
 } from "@/lib/types";
 
@@ -91,6 +93,28 @@ export const PREF_DIET = [
   { key: "vegetarian", label: "Vegetarian or vegan" },
   { key: "vegan", label: "Vegan" },
 ] as const satisfies readonly { key: PrefDiet; label: string }[];
+export const SHABBAT_LEVELS = [
+  { key: "", label: "Prefer not to say" },
+  { key: "observant", label: "Observant" },
+  { key: "traditional", label: "Traditional" },
+  { key: "not_observant", label: "Not observant" },
+] as const satisfies readonly { key: Shabbat; label: string }[];
+export const PREF_SHABBAT = [
+  { key: "any", label: "No preference" },
+  { key: "traditional", label: "Traditional or observant" },
+  { key: "observant", label: "Observant only" },
+  { key: "not_observant", label: "Not observant" },
+] as const satisfies readonly { key: PrefShabbat; label: string }[];
+
+/** Household chores a member can offer to take on (profile `chores`). */
+export const CHORES = [
+  "Dishes", "Cooking", "Sweeping & vacuuming", "Mopping", "Bathroom cleaning", "Kitchen cleaning",
+  "Laundry", "Taking out the trash", "Grocery shopping", "Tidying shared spaces", "Watering plants", "Recycling",
+] as const;
+
+/** Approximate, full-hour wake-up / bedtime choices (stored as HH:MM; "" = not set). */
+export const WAKE_TIMES = ["05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00"] as const;
+export const BED_TIMES = ["20:00", "21:00", "22:00", "23:00", "00:00", "01:00", "02:00", "03:00"] as const;
 
 export function optionLabel<K extends string | number>(options: readonly { key: K; label: string }[], key: K): string {
   return options.find((o) => o.key === key)?.label ?? String(key);

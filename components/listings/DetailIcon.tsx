@@ -82,12 +82,14 @@ const PATHS: Record<DetailIconName, JSX.Element> = {
       <path d="m5.65 5.65 12.7 12.7" />
     </>
   ),
+  // French door above a railing on a floor slab — reads as a balcony even at 18px.
   balcony: (
     <>
-      <path d="M3.5 11h17" />
-      <path d="M5.5 11v9M9 11v9M12.5 11v9M16 11v9M19.5 11v9" />
-      <path d="M3.5 20h17" />
-      <path d="M8 11V7.5a4 4 0 0 1 8 0V11" />
+      <path d="M8 12V5a1.5 1.5 0 0 1 1.5-1.5h5A1.5 1.5 0 0 1 16 5v7" />
+      <path d="M12 3.5V12" />
+      <path d="M3.5 12h17" />
+      <path d="M6 12v5M10 12v5M14 12v5M18 12v5" />
+      <rect x="3.5" y="17" width="17" height="3" rx="1" />
     </>
   ),
   snowflake: (

@@ -7,7 +7,9 @@ import {
   PREF_DIET,
   PREF_GUESTS,
   PREF_NOISE,
+  PREF_SHABBAT,
   PREF_SLEEP,
+  SHABBAT_LEVELS,
   SLEEP_SCHEDULES,
   optionLabel,
 } from "@/lib/constants";
@@ -17,7 +19,7 @@ export type DailyLifeRow = { key: string; label: string; mine: string; wants: st
 
 /**
  * The Daily life table as words — one row per habit, "how I live" beside
- * "what I want in flatmates". Shared by the read-only profile view and any
+ * "what I want in roommates". Shared by the read-only profile view and any
  * place that summarises a member.
  */
 export function dailyLifeRows(p: Profile): DailyLifeRow[] {
@@ -29,5 +31,6 @@ export function dailyLifeRows(p: Profile): DailyLifeRow[] {
     { key: "guests", label: "Guests", mine: optionLabel(GUEST_FREQS, p.guests_freq), wants: optionLabel(PREF_GUESTS, p.pref_guests) },
     { key: "noise", label: "Noise", mine: optionLabel(NOISE_LEVELS, p.noise_level), wants: optionLabel(PREF_NOISE, p.pref_noise) },
     { key: "diet", label: "Dietary restrictions", mine: optionLabel(DIETS, p.diet), wants: optionLabel(PREF_DIET, p.pref_diet) },
+    { key: "shabbat", label: "Shabbat", mine: optionLabel(SHABBAT_LEVELS, p.shabbat ?? ""), wants: optionLabel(PREF_SHABBAT, p.pref_shabbat ?? "any") },
   ];
 }

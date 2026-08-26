@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { DailyLifeHead } from "@/components/profile/DailyLifeView";
 import { Select } from "@/components/ui/Select";
 import {
   CLEANLINESS_LEVELS,
@@ -9,26 +10,22 @@ import {
   PREF_DIET,
   PREF_GUESTS,
   PREF_NOISE,
+  PREF_SHABBAT,
   PREF_SLEEP,
+  SHABBAT_LEVELS,
   SLEEP_SCHEDULES,
 } from "@/lib/constants";
 import type { Profile } from "@/lib/types";
 
-const head = "text-[11px] font-bold uppercase tracking-[0.18em] text-accent";
-const cols = "sm:grid-cols-[8.5rem_1fr_1fr]";
+/** Phones: the two answer columns; wider: the habit name gets its own first column. */
+const cols = "grid grid-cols-2 gap-x-3 sm:grid-cols-[8.5rem_1fr_1fr] sm:gap-x-4";
 
 function Row({ label, mine, wants }: { label: string; mine: ReactNode; wants: ReactNode }) {
   return (
-    <div role="row" className={`grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-hairline py-3 sm:gap-4 sm:py-2.5 ${cols} sm:items-center`}>
+    <div role="row" className={`${cols} gap-y-1.5 border-t border-hairline py-3 sm:items-center sm:py-2.5`}>
       <p role="rowheader" className="col-span-2 text-[13px] font-semibold text-ink sm:col-span-1">{label}</p>
-      <div role="cell">
-        <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-muted sm:hidden">Me</span>
-        {mine}
-      </div>
-      <div role="cell">
-        <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-muted sm:hidden">Flatmates</span>
-        {wants}
-      </div>
+      <div role="cell">{mine}</div>
+      <div role="cell">{wants}</div>
     </div>
   );
 }
@@ -65,19 +62,14 @@ function YesNo({ name, checked, yes, no }: { name: string; checked: boolean; yes
 
 /**
  * Daily life as a two-column table: how I live beside what I want in
- * flatmates, one row per habit. Every cell is a plain form control, so the
+ * roommates, one row per habit. Every cell is a plain form control, so the
  * table submits with the profile form; the scores in lib/compatibility.ts
  * read both columns.
  */
 export function DailyLifeFields({ profile: p }: { profile: Profile | null }) {
   return (
-    <div role="table" aria-label="Daily life" className="rounded-2xl border border-hairline bg-surface px-4 pb-1 sm:px-5">
-      <div role="row" className={`hidden gap-4 py-3 sm:grid ${cols}`}>
-        <span role="columnheader" className="sr-only">Habit</span>
-        <span role="columnheader" className={head}>My lifestyle</span>
-        <span role="columnheader" className={head}>What I want in flatmates</span>
-      </div>
-      <div className="sm:hidden pt-3" aria-hidden="true" />
+    <div role="table" aria-label="Daily life" className="rounded-2xl border border-hairline bg-surface px-4 pb-1 pt-3 sm:px-5">
+      <DailyLifeHead cols={cols} className="pb-2.5" />
 
       <Row
         label="Smoking"
@@ -113,6 +105,11 @@ export function DailyLifeFields({ profile: p }: { profile: Profile | null }) {
         label="Dietary restrictions"
         mine={<Choice name="dietary" value={p?.diet ?? "none"} options={DIETS} />}
         wants={<Choice name="pref_diet" value={p?.pref_diet ?? "any"} options={PREF_DIET} />}
+      />
+      <Row
+        label="Shabbat"
+        mine={<Choice name="shabbat" value={p?.shabbat ?? ""} options={SHABBAT_LEVELS} />}
+        wants={<Choice name="pref_shabbat" value={p?.pref_shabbat ?? "any"} options={PREF_SHABBAT} />}
       />
     </div>
   );

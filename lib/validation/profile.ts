@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BUDGET_CAP, CITIES, INTERESTS, MAX_INTERESTS, MIN_INTERESTS } from "@/lib/constants";
+import { BUDGET_CAP, CHORES, CITIES, INTERESTS, MAX_INTERESTS, MIN_INTERESTS } from "@/lib/constants";
 
 export const profileSchema = z
   .object({
@@ -15,12 +15,19 @@ export const profileSchema = z
     guests_freq: z.enum(["rare", "sometimes", "often"]),
     noise_level: z.enum(["quiet", "moderate", "lively"]).default("moderate"),
     diet: z.enum(["none", "kosher", "vegetarian", "vegan", "halal", "gluten_free", "other"]).default("none"),
+    shabbat: z.enum(["", "observant", "traditional", "not_observant"]).default(""),
     interests: z
       .array(z.enum(INTERESTS))
       .min(MIN_INTERESTS, "Select at least 3 interests")
       .max(MAX_INTERESTS)
       .refine((arr) => new Set(arr).size === arr.length, "Interests must be unique"),
-    // --- Daily life: what I want in flatmates ---
+    // --- Household chores I'm happy to take on ---
+    chores: z
+      .array(z.enum(CHORES))
+      .max(CHORES.length)
+      .default([])
+      .transform((arr) => [...new Set(arr)]),
+    // --- Daily life: what I want in roommates ---
     ok_with_smoker: z.coerce.boolean().default(false),
     ok_with_pets: z.coerce.boolean().default(false),
     pref_cleanliness: z.coerce.number().int().min(1).max(5).default(1),
@@ -28,6 +35,7 @@ export const profileSchema = z
     pref_guests: z.enum(["any", "rare", "sometimes"]).default("any"),
     pref_noise: z.enum(["any", "quiet", "moderate"]).default("any"),
     pref_diet: z.enum(["any", "kosher", "vegetarian", "vegan"]).default("any"),
+    pref_shabbat: z.enum(["any", "observant", "traditional", "not_observant"]).default("any"),
     // --- Apartment preferences ---
     budget_min: z.coerce.number().int().min(0).max(BUDGET_CAP).default(0),
     budget_max: z.coerce.number().int().min(0).max(BUDGET_CAP).default(0), // 0 = no max

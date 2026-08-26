@@ -11,10 +11,13 @@ const NOISE_TOLERANCE: Record<Profile["pref_noise"], number> = { quiet: 0, moder
 
 /**
  * Weights (sum 100). Room facts first, then the Daily life table — each row
- * is judged from the viewer's side: their "what I want in flatmates" against
+ * is judged from the viewer's side: their "what I want in roommates" against
  * the other person's "how I live".
  */
-const W = { budget: 22, city: 18, moveIn: 12, smoking: 10, pets: 8, cleanliness: 10, sleep: 6, guests: 6, noise: 4, diet: 4 } as const;
+const W = {
+  budget: 20, city: 18, moveIn: 10,
+  smoking: 10, pets: 8, cleanliness: 10, sleep: 6, guests: 6, noise: 4, diet: 4, shabbat: 4,
+} as const;
 
 // Convention: when a seeker hasn't set a preference, award ~60% of the
 // component's weight rather than 0 — absence of a preference is not the
@@ -98,9 +101,26 @@ function dietPoints(holder: Profile, other: Profile): number {
 }
 
 /**
+ * Shabbat: what I want in roommates against how the other person keeps it.
+ * Someone who preferred not to say is neutral, never a mismatch.
+ */
+function shabbatPoints(holder: Profile, other: Profile): number {
+  if (holder.pref_shabbat === "any") return W.shabbat;
+  if (other.shabbat === "") return neutral(W.shabbat);
+  switch (holder.pref_shabbat) {
+    case "observant":
+      return other.shabbat === "observant" ? W.shabbat : 0;
+    case "traditional":
+      return other.shabbat === "not_observant" ? 0 : W.shabbat;
+    case "not_observant":
+      return other.shabbat === "not_observant" ? W.shabbat : other.shabbat === "traditional" ? W.shabbat / 2 : 0;
+  }
+}
+
+/**
  * Lifestyle compatibility 0–100. Directional: pass the perspective of the
  * person LOOKING (seeker viewing a listing, or lister viewing a seeker); the
- * looker's "what I want in flatmates" is checked against the other's habits.
+ * looker's "what I want in roommates" is checked against the other's habits.
  * The swipe deck admits only rooms whose combined score reaches
  * `MIN_DECK_SCORE` (lib/swipe.ts); elsewhere scores inform and sort only.
  */
@@ -122,7 +142,8 @@ export function lifestyleScore(
       sleepPoints(holder, other) +
       guestPoints(holder, other) +
       noisePoints(holder, other) +
-      dietPoints(holder, other)
+      dietPoints(holder, other) +
+      shabbatPoints(holder, other)
   );
 }
 

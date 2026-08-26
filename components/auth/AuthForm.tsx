@@ -3,10 +3,8 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import type { AuthState } from "@/app/actions/auth";
-
-const inputClass =
-  "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
-const labelClass = "mt-4 block text-xs font-medium uppercase tracking-widest text-muted";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { formClass, inputClass, labelClass, submitClass } from "@/components/auth/fields";
 
 export function AuthForm({
   mode,
@@ -23,7 +21,7 @@ export function AuthForm({
 
   if (state.sent) {
     return (
-      <div className="mx-auto mt-24 w-full max-w-md px-4 text-center sm:px-6">
+      <div className="mx-auto mt-16 w-full max-w-md px-4 text-center sm:px-6">
         <h1 className="text-3xl font-bold">Check your inbox</h1>
         <p className="mt-3 text-sm text-muted">
           We sent you a confirmation link. Click it to activate your account, then log in.
@@ -36,7 +34,7 @@ export function AuthForm({
   }
 
   return (
-    <form action={formAction} className="mx-auto mt-16 w-full max-w-md px-4 sm:mt-24 sm:px-6">
+    <form action={formAction} className={formClass}>
       <h1 className="text-3xl font-bold">
         {mode === "login" ? "Welcome back" : "Create your account"}
       </h1>
@@ -53,19 +51,21 @@ export function AuthForm({
       </label>
       <label className={labelClass}>
         Password
-        <input
-          name="password" type="password" required minLength={8}
+        <PasswordInput
+          name="password" required minLength={8}
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           className={inputClass}
         />
       </label>
+      {mode === "login" ? (
+        <p className="mt-2 text-right text-xs">
+          <Link href="/forgot-password" className="text-accent underline">Forgot your password?</Link>
+        </p>
+      ) : null}
 
       {state.error ? <p role="alert" className="mt-3 text-sm text-danger">{state.error}</p> : null}
 
-      <button
-        type="submit" disabled={pending}
-        className="mt-6 w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-accent-contrast disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className={submitClass}>
         {pending ? "One moment…" : mode === "login" ? "Log in" : "Sign up"}
       </button>
 
