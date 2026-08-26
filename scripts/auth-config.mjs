@@ -37,7 +37,10 @@ export function readTemplates(dir = templatesDir) {
   };
 }
 
-/** SMTP settings from the environment, or null when they're incomplete. */
+/**
+ * SMTP settings from the environment, or null when they're incomplete.
+ * @param {Record<string, string | undefined>} [env]
+ */
 export function smtpFromEnv(env = process.env) {
   const host = env.SMTP_HOST?.trim();
   const user = env.SMTP_USER?.trim();
@@ -54,8 +57,12 @@ export function smtpFromEnv(env = process.env) {
   };
 }
 
-/** The Management API body (`PATCH /v1/projects/{ref}/config/auth`). */
+/**
+ * The Management API body (`PATCH /v1/projects/{ref}/config/auth`).
+ * @param {{ templates: { recovery: string; confirmation: string }; smtp?: ReturnType<typeof smtpFromEnv> }} input
+ */
 export function buildAuthConfig({ templates, smtp = null }) {
+  /** @type {Record<string, string | number>} */
   const config = {
     site_url: SITE_URL,
     uri_allow_list: REDIRECT_URLS.join(","),
