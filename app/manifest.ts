@@ -6,6 +6,11 @@ import type { MetadataRoute } from "next";
  * treat any URL outside the declared scope as external and open it in the
  * browser. Without a manifest the scope is inferred, so moving between
  * /swipe, /browse, /chat and /profile could bounce out to a new Safari tab.
+ *
+ * `display: "browser"` on purpose (user decision 2026-08-26): NestUp is a
+ * website, not an installable app, and Chrome/Edge only show their
+ * "Install app" omnibox button for standalone/fullscreen/minimal-ui
+ * manifests. The scope declaration above still applies.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -15,8 +20,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     start_url: "/",
     scope: "/",
-    display: "standalone",
-    orientation: "portrait",
+    display: "browser",
     background_color: "#faf7f2",
     theme_color: "#2f5d50",
     icons: [
