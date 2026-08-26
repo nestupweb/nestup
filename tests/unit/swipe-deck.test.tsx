@@ -88,12 +88,23 @@ test("information panel has three pages with address, home details and roommates
   render(<SwipeDeck entries={entries} seeker={profile()} />);
   expect(screen.getByRole("heading", { name: "Florentin 12" })).toBeInTheDocument();
   expect(screen.getByText("1 Oct 2026")).toBeInTheDocument();
+  // Entrance date + a rough duration under the apartment — never an end date.
+  expect(screen.getByText("Entrance date")).toBeInTheDocument();
+  expect(screen.getByText("For how long")).toBeInTheDocument();
+  expect(screen.getByText("Flexible")).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Essentials" })).toHaveAttribute("aria-selected", "true");
 
   await userEvent.click(screen.getByRole("tab", { name: "Home" }));
   expect(screen.getByText("House rules")).toBeInTheDocument();
   expect(screen.getByText("Balcony")).toBeInTheDocument();
   expect(screen.getByText("No smoking")).toBeInTheDocument();
+  // Order (user request): Property → House rules → Amenities.
+  const property = screen.getByText("Property");
+  const rules = screen.getByText("House rules");
+  const amenities = screen.getByText("Amenities");
+  expect(property.compareDocumentPosition(rules) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(rules.compareDocumentPosition(amenities) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByText("Flexible term")).toBeInTheDocument();
 
   await userEvent.click(screen.getByRole("tab", { name: "Roommates" }));
   expect(screen.getByRole("link", { name: "Dana's profile" })).toHaveAttribute("href", "/people/o1?listing=11111111-1111-4111-8111-111111111111");

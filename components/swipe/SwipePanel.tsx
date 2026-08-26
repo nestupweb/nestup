@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
-import { FEATURES, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
+import { FEATURES, leaseTermLabel, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
 import { formatMoveIn, sharedInterests, type DeckEntry } from "@/lib/swipe";
 import type { Profile } from "@/lib/types";
 
@@ -105,17 +105,22 @@ function Essentials({ entry }: { entry: DeckEntry }) {
       <h2 className="mt-2 text-[28px] font-semibold leading-tight sm:text-3xl">{street}</h2>
       <p className="mt-1 text-sm text-muted">{locality}</p>
 
-      <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-hairline pt-5">
-        <div>
+      {/* Under the apartment: rent, entrance date and a rough duration — never an end date (user decision). */}
+      <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-hairline pt-5">
+        <div className="min-w-0">
           <dt className={eyebrow}>Monthly</dt>
-          <dd className="mt-1.5 text-2xl font-bold">
+          <dd className="mt-1.5 text-xl font-bold">
             ₪{listing.rent.toLocaleString()}
             <span className="text-sm font-normal text-muted"> / mo</span>
           </dd>
         </div>
-        <div>
-          <dt className={eyebrow}>Move in</dt>
-          <dd className="mt-1.5 text-2xl font-bold">{formatMoveIn(listing.available_from)}</dd>
+        <div className="min-w-0">
+          <dt className={eyebrow}>Entrance date</dt>
+          <dd className="mt-1.5 text-xl font-bold">{formatMoveIn(listing.available_from)}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className={eyebrow}>For how long</dt>
+          <dd className="mt-1.5 text-xl font-bold">{leaseTermLabel(listing.lease_term ?? "flexible")}</dd>
         </div>
       </dl>
 
@@ -132,7 +137,7 @@ function Essentials({ entry }: { entry: DeckEntry }) {
   );
 }
 
-/* ---------- page 2: amenities, property, house rules ---------- */
+/* ---------- page 2: property, house rules, amenities (order: user request) ---------- */
 function Home({ entry }: { entry: DeckEntry }) {
   const { listing } = entry;
   const amenities = FEATURES.filter((f) => listing[f.key]);
@@ -141,17 +146,6 @@ function Home({ entry }: { entry: DeckEntry }) {
 
   return (
     <div className="space-y-5">
-      <Group title="Amenities">
-        {amenities.length === 0 ? (
-          <span className="text-sm text-muted">No extras listed</span>
-        ) : (
-          amenities.map((f) => (
-            <Item key={f.key} icon={AMENITY_ICONS[f.key] ?? "building"}>
-              {f.label}
-            </Item>
-          ))
-        )}
-      </Group>
       <Group title="Property">
         <Item icon={propertyIcon}>{propertyTypeLabel(listing.property_type)}</Item>
         <Item icon="door">
@@ -161,6 +155,10 @@ function Home({ entry }: { entry: DeckEntry }) {
         {listing.safe_room && listing.safe_room !== "none" ? (
           <Item icon="shield">Mamad {safeRoomLabel(listing.safe_room).toLowerCase()}</Item>
         ) : null}
+        <Item icon="calendar">From {formatMoveIn(listing.available_from)}</Item>
+        <Item icon="calendar">
+          {!listing.lease_term || listing.lease_term === "flexible" ? "Flexible term" : `For ${leaseTermLabel(listing.lease_term).toLowerCase()}`}
+        </Item>
       </Group>
       <Group title="House rules">
         <Item icon="users">
@@ -171,6 +169,17 @@ function Home({ entry }: { entry: DeckEntry }) {
           {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
         </Item>
         {listing.food_restrictions ? <Item icon="food">{listing.food_restrictions}</Item> : null}
+      </Group>
+      <Group title="Amenities">
+        {amenities.length === 0 ? (
+          <span className="text-sm text-muted">No extras listed</span>
+        ) : (
+          amenities.map((f) => (
+            <Item key={f.key} icon={AMENITY_ICONS[f.key] ?? "building"}>
+              {f.label}
+            </Item>
+          ))
+        )}
       </Group>
     </div>
   );
