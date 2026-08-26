@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getAuthContext, getOwnProfile } from "@/lib/auth";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { PROFILE_EDIT_ON_PENCIL_PAGE } from "@/lib/feature-flags";
@@ -16,12 +15,6 @@ export default async function ProfileEditPage() {
     about = { details: (data as ProfileDetails | null) ?? null, email: user?.email ?? "" };
   }
 
-  return (
-    <>
-      <div className="mx-auto w-full max-w-3xl px-4 pb-4 pt-2 sm:px-6">
-        <Link href="/profile" className="text-sm text-muted hover:text-ink">← Back to profile</Link>
-      </div>
-      <ProfileForm profile={profile} onboarding={!profile} next="/profile" about={about} />
-    </>
-  );
+  // The "← Back to profile" link under the site header comes from the layout's BackButton.
+  return <ProfileForm profile={profile} onboarding={!profile} next="/profile" about={about} />;
 }
