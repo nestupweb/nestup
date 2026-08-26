@@ -6,6 +6,7 @@ import { NoPhoto } from "@/components/listings/NoPhoto";
 import { SwipePanel } from "@/components/swipe/SwipePanel";
 import { scoreLabel } from "@/lib/compatibility";
 import { photoRoomLabel } from "@/lib/constants";
+import { orderPhotos } from "@/lib/photos";
 import type { DeckEntry } from "@/lib/swipe";
 import type { Profile, SwipeDirection } from "@/lib/types";
 
@@ -29,7 +30,8 @@ export function SwipeCard({
   onDecide: (direction: SwipeDirection) => void;
 }) {
   const { listing, lifestyle, social } = entry;
-  const photos = listing.photo_urls;
+  // Story order: living room → bedroom → bathroom, then the rest as posted.
+  const { urls: photos, labels } = orderPhotos(listing.photo_urls, listing.photo_labels ?? []);
   const count = photos.length;
   const [photo, setPhoto] = useState(0);
   const [page, setPage] = useState(0);
@@ -128,9 +130,9 @@ export function SwipeCard({
           </>
         ) : null}
 
-        {listing.photo_labels?.[photo] ? (
+        {labels[photo] ? (
           <span className="absolute bottom-7 left-5 rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/90 backdrop-blur-md">
-            {photoRoomLabel(listing.photo_labels[photo])}
+            {photoRoomLabel(labels[photo])}
           </span>
         ) : null}
 

@@ -75,6 +75,13 @@ describe("seed data", () => {
     }
   });
 
+  test("every room's photo story opens living room → bedroom → bathroom, each tagged", () => {
+    for (const { listing: l } of SEEDS) {
+      expect(l.photo_labels.length).toBe(l.photo_urls.length);
+      expect(l.photo_labels.slice(0, 3)).toEqual(["living_room", "bedroom", "bathroom"]);
+    }
+  });
+
   test("owners who smoke or keep pets list rooms that allow it", () => {
     for (const { profile: p, listing: l } of SEEDS) {
       if (p.smoker) expect(l.smoking_allowed).toBe(true);

@@ -40,6 +40,9 @@ export interface SeedProfile {
   earliest_move_in: string | null;
 }
 
+/** Mirrors PhotoRoom in lib/types.ts (this file can't use the @/ alias). */
+export type PhotoRoom = "living_room" | "bedroom" | "bathroom" | "kitchen" | "balcony" | "exterior" | "other";
+
 export interface SeedListing {
   title: string;
   description: string;
@@ -60,6 +63,7 @@ export interface SeedListing {
   elevator: boolean;
   furnished: boolean;
   photo_urls: string[];
+  photo_labels: PhotoRoom[]; // same order as photo_urls
   is_active: boolean;
 }
 
@@ -91,7 +95,9 @@ const portrait = (id: string) =>
 // The original twelve — one per city, written by hand.
 // ---------------------------------------------------------------------------
 
-export const HANDCRAFTED: Seed[] = [
+type HandcraftedSeed = Omit<Seed, "listing"> & { listing: Omit<SeedListing, "photo_urls" | "photo_labels"> };
+
+const HANDCRAFTED_BASE: HandcraftedSeed[] = [
   {
     email: seedEmail(1),
     profile: {
@@ -110,7 +116,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "apartment", rooms: 3, size_sqm: 78, roommates_count: 2,
       pets_allowed: true, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: false, elevator: false, furnished: true,
-      photo_urls: [photo("1522708323590-d24dbb6b0267"), photo("1502672260266-1c1ef2d93688"), photo("1556912167-f556f1f39fdf")],
       is_active: true,
     },
   },
@@ -132,7 +137,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "apartment", rooms: 4, size_sqm: 95, roommates_count: 3,
       pets_allowed: false, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: false, elevator: false, furnished: true,
-      photo_urls: [photo("1493809842364-78817add7ffb"), photo("1554995207-c18c203602cb"), photo("1502672023488-70e25813eb80")],
       is_active: true,
     },
   },
@@ -154,7 +158,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "apartment", rooms: 3.5, size_sqm: 88, roommates_count: 2,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: false, parking: false, elevator: false, furnished: true,
-      photo_urls: [photo("1560448204-e02f11c3d0e2"), photo("1586023492125-27b2c045efd7"), photo("1493663284031-b7e3aefcae8e")],
       is_active: true,
     },
   },
@@ -176,7 +179,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "apartment", rooms: 3, size_sqm: 70, roommates_count: 1,
       pets_allowed: true, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: true, elevator: true, furnished: false,
-      photo_urls: [photo("1484154218962-a197022b5858"), photo("1512918728675-ed5a9ecdebfd"), photo("1484101403633-562f891dc89a")],
       is_active: true,
     },
   },
@@ -198,7 +200,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "garden_apartment", rooms: 3.5, size_sqm: 85, roommates_count: 2,
       pets_allowed: true, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: false, elevator: false, furnished: true,
-      photo_urls: [photo("1598928506311-c55ded91a20c"), photo("1595526114035-0d45ed16cfbf"), photo("1501183638710-841dd1904471")],
       is_active: true,
     },
   },
@@ -220,7 +221,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "penthouse", rooms: 5, size_sqm: 140, roommates_count: 2,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: true, elevator: true, furnished: true,
-      photo_urls: [photo("1600607687939-ce8a6c25118c"), photo("1616486338812-3dadae4b4ace"), photo("1600585154340-be6161a56a0c")],
       is_active: true,
     },
   },
@@ -242,7 +242,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "apartment", rooms: 4, size_sqm: 100, roommates_count: 3,
       pets_allowed: true, smoking_allowed: true,
       balcony: true, air_conditioning: true, parking: false, elevator: false, furnished: true,
-      photo_urls: [photo("1536376072261-38c75010e6c9"), photo("1513694203232-719a280e022f"), photo("1556228453-efd6c1ff04f6")],
       is_active: true,
     },
   },
@@ -264,7 +263,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "apartment", rooms: 4, size_sqm: 105, roommates_count: 2,
       pets_allowed: false, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: true, elevator: true, furnished: false,
-      photo_urls: [photo("1524758631624-e2822e304c36"), photo("1505691938895-1758d7feb511"), photo("1567767292278-a4f21aa2d36e")],
       is_active: true,
     },
   },
@@ -286,7 +284,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "duplex", rooms: 4.5, size_sqm: 120, roommates_count: 3,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: true, elevator: false, furnished: false,
-      photo_urls: [photo("1600566753086-00f18fb6b3ea"), photo("1600210492486-724fe5c67fb0"), photo("1505693416388-ac5ce068fe85")],
       is_active: true,
     },
   },
@@ -308,7 +305,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "studio", rooms: 1.5, size_sqm: 42, roommates_count: 0,
       pets_allowed: false, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: false, elevator: true, furnished: true,
-      photo_urls: [photo("1540518614846-7eded433c457"), photo("1567016432779-094069958ea5"), photo("1522771739844-6a9f6d5f14af")],
       is_active: true,
     },
   },
@@ -330,7 +326,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "garden_apartment", rooms: 4, size_sqm: 110, roommates_count: 2,
       pets_allowed: true, smoking_allowed: false,
       balcony: false, air_conditioning: true, parking: true, elevator: false, furnished: true,
-      photo_urls: [photo("1583847268964-b28dc8f51f92"), photo("1615873968403-89e068629265"), photo("1560185893-a55cbc8c57e8")],
       is_active: true,
     },
   },
@@ -352,7 +347,6 @@ export const HANDCRAFTED: Seed[] = [
       property_type: "private_house", rooms: 6, size_sqm: 210, roommates_count: 1,
       pets_allowed: true, smoking_allowed: false,
       balcony: true, air_conditioning: true, parking: true, elevator: false, furnished: false,
-      photo_urls: [photo("1502005229762-cf1b2da7c5d6"), photo("1616594039964-ae9021a400a0"), photo("1560185007-cde436f6a4d0")],
       is_active: true,
     },
   },
@@ -378,34 +372,74 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-const ROOM_PHOTOS = [
-  // the 36 used by the handcrafted rooms
-  "1522708323590-d24dbb6b0267", "1502672260266-1c1ef2d93688", "1556912167-f556f1f39fdf",
-  "1493809842364-78817add7ffb", "1554995207-c18c203602cb", "1502672023488-70e25813eb80",
-  "1560448204-e02f11c3d0e2", "1586023492125-27b2c045efd7", "1493663284031-b7e3aefcae8e",
-  "1484154218962-a197022b5858", "1512918728675-ed5a9ecdebfd", "1484101403633-562f891dc89a",
-  "1598928506311-c55ded91a20c", "1595526114035-0d45ed16cfbf", "1501183638710-841dd1904471",
-  "1600607687939-ce8a6c25118c", "1616486338812-3dadae4b4ace", "1600585154340-be6161a56a0c",
-  "1536376072261-38c75010e6c9", "1513694203232-719a280e022f", "1556228453-efd6c1ff04f6",
-  "1524758631624-e2822e304c36", "1505691938895-1758d7feb511", "1567767292278-a4f21aa2d36e",
-  "1600566753086-00f18fb6b3ea", "1600210492486-724fe5c67fb0", "1505693416388-ac5ce068fe85",
-  "1540518614846-7eded433c457", "1567016432779-094069958ea5", "1522771739844-6a9f6d5f14af",
-  "1583847268964-b28dc8f51f92", "1615873968403-89e068629265", "1560185893-a55cbc8c57e8",
-  "1502005229762-cf1b2da7c5d6", "1616594039964-ae9021a400a0", "1560185007-cde436f6a4d0",
-  // extra rooms, kitchens, living rooms and facades
-  "1501876725168-00c445821c9e", "1505873242700-f289a29e1e0f", "1512917774080-9991f1c4c750",
-  "1513584684374-8bab748fbf90", "1556909114-f6e7ad7d3136", "1556911220-bff31c812dba",
-  "1558618666-fcd25c85cd64", "1560184897-ae75f418493e", "1560185009-5bf9f2849488",
-  "1560185127-6ed189bf02f4", "1560440021-33f9b867899d", "1560448075-bb485b067938",
-  "1567016376408-0226e4d0c1ea", "1571939228382-b2f2b585ce15", "1580587771525-78b9dba3b914",
-  "1583608205776-bfd35f0d9f83", "1586105251261-72a756497a11", "1598300042247-d088f8ab3a91",
-  "1600047509807-ba8f99d2cdde", "1600121848594-d8644e57abab", "1600210491892-03d54c0aaf87",
-  "1600494603989-9650cf6ddd3d", "1600566752355-35792bedcfea", "1600566753190-17f0baa2a6c3",
-  "1600573472550-8090b5e0745e", "1600573472591-ee6b68d14c68", "1600585152220-90363fe7e115",
-  "1600585153490-76fb20a32601", "1600607686527-6fb886090705", "1613490493576-7fde63acd811",
-  "1615529328331-f8917597711f", "1615874959474-d609969a20ed", "1616137466211-f939a420be84",
-  "1617806118233-18e1de247200", "1618221195710-dd6b41faaea6", "1631679706909-1844bbd07221",
+/**
+ * Room photos sorted by what they actually show — each one checked by eye
+ * (2026-08-26), so every seed listing opens with an honest living room,
+ * bedroom and bathroom, in that order, the way the Swipe story presents them.
+ */
+const LIVING_ROOM_PHOTOS = [
+  "1502672260266-1c1ef2d93688", "1493809842364-78817add7ffb", "1554995207-c18c203602cb", "1560448204-e02f11c3d0e2",
+  "1586023492125-27b2c045efd7", "1493663284031-b7e3aefcae8e", "1484101403633-562f891dc89a", "1598928506311-c55ded91a20c",
+  "1501183638710-841dd1904471", "1600607687939-ce8a6c25118c", "1616486338812-3dadae4b4ace", "1536376072261-38c75010e6c9",
+  "1513694203232-719a280e022f", "1556228453-efd6c1ff04f6", "1524758631624-e2822e304c36", "1505691938895-1758d7feb511",
+  "1567767292278-a4f21aa2d36e", "1600566753086-00f18fb6b3ea", "1600210492486-724fe5c67fb0", "1583847268964-b28dc8f51f92",
+  "1615873968403-89e068629265", "1501876725168-00c445821c9e", "1560185009-5bf9f2849488", "1560185127-6ed189bf02f4",
+  "1600121848594-d8644e57abab", "1600210491892-03d54c0aaf87", "1616137466211-f939a420be84", "1618221195710-dd6b41faaea6",
+  "1631679706909-1844bbd07221", "1585412727339-54e4bae3bbf9", "1615874694520-474822394e73", "1600210492493-0946911123ea",
 ];
+const BEDROOM_PHOTOS = [
+  "1512918728675-ed5a9ecdebfd", "1595526114035-0d45ed16cfbf", "1505693416388-ac5ce068fe85", "1540518614846-7eded433c457",
+  "1522771739844-6a9f6d5f14af", "1560185893-a55cbc8c57e8", "1616594039964-ae9021a400a0", "1586105251261-72a756497a11",
+  "1615874959474-d609969a20ed", "1505693314120-0d443867891c", "1571508601891-ca5e7a713859", "1618773928121-c32242e63f39",
+  "1617325247661-675ab4b64ae2", "1616627561839-074385245ff6", "1611892440504-42a792e24d32", "1616486029423-aaa4789e8c9a",
+  "1598928636135-d146006ff4be", "1617098474202-0d0d7f60c56b",
+];
+const BATHROOM_PHOTOS = [
+  "1560448075-bb485b067938", "1600566752355-35792bedcfea", "1552321554-5fefe8c9ef14", "1584622650111-993a426fbf0a",
+  "1507652313519-d4e9174996dd", "1564540583246-934409427776", "1620626011761-996317b8d101", "1604709177225-055f99402ea3",
+  "1595515106969-1ce29566ff1c", "1631889993959-41b4e9c6e3c5", "1609946860441-a51ffcf22208", "1613849925594-415a32298f54",
+];
+/** Optional fourth photo — kitchens, balconies, facades, dining corners — with its room tag. */
+const EXTRA_PHOTOS: { id: string; room: PhotoRoom }[] = [
+  { id: "1556912167-f556f1f39fdf", room: "kitchen" }, { id: "1484154218962-a197022b5858", room: "kitchen" },
+  { id: "1556911220-bff31c812dba", room: "kitchen" }, { id: "1560440021-33f9b867899d", room: "kitchen" },
+  { id: "1600585152220-90363fe7e115", room: "kitchen" }, { id: "1600607686527-6fb886090705", room: "kitchen" },
+  { id: "1600585154340-be6161a56a0c", room: "exterior" }, { id: "1512917774080-9991f1c4c750", room: "exterior" },
+  { id: "1513584684374-8bab748fbf90", room: "exterior" }, { id: "1571939228382-b2f2b585ce15", room: "exterior" },
+  { id: "1580587771525-78b9dba3b914", room: "exterior" }, { id: "1583608205776-bfd35f0d9f83", room: "exterior" },
+  { id: "1600047509807-ba8f99d2cdde", room: "exterior" }, { id: "1600566753190-17f0baa2a6c3", room: "exterior" },
+  { id: "1600585153490-76fb20a32601", room: "exterior" }, { id: "1613490493576-7fde63acd811", room: "exterior" },
+  { id: "1560184897-ae75f418493e", room: "balcony" }, { id: "1600573472550-8090b5e0745e", room: "balcony" },
+  { id: "1522708323590-d24dbb6b0267", room: "other" }, { id: "1502672023488-70e25813eb80", room: "other" },
+  { id: "1560185007-cde436f6a4d0", room: "other" }, { id: "1617806118233-18e1de247200", room: "other" },
+  { id: "1519710164239-da123dc03ef4", room: "other" }, { id: "1560185008-b033106af5c3", room: "other" },
+  { id: "1502005229762-cf1b2da7c5d6", room: "other" }, { id: "1600494603989-9650cf6ddd3d", room: "other" },
+];
+
+/**
+ * The photo story for seed listing number `i`: living room, bedroom, bathroom,
+ * and for some a fourth room. Pools have different lengths, so neighbouring
+ * listings never share a full set.
+ */
+export function roomPhotos(i: number, withExtra: boolean): { photo_urls: string[]; photo_labels: PhotoRoom[] } {
+  const photo_urls = [
+    photo(LIVING_ROOM_PHOTOS[i % LIVING_ROOM_PHOTOS.length]),
+    photo(BEDROOM_PHOTOS[i % BEDROOM_PHOTOS.length]),
+    photo(BATHROOM_PHOTOS[i % BATHROOM_PHOTOS.length]),
+  ];
+  const photo_labels: PhotoRoom[] = ["living_room", "bedroom", "bathroom"];
+  if (withExtra) {
+    const extra = EXTRA_PHOTOS[i % EXTRA_PHOTOS.length];
+    photo_urls.push(photo(extra.id));
+    photo_labels.push(extra.room);
+  }
+  return { photo_urls, photo_labels };
+}
+
+export const HANDCRAFTED: Seed[] = HANDCRAFTED_BASE.map((s, i) => ({
+  ...s,
+  listing: { ...s.listing, ...roomPhotos(i, i % 3 === 0) },
+}));
 
 /** Portraits not already used by the handcrafted twelve. */
 const PORTRAITS = [
@@ -639,8 +673,6 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
   const firsts = shuffle(FIRST_NAMES);
   const lasts = shuffle(LAST_NAMES);
   const portraits = shuffle(PORTRAITS);
-  const photos = shuffle(ROOM_PHOTOS);
-  let photoCursor = 0;
 
   const seeds: Seed[] = [];
   for (let i = 0; i < count; i++) {
@@ -662,13 +694,8 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
     const band = RENT[city];
     const rent = Math.round((band.min + Math.pow(rand(), band.skew) * (band.max - band.min)) / 50) * 50;
 
-    // 3–4 photos each; walk the shuffled pool so neighbours don't share covers.
-    const photoCount = chance(0.35) ? 4 : 3;
-    const photo_urls: string[] = [];
-    for (let k = 0; k < photoCount; k++) {
-      photo_urls.push(photo(photos[photoCursor % photos.length]));
-      photoCursor++;
-    }
+    // 3–4 photos each: living room, bedroom, bathroom, sometimes one more room.
+    const { photo_urls, photo_labels } = roomPhotos(HANDCRAFTED_BASE.length + i, chance(0.35));
 
     const smoker = chance(0.12);
     const has_pet = chance(0.25);
@@ -720,6 +747,7 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
         furnished: studio || chance(0.55),
         is_active: true,
         photo_urls,
+        photo_labels,
       },
     });
   }

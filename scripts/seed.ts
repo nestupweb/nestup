@@ -50,6 +50,13 @@ async function main() {
     const existingId = idByEmail.get(s.email);
     if (existingId) {
       skipped++;
+      // Keep the demo room's photo story in sync with seed-data (living room →
+      // bedroom → bathroom, each tagged) — the deck relies on the tags.
+      const { error: photoErr } = await admin
+        .from("listings")
+        .update({ photo_urls: s.listing.photo_urls, photo_labels: s.listing.photo_labels })
+        .eq("owner_id", existingId);
+      if (photoErr) throw new Error(`photos(${s.email}): ${photoErr.message}`);
       if (s.profile.avatar_url) {
         // Older seed runs didn't set portraits; fill in only where still empty.
         await admin
