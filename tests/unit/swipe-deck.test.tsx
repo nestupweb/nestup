@@ -16,9 +16,11 @@ vi.mock("next/image", () => ({
 
 const recordSwipeAction = vi.fn(async () => ({ ok: true }));
 const sendIntroAction = vi.fn(async () => ({ ok: true as const, conversationId: "33333333-3333-4333-8333-333333333333" }));
+const saveIntroTemplateAction = vi.fn(async () => ({ ok: true }));
 vi.mock("@/app/actions/swipe", () => ({
   recordSwipeAction: (...args: unknown[]) => recordSwipeAction(...(args as [])),
   sendIntroAction: (...args: unknown[]) => sendIntroAction(...(args as [])),
+  saveIntroTemplateAction: (...args: unknown[]) => saveIntroTemplateAction(...(args as [])),
 }));
 
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
@@ -120,18 +122,32 @@ test("liking records the swipe, offers the hello first, then loads the next room
   await waitFor(() => expect(screen.getByText(/every strong match for now/i)).toBeInTheDocument());
 });
 
-test("the intro sheet sends a pre-written, editable hello to the household", async () => {
+test("the intro sheet sends a pre-written, editable hello, then the card slides on to the next room", async () => {
   render(<SwipeDeck entries={entries} seeker={profile()} />);
   await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
   const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
-  expect(box.value).toBe("Hi Dana and everyone! I liked your room at Florentin 12, Tel Aviv — could I come see it?");
+  expect(box.value).toBe("Hi Dana, I liked the room — can we schedule a viewing?");
   await userEvent.clear(box);
   await userEvent.type(box, "Hello from the deck");
   await userEvent.click(screen.getByRole("button", { name: /send message/i }));
   expect(sendIntroAction).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", "Hello from the deck");
-  await waitFor(() =>
-    expect(screen.getByRole("link", { name: /open the chat/i })).toHaveAttribute("href", "/chat/33333333-3333-4333-8333-333333333333")
-  );
+  // No "open the chat" step: the sheet closes itself and the deck moves on.
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(screen.queryByRole("link", { name: /open the chat/i })).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole("article", { name: "Quiet room by the park" })).toBeInTheDocument());
+});
+
+test("the seeker's saved template pre-fills the hello, and an edited text can be saved as the new default", async () => {
+  render(<SwipeDeck entries={entries} seeker={profile()} introTemplate="Hey {name}, is it still free?" />);
+  await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
+  const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
+  expect(box.value).toBe("Hey Dana, is it still free?");
+  expect(screen.queryByRole("button", { name: /save as my default/i })).not.toBeInTheDocument();
+  await userEvent.type(box, " Thanks!");
+  await userEvent.click(screen.getByRole("button", { name: /save as my default/i }));
+  expect(saveIntroTemplateAction).toHaveBeenCalledWith("Hey Dana, is it still free? Thanks!");
+  await waitFor(() => expect(screen.getByText(/saved as your default/i)).toBeInTheDocument());
+  expect(sendIntroAction).not.toHaveBeenCalled();
 });
 
 test("an empty deck explains itself", () => {

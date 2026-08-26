@@ -37,6 +37,7 @@ export const aboutDetailsSchema = z.object({
   instagram: text(120),
   facebook: text(160),
   linkedin: text(160),
+  intro_template: text(500),
 });
 
 export type AboutDetailsInput = z.infer<typeof aboutDetailsSchema>;
@@ -59,6 +60,7 @@ export function aboutDetailsFromForm(formData: FormData): Record<keyof AboutDeta
     instagram: get("instagram"),
     facebook: get("facebook"),
     linkedin: get("linkedin"),
+    intro_template: get("intro_template"),
   };
 }
 
@@ -86,6 +88,7 @@ export const aboutSchema = z
     instagram: text(120),
     facebook: text(160),
     linkedin: text(160),
+    intro_template: text(500),
     // mirrored on `profiles`
     occupation: text(80),
     smoker: z.coerce.boolean().default(false),

@@ -61,6 +61,17 @@ export async function sendIntroAction(
   return { ok: true, conversationId: conversation.id };
 }
 
+/** Remembers the seeker's own default hello (Profile › Swipe › Default hello message). */
+export async function saveIntroTemplateAction(template: string): Promise<{ ok: boolean }> {
+  const value = String(template ?? "").trim();
+  if (value.length > 500) return { ok: false };
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("profile_details")
+    .upsert({ user_id: user.id, intro_template: value, updated_at: new Date().toISOString() });
+  return { ok: !error };
+}
+
 /** Form-action variant used by the listing page's "I'm interested" button. */
 export async function swipeAction(listingId: string, direction: SwipeDirection): Promise<void> {
   await recordSwipeAction(listingId, direction);

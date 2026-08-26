@@ -81,7 +81,7 @@ test("read-only mode shows the About me section as other members see it — no i
           user_id: "u1", about: "Plants and shakshuka.", languages: ["Hebrew", "English"], diet: "Vegetarian",
           pet_details: "a cat", lifestyle: "WFH", wake_time: "07:30", bed_time: "23:00", shabbat: "traditional",
           cooking: "Most evenings", phone: "050-1234567", contact_email: "noa@example.com",
-          instagram: "@noa", facebook: "", linkedin: "", updated_at: "",
+          instagram: "@noa", facebook: "", linkedin: "", intro_template: "", updated_at: "",
         },
         email: "noa@example.com",
         readOnly: true,

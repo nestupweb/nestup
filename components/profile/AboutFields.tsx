@@ -2,6 +2,7 @@ import { SHABBAT_OPTIONS } from "@/lib/validation/about";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import type { Profile, ProfileDetails } from "@/lib/types";
+import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
@@ -124,6 +125,22 @@ export function AboutFields({
         </label>
         <label className={`${label} sm:col-span-2`}>LinkedIn
           <input name="linkedin" maxLength={160} defaultValue={d?.linkedin ?? ""} placeholder="linkedin.com/in/…" className={input} />
+        </label>
+      </Section>
+
+      <Section title="Swipe">
+        <label className={`${label} sm:col-span-2`}>Default hello message
+          <textarea
+            name="intro_template"
+            rows={3}
+            maxLength={500}
+            defaultValue={d?.intro_template ?? ""}
+            placeholder={DEFAULT_INTRO}
+            className={`${input} text-[16px] leading-6`}
+          />
+          <span className="mt-1.5 block text-xs font-normal normal-case tracking-normal text-muted">
+            Offered every time you like a room — you can still edit it before sending. Write {"{name}"} where the host&rsquo;s first name should go. Leave empty for the standard text.
+          </span>
         </label>
       </Section>
 

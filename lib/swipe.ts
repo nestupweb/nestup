@@ -1,3 +1,4 @@
+import { renderIntro } from "@/lib/swipe-intro";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { lifestyleScore, socialScore, sortKey } from "@/lib/compatibility";
 import type { Listing, Profile } from "@/lib/types";
@@ -73,15 +74,11 @@ export function formatMoveIn(iso: string): string {
 }
 
 /**
- * The ready-made hello offered right after a like: one short line that
- * greets the household by first name, names the room and asks to see it.
+ * The ready-made hello offered after a like — the seeker's saved template
+ * (or the built-in one) with {name} filled in. See `lib/swipe-intro.ts`.
  */
-export function introMessage(entry: DeckEntry): string {
-  const { listing, owner, residents } = entry;
-  const first = owner.full_name.split(" ")[0];
-  const greeting = residents.length > 0 ? `Hi ${first} and everyone` : `Hi ${first}`;
-  const where = [listing.address || listing.neighborhood, listing.city].filter(Boolean).join(", ");
-  return `${greeting}! I liked your room${where ? ` at ${where}` : ""} — could I come see it?`;
+export function introMessage(entry: DeckEntry, template = ""): string {
+  return renderIntro(template, entry.owner.full_name);
 }
 
 /** Interests two people share, in the seeker's order. */

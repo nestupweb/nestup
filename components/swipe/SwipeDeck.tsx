@@ -18,7 +18,16 @@ const EXIT_MS = 360;
  * first opens the "say hi" sheet over the card; the card slides away only
  * once the sheet is closed (sent or "Not now").
  */
-export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: Profile }) {
+export function SwipeDeck({
+  entries,
+  seeker,
+  introTemplate = "",
+}: {
+  entries: DeckEntry[];
+  seeker: Profile;
+  /** The seeker's saved default hello (Profile › Swipe), "" for the built-in text. */
+  introTemplate?: string;
+}) {
   const [queue, setQueue] = useState(entries);
   const [leaving, setLeaving] = useState<SwipeDirection | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +97,7 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
           {error}
         </p>
       ) : null}
-      {intro ? <IntroSheet key={`intro-${intro.listing.id}`} entry={intro} onClose={closeIntro} /> : null}
+      {intro ? <IntroSheet key={`intro-${intro.listing.id}`} entry={intro} template={introTemplate} onClose={closeIntro} /> : null}
     </div>
   );
 }
