@@ -227,20 +227,6 @@ export default async function ListingDetailPage({
             Message the owner
           </Link>
         )}
-        {user ? (
-          <form action={swipeAction.bind(null, listing.id, "like")}>
-            <button className="w-full rounded-xl border border-hairline py-3 text-sm font-semibold text-ink hover:border-accent">
-              I&apos;m interested
-            </button>
-          </form>
-        ) : (
-          <Link
-            href={`/login?next=/browse/${listing.id}`}
-            className="block w-full rounded-xl border border-hairline py-3 text-center text-sm font-semibold text-ink hover:border-accent"
-          >
-            Sign in to show interest
-          </Link>
-        )}
       </div>
     </main>
   );

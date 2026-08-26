@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { PencilIcon } from "@/components/ui/PencilIcon";
 
 /**
  * Full-size variant of the picture. Seed portraits are Unsplash thumbnails
@@ -26,10 +25,9 @@ export function fullSizeUrl(url: string): string {
 }
 
 /**
- * The profile picture on /profile. Clicking the picture opens it full-size;
- * the pencil that appears on hover (always visible on touch screens, where
- * there is no hover) leads to the editor. Without a photo there is nothing to
- * enlarge, so the placeholder itself leads to the editor too.
+ * The profile picture on /profile. Clicking the picture opens it full-size —
+ * editing lives behind the header's "Edit profile" button. Without a photo
+ * there is nothing to enlarge, so the placeholder itself leads to the editor.
  */
 export function ProfileAvatar({ url, name }: { url: string | null; name: string }) {
   const [open, setOpen] = useState(false);
@@ -43,23 +41,12 @@ export function ProfileAvatar({ url, name }: { url: string | null; name: string 
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const pencil = (
-    <Link
-      href="/profile/edit"
-      aria-label="Edit profile"
-      className="absolute bottom-0.5 right-0.5 flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-surface/95 text-ink opacity-0 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.45)] backdrop-blur transition-opacity hover:text-accent focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-    >
-      <PencilIcon />
-    </Link>
-  );
-
   if (!url) {
     return (
       <div className="group relative shrink-0">
         <Link href="/profile/edit" aria-label="Add a profile photo" className="block rounded-full">
           <Avatar url={null} name={name} size={28} />
         </Link>
-        {pencil}
       </div>
     );
   }
@@ -75,7 +62,6 @@ export function ProfileAvatar({ url, name }: { url: string | null; name: string 
         >
           <Avatar url={url} name={name} size={28} />
         </button>
-        {pencil}
       </div>
 
       {open ? (

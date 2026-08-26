@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { Avatar } from "@/components/ui/Avatar";
-import { PropertyTile } from "@/components/listings/PropertyTile";
-import { roomPhoto } from "@/lib/room-photo";
+import { ListingPhotoGrid } from "@/components/listings/ListingPhotoGrid";
 import { AboutView } from "@/components/profile/AboutView";
 import type { PublicDetails } from "@/lib/people";
 import type { Listing, Profile } from "@/lib/types";
@@ -57,7 +56,6 @@ export default async function PersonPage({
   // else the room they host. Seed users are both hosts and flatmates elsewhere.
   const lived = (livedRows as Listing[] | null) ?? [];
   const listing = [...lived, ...owned].find((l) => l.id === fromListing) ?? lived[0] ?? owned[0] ?? null;
-  const photo = listing ? roomPhoto(listing) : null;
   const first = profile.full_name.split(" ")[0] || profile.full_name;
 
   return (
@@ -86,9 +84,9 @@ export default async function PersonPage({
       {listing ? (
         <section className="mt-10 border-t border-hairline pt-5">
           <h3 className="text-[15px] font-bold uppercase tracking-[0.18em] text-accent">{first}&rsquo;s listing</h3>
-          {/* One tile, showing the room for rent (the photo tagged "bedroom") rather than the cover — identical on every member of the household. */}
-          <div className="mt-4 max-w-[13rem]">
-            <PropertyTile listing={listing} cover={photo?.url ?? null} badge={photo?.isBedroom ? "The room" : undefined} />
+          {/* The whole post — every photo captioned with its room — identical on every member of the household. */}
+          <div className="mt-4">
+            <ListingPhotoGrid listing={listing} />
           </div>
         </section>
       ) : null}

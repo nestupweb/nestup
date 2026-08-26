@@ -22,21 +22,16 @@ test("clicking the picture opens it full-size; Escape and the close button dismi
   expect(screen.queryByRole("dialog")).toBeNull();
 });
 
-test("the pencil overlay links to the edit page without opening the full-size view", () => {
+test("no pencil overlay: the picture only zooms; editing is the header button", () => {
   render(<ProfileAvatar url={PHOTO} name="Noa Peretz" />);
-  const pencil = screen.getByRole("link", { name: "Edit profile" });
-  expect(pencil).toHaveAttribute("href", "/profile/edit");
-  expect(pencil).not.toHaveAttribute("target");
-  expect(pencil.className).toContain("group-hover:opacity-100");
-  // The pencil is a plain link, so it can't be what opens the lightbox.
-  expect(pencil.tagName).toBe("A");
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("link", { name: "Edit profile" })).toBeNull();
+  expect(screen.queryByRole("link")).toBeNull();
 });
 
-test("without a photo, the placeholder and the pencil both lead to the editor", () => {
+test("without a photo, the placeholder leads to the editor", () => {
   render(<ProfileAvatar url={null} name="Noa Peretz" />);
   expect(screen.getByRole("link", { name: "Add a profile photo" })).toHaveAttribute("href", "/profile/edit");
-  expect(screen.getByRole("link", { name: "Edit profile" })).toHaveAttribute("href", "/profile/edit");
+  expect(screen.queryByRole("link", { name: "Edit profile" })).toBeNull();
   expect(screen.queryByRole("button", { name: "View profile photo" })).toBeNull();
 });
 

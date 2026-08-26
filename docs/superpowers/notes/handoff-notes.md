@@ -42,6 +42,8 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 
 - **Profile header button (2026-08-26, user-requested):** the top-right "+" (→ `/listing`) on `/profile` is now an **Edit profile** pill (→ `/profile/edit`). Creating a listing is reached only from the My listing tab's "Add listing" tile (`components/profile/MyListing.tsx`). The avatar's pencil badge still links to `/profile/edit` too.
 
+- **Member page = whole post; no avatar pencil (2026-08-26, user-requested):** `/people/[id]` now renders `components/listings/ListingPhotoGrid.tsx` for the one listing it picks (same selection rule as before: `?listing=` → lived-in → owned): every photo in a 2/3-column grid, the room name from `photo_labels` under each (untagged photos get no caption), title + rent, and a "View listing" button → `/browse/[id]`. The previous single bedroom tile (`lib/room-photo.ts`, PropertyTile `cover`) was removed. `ProfileAvatar` lost its hover pencil — the picture only zooms; editing is the header's "Edit profile" button (the no-photo placeholder still links to the editor).
+
 ## For the scale doc
 
 - Unbounded page offsets in listing pagination (deep OFFSET scans).
