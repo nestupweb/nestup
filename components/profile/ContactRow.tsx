@@ -57,8 +57,9 @@ const linkPill = plainPill;
 
 /**
  * Contact details in the profile header: social profiles as opening links,
- * plus phone / e-mail when given (the owner's own page only — other members
- * never receive those). Renders nothing when there is nothing to show.
+ * plus phone / e-mail when given — on the owner's own page and, since
+ * migration 0020, on other members' pages too. Renders nothing when there is
+ * nothing to show.
  */
 export function ContactRow({
   instagram = "",

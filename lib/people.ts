@@ -1,7 +1,11 @@
 import { SHABBAT_OPTIONS } from "@/lib/validation/about";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
-/** What another member may see of someone's "About me" — no phone / e-mail. */
+/**
+ * What another signed-in member may see of someone's "About me" — everything
+ * including phone and contact e-mail (user decision, migration 0020); only the
+ * private default hello template stays out.
+ */
 export type PublicDetails = Pick<
   ProfileDetails,
   | "about"
@@ -16,6 +20,8 @@ export type PublicDetails = Pick<
   | "instagram"
   | "facebook"
   | "linkedin"
+  | "phone"
+  | "contact_email"
 >;
 
 export type ProfileRow = { label: string; value: string; href?: string };

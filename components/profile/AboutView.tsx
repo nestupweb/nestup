@@ -8,8 +8,8 @@ const h3 = "text-[15px] font-bold uppercase tracking-[0.18em] text-accent";
 /**
  * A member's About-me, read-only, exactly as other members see it: interest
  * chips, the introduction, the Daily life table, the chores they take on,
- * then the remaining details in groups (never phone / e-mail — those and the
- * social links live in the header's ContactRow). Used on `/people/[id]` and,
+ * then the remaining details in groups (phone / e-mail and the social links
+ * live in the page header's ContactRow, not here). Used on `/people/[id]` and,
  * when `PROFILE_EDIT_ON_PENCIL_PAGE` is on, on the owner's own Profile tab.
  */
 export function AboutView({

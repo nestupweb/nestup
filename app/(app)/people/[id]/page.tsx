@@ -11,9 +11,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * A member's profile as other members see it: the same header (with their
- * social links) and "About me" sections as their own Profile page, read-only,
- * without phone / e-mail. Linked from roommate names on listing pages and the
- * Swipe deck.
+ * social links, phone and e-mail) and "About me" sections as their own
+ * Profile page, read-only. Linked from roommate names on listing pages and
+ * the Swipe deck.
  */
 export default async function PersonPage({
   params,
@@ -73,7 +73,14 @@ export default async function PersonPage({
           {profile.bio ? (
             <p className="mt-1.5 max-w-md whitespace-pre-line text-sm leading-5 text-ink">{profile.bio}</p>
           ) : null}
-          <ContactRow instagram={details?.instagram} facebook={details?.facebook} linkedin={details?.linkedin} />
+          {/* Every contact detail, phone and e-mail included (user decision — migration 0020). */}
+          <ContactRow
+            instagram={details?.instagram}
+            facebook={details?.facebook}
+            linkedin={details?.linkedin}
+            phone={details?.phone}
+            email={details?.contact_email}
+          />
         </div>
       </div>
 

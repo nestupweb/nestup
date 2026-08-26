@@ -20,6 +20,7 @@ const details = {
   about: "Hi!", languages: ["Hebrew", "English"], diet: "Vegetarian", pet_details: "a cat named Tuna",
   lifestyle: "WFH", wake_time: "07:30", bed_time: "23:15", shabbat: "traditional" as const, cooking: "Most evenings",
   instagram: "@dana.levi", facebook: "Dana Levi", linkedin: "linkedin.com/in/danalevi",
+  phone: "+972 50-123-4567", contact_email: "dana@example.com",
 };
 
 describe("formatClock", () => {

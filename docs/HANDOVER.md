@@ -9,7 +9,7 @@ Paste this into a new chat to continue the project. For per-feature technical de
 - **Live:** https://nestup-kappa.vercel.app — the ONLY public URL. `nestup-nu18.vercel.app` and every `nestup-<hash>-nu18.vercel.app` sit behind Vercel Deployment Protection and show a Vercel login page — never share those.
 - **Code:** `Final-Project/` (this folder), branch `feature/roommatch`, public GitHub repo https://github.com/nestupweb/nestup (`gh` is logged in). **A Stop hook auto-commits and pushes after every Claude turn** (`auto: <date> · N file(s)`), so never leave half-finished edits on disk at the end of a turn and never put secrets in tracked files.
 - **Vercel is not git-connected.** Deploy from `Final-Project`: `VERCEL_TOKEN_STORAGE=file npx vercel deploy --prod --yes -b NEXT_PUBLIC_SUPABASE_URL=… -b NEXT_PUBLIC_SUPABASE_ANON_KEY=… -e NEXT_PUBLIC_SUPABASE_URL=… -e NEXT_PUBLIC_SUPABASE_ANON_KEY=…` (values from `.env.local`; never pass the service-role key). Always `VERCEL_TOKEN_STORAGE=file`; never run two `vercel` commands at once. If the working tree doesn't typecheck because a parallel session is mid-edit, deploy from a detached `git worktree` at the last good commit with only your files copied in (done today; works).
-- **Supabase project** `eiykciushbnbwpxpvybi` (keys in `.env.local`, gitignored). RLS on every table. Migrations `supabase/migrations/0001…0019` — **all 19 are applied to the live project** (latest: `0019_shabbat_chores`). The Supabase MCP tools (`execute_sql`, `apply_migration`) work from Claude Code; always add the matching `.sql` file too.
+- **Supabase project** `eiykciushbnbwpxpvybi` (keys in `.env.local`, gitignored). RLS on every table. Migrations `supabase/migrations/0001…0020` — **all 20 are applied to the live project** (latest: `0020_public_contact` — other members now see phone + e-mail). The Supabase MCP tools (`execute_sql`, `apply_migration`) work from Claude Code; always add the matching `.sql` file too.
 - **Auth:** email + password, **email confirmation ON by my explicit decision — keep it**. Demo accounts skip confirmation. Forgot-password flow: `/forgot-password` → recovery email → `/auth/confirm` → `/reset-password` (2026-08-26).
 
 ## Stack
@@ -17,7 +17,7 @@ Next.js 16.3.2 App Router (Turbopack; `proxy.ts` replaces `middleware.ts`; `para
 
 ## Commands
 - `npm run dev` → http://localhost:3000
-- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **41 files / 217 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
+- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **42 files / 219 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
 - `npm run seed` — idempotent demo data (see below). `npm run check:nav [baseUrl]` — real-browser check that internal navigation stays in one tab.
 - Handy one-off Playwright probes against production live in Temp; pattern: log in as a seed user, assert, screenshot. Screenshots as proof are appreciated.
 
