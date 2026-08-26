@@ -1,6 +1,7 @@
 /**
  * Seeds demo owners + their listings so Browse and the swipe deck look like a
- * real marketplace: 12 handcrafted + 80 generated (see `seed-data.ts`).
+ * real marketplace: 12 handcrafted + 80 generated + a second wave of 62 that
+ * fills the smaller cities (see `seed-data.ts`).
  *
  * Idempotent — safe to re-run:
  *  - a seed user whose email already exists is left alone (its portrait is

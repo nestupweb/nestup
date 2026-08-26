@@ -1,6 +1,7 @@
 /**
  * Demo data for `scripts/seed.ts`: 12 handcrafted owners plus 80 generated
- * ones, each with a portrait and one active listing. Pure module — no env,
+ * ones (first wave) and 62 more (second wave), each with a portrait and one
+ * active listing. Pure module — no env,
  * no I/O — so `tests/unit/seed-data.test.ts` can check it against the DB
  * constraints. Generation is deterministic (fixed PRNG seed): running the
  * seed twice produces the same people and rooms.
@@ -438,24 +439,37 @@ const EXTRA_PHOTOS: { id: string; room: PhotoRoom }[] = [
   { id: "1502005229762-cf1b2da7c5d6", room: "other" }, { id: "1600494603989-9650cf6ddd3d", room: "other" },
 ];
 
+export interface PhotoPools {
+  living: readonly string[];
+  bedroom: readonly string[];
+  bathroom: readonly string[];
+  extra: readonly { id: string; room: PhotoRoom }[];
+}
+const WAVE1_POOLS: PhotoPools = { living: LIVING_ROOM_PHOTOS, bedroom: BEDROOM_PHOTOS, bathroom: BATHROOM_PHOTOS, extra: EXTRA_PHOTOS };
+
 /**
  * The photo story for seed listing number `i`: living room, bedroom, bathroom,
  * and for some a fourth room. Pools have different lengths, so neighbouring
  * listings never share a full set.
  */
-export function roomPhotos(i: number, withExtra: boolean): { photo_urls: string[]; photo_labels: PhotoRoom[] } {
+export function photoStory(pools: PhotoPools, i: number, withExtra: boolean): { photo_urls: string[]; photo_labels: PhotoRoom[] } {
   const photo_urls = [
-    photo(LIVING_ROOM_PHOTOS[i % LIVING_ROOM_PHOTOS.length]),
-    photo(BEDROOM_PHOTOS[i % BEDROOM_PHOTOS.length]),
-    photo(BATHROOM_PHOTOS[i % BATHROOM_PHOTOS.length]),
+    photo(pools.living[i % pools.living.length]),
+    photo(pools.bedroom[i % pools.bedroom.length]),
+    photo(pools.bathroom[i % pools.bathroom.length]),
   ];
   const photo_labels: PhotoRoom[] = ["living_room", "bedroom", "bathroom"];
   if (withExtra) {
-    const extra = EXTRA_PHOTOS[i % EXTRA_PHOTOS.length];
+    const extra = pools.extra[i % pools.extra.length];
     photo_urls.push(photo(extra.id));
     photo_labels.push(extra.room);
   }
   return { photo_urls, photo_labels };
+}
+
+/** First-wave photo story (the handcrafted twelve and the first 80 generated rooms). */
+export function roomPhotos(i: number, withExtra: boolean): { photo_urls: string[]; photo_labels: PhotoRoom[] } {
+  return photoStory(WAVE1_POOLS, i, withExtra);
 }
 
 const HANDCRAFTED_SHABBAT = ["not_observant", "traditional", "observant", "not_observant", "traditional", "not_observant"] as const;
@@ -683,8 +697,28 @@ const MOVE_IN_DATES = [
   "2026-10-15", "2026-11-01", "2026-11-01", "2026-11-15", "2026-12-01", "2027-01-01",
 ];
 
-export function generateSeeds(count = GENERATED_COUNT): Seed[] {
-  const rand = mulberry32(PRNG_SEED);
+/** One generation run: which PRNG seed, cities, portraits and photo pools it draws from. */
+export interface Wave {
+  prngSeed: number;
+  cityPlan: readonly (readonly [City, number])[];
+  /** `seed.user<N>` of the first generated owner in this wave. */
+  firstUser: number;
+  portraits: readonly string[];
+  photos: (i: number, withExtra: boolean) => { photo_urls: string[]; photo_labels: PhotoRoom[] };
+  /** Full names already taken by earlier waves — never reused. */
+  takenNames?: readonly string[];
+}
+
+export const WAVE1: Wave = {
+  prngSeed: PRNG_SEED,
+  cityPlan: CITY_PLAN,
+  firstUser: HANDCRAFTED_BASE.length + 1,
+  portraits: PORTRAITS,
+  photos: (i, withExtra) => roomPhotos(HANDCRAFTED_BASE.length + i, withExtra),
+};
+
+export function generateSeeds(count = GENERATED_COUNT, wave: Wave = WAVE1): Seed[] {
+  const rand = mulberry32(wave.prngSeed);
   const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)];
   const int = (min: number, max: number) => min + Math.floor(rand() * (max - min + 1));
   const chance = (p: number) => rand() < p;
@@ -703,10 +737,11 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
     return [...chosen];
   };
 
-  const cities = shuffle(CITY_PLAN.flatMap(([city, n]) => Array<City>(n).fill(city))).slice(0, count);
+  const cities = shuffle(wave.cityPlan.flatMap(([city, n]) => Array<City>(n).fill(city))).slice(0, count);
   const firsts = shuffle(FIRST_NAMES);
   const lasts = shuffle(LAST_NAMES);
-  const portraits = shuffle(PORTRAITS);
+  const portraits = shuffle(wave.portraits);
+  const taken = new Set(wave.takenNames ?? []);
 
   const seeds: Seed[] = [];
   for (let i = 0; i < count; i++) {
@@ -729,7 +764,7 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
     const rent = Math.round((band.min + Math.pow(rand(), band.skew) * (band.max - band.min)) / 50) * 50;
 
     // 3–4 photos each: living room, bedroom, bathroom, sometimes one more room.
-    const { photo_urls, photo_labels } = roomPhotos(HANDCRAFTED_BASE.length + i, chance(0.35));
+    const { photo_urls, photo_labels } = wave.photos(i, chance(0.35));
 
     const smoker = chance(0.12);
     const has_pet = chance(0.25);
@@ -737,11 +772,16 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
       ? shuffle(STUDIO_LINES).slice(0, 3).join(" ")
       : [pick(ROOM_LINES), pick(FLAT_LINES), pick(VIBE_LINES)].join(" ");
 
-    const n = 13 + i;
+    // A name is never reused across waves: slide along the surnames until the pair is free.
+    let full_name = `${firsts[i % firsts.length]} ${lasts[i % lasts.length]}`;
+    for (let k = 1; taken.has(full_name); k++) full_name = `${firsts[i % firsts.length]} ${lasts[(i + k) % lasts.length]}`;
+    taken.add(full_name);
+
+    const n = wave.firstUser + i;
     seeds.push({
       email: seedEmail(n),
       profile: {
-        full_name: `${firsts[i % firsts.length]} ${lasts[i % lasts.length]}`,
+        full_name,
         age: int(22, 38),
         occupation: pick(OCCUPATIONS),
         bio: pick(BIOS),
@@ -799,4 +839,136 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
   return seeds;
 }
 
-export const SEEDS: Seed[] = [...HANDCRAFTED, ...generateSeeds()];
+// ---------------------------------------------------------------------------
+// Second wave (2026-08-26): 62 more owners so every city offers a real choice
+// of rooms, not just Tel Aviv. Appended after the original 92 (seed.user93…)
+// with its own PRNG seed, portraits and photo pools, so re-running the seed
+// leaves the first wave byte-identical (the unit test pins its fingerprint).
+// ---------------------------------------------------------------------------
+
+export const WAVE2_COUNT = 62;
+
+/** Where the second wave goes — the smaller cities get the most. */
+const WAVE2_CITY_PLAN: [City, number][] = [
+  ["Tel Aviv", 4], ["Jerusalem", 6], ["Haifa", 6], ["Ramat Gan", 3], ["Givatayim", 3], ["Herzliya", 5],
+  ["Raanana", 5], ["Petah Tikva", 6], ["Rishon LeZion", 6], ["Netanya", 6], ["Rehovot", 6], ["Beer Sheva", 6],
+];
+
+/**
+ * Wave-2 room photos, sorted by what they actually show — every id below was
+ * looked at (2026-08-26) before it went into its pool, so a living-room slot
+ * only ever shows a living room, a bedroom slot a bedroom, and so on.
+ */
+const WAVE2_LIVING_ROOM_PHOTOS = [
+  "1613575831056-0acd5da8f085", "1629042306558-7d1e15cc02fa", "1654506012740-09321c969dc2", "1663756915304-40b7eda63e41",
+  "1665249934445-1de680641f50", "1666532937489-331f2f8f4668", "1713832139677-a03a41b602e3", "1713832139688-79676097edde",
+  "1738168246881-40f35f8aba0a", "1605774337664-7a846e9cdf17", "1564078516393-cf04bd966897", "1641232458416-feace752b346",
+  "1631510390389-c1e4fb20ff31", "1610123172763-1f587473048f", "1615529182904-14819c35db37", "1649511134921-67afc567280c",
+  "1632829882891-5047ccc421bc", "1560185007-5f0bb1866cab", "1560185127-bc36ce01f6e5", "1560185008-186576e0f1e2",
+  "1560448205-97abe7378152", "1667959284037-97d4e06508d0", "1745429523617-0d837856ca35", "1616047006789-b7af5afb8c20",
+  "1664711942326-2c3351e215e6", "1633505899118-4ca6bd143043", "1724582586529-62622e50c0b3", "1628744876497-eb30460be9f6",
+  "1705321963943-de94bb3f0dd3", "1729086046027-09979ade13fd", "1723748972084-4124765e0a55", "1747336754870-ca7b10cc75f5",
+  "1541085929911-dea736e9287b", "1614628079765-6c164f4bd970", "1610307540583-7472788642d6", "1615800002234-05c4d488696c",
+];
+const WAVE2_BEDROOM_PHOTOS = [
+  "1566665797739-1674de7a421a", "1531835551805-16d864c8d311", "1618221118493-9cfa1a1c00da", "1562438668-bcf0ca6578f0",
+  "1617098900591-3f90928e8c54", "1619810230359-b2c2f61c49cd", "1765464184843-105e144bd54b", "1744974256549-8ece7cdb5dd2",
+  "1781249144235-7dff19f6e7db", "1734599505058-6653a0d8d3ff", "1734599511415-cb4a52aea2fe", "1780884864627-3e1664eb8feb",
+  "1781249144129-4ba0869707f5", "1781249144056-ec397e444dfa", "1552558636-f6a8f071c2b3", "1699942681763-d1da9f692489",
+  "1757344454333-cc666252e596", "1718717722247-26f4c6c09192", "1765862835193-3c37388a409e", "1610307522657-8c0304960189",
+  "1760072513376-67a46aab0fd1", "1775241186452-c3d99b09f223", "1765862835260-47843a7bba45", "1765279333918-949ddcb655ba",
+  "1630699293259-0b6c08606c62", "1630699375019-c334927264df", "1652882860938-f90aa298e644", "1612320582827-a95ab2596dbc",
+  "1612320743558-020669ff20e8", "1649068559107-e5d936141e44", "1702014861736-d62834317c5e", "1771287491132-4954b32210d6",
+  "1662454419716-c4c504728811",
+];
+const WAVE2_BATHROOM_PHOTOS = [
+  "1695002817411-203c7f19dfa3", "1661107259637-4e1c55462428", "1629079447777-1e605162dc8d", "1576698483491-8c43f0862543",
+  "1587527901949-ab0341697c1e", "1643949719317-4342d8d4031e", "1733426107854-ee00a25d72a7", "1603825491103-bd638b1873b0",
+  "1521783593447-5702b9bfd267", "1650894622076-e09ab837c502", "1616537937163-387d3f079de8", "1642755622932-d1e0cb783dc5",
+  "1643949700215-e61cdca053f7", "1742134131017-44d377a611b1", "1644421439741-712c7fde7e95", "1586798271654-0471bb1b0517",
+  "1630699376443-a79cea41ed80", "1584069793933-57852d7060ea", "1560185127-bdf08e449371", "1618236444666-105ec54b5b69",
+  "1737233523182-99e287258d58", "1646592472335-fa6be8e9bc7c", "1643949700830-2420cd030678", "1737233536991-8ee3f92b7781",
+  "1566446896748-6075a87760c1", "1696987007764-7f8b85dd3033", "1631048499052-e6d9f305d2c0", "1644916930530-0e4e5afdd20d",
+];
+/** Optional fourth photo for wave 2 — kitchens, balconies and building fronts. */
+const WAVE2_EXTRA_PHOTOS: { id: string; room: PhotoRoom }[] = [
+  { id: "1600489000022-c2086d79f9d4", room: "kitchen" }, { id: "1617228069096-4638a7ffc906", room: "kitchen" },
+  { id: "1565538810643-b5bdb714032a", room: "kitchen" }, { id: "1628797285815-453c1d0d21e3", room: "kitchen" },
+  { id: "1588854337221-4cf9fa96059c", room: "kitchen" }, { id: "1588854337236-6889d631faa8", room: "kitchen" },
+  { id: "1632583824020-937ae9564495", room: "kitchen" }, { id: "1600684388091-627109f3cd60", room: "kitchen" },
+  { id: "1622372738946-62e02505feb3", room: "kitchen" }, { id: "1556910096-6f5e72db6803", room: "kitchen" },
+  { id: "1556912173-46c336c7fd55", room: "kitchen" }, { id: "1610527003928-47afd5f470c6", room: "kitchen" },
+  { id: "1629042306650-62a83c847b15", room: "kitchen" }, { id: "1630699144641-72fa7a6b8aa1", room: "kitchen" },
+  { id: "1630699293784-9f977570255a", room: "kitchen" }, { id: "1630699294157-554177f5b940", room: "kitchen" },
+  { id: "1630699294512-64ecddd912c5", room: "kitchen" }, { id: "1630699294544-d3fb634e2de4", room: "kitchen" },
+  { id: "1630699376167-3870469e7598", room: "kitchen" }, { id: "1630699376331-7d70d7a3e417", room: "kitchen" },
+  { id: "1560448075-cbc16bb4af8e", room: "kitchen" },
+  { id: "1524549207884-e7d1130ae2f3", room: "balcony" }, { id: "1600776216872-b39b2a3dd995", room: "balcony" },
+  { id: "1630699376682-84df40131d22", room: "balcony" }, { id: "1693585576674-2e1b7166f583", room: "balcony" },
+  { id: "1630703103579-bde27ee45e49", room: "balcony" }, { id: "1616593969747-4797dc75033e", room: "balcony" },
+  { id: "1560448205-d82bf18b9bcf", room: "balcony" }, { id: "1619082791183-1888233d6569", room: "balcony" },
+  { id: "1486484290742-0ce4eb743a34", room: "balcony" }, { id: "1621045081424-97aa08903f76", room: "balcony" },
+  { id: "1564829439675-0eec72f0b695", room: "balcony" }, { id: "1591944438730-23dbc9076a9a", room: "balcony" },
+  { id: "1613013441633-785518cf90b3", room: "balcony" }, { id: "1597663459867-9903bf92dcfd", room: "balcony" },
+  { id: "1537289865689-48454e64980b", room: "balcony" }, { id: "1667992403195-d2241a40ca2d", room: "balcony" },
+  { id: "1613685302957-3a6fc45346ef", room: "balcony" },
+  { id: "1515263487990-61b07816b324", room: "exterior" }, { id: "1479839672679-a46483c0e7c8", room: "exterior" },
+  { id: "1612637968894-660373e23b03", room: "exterior" }, { id: "1545324418-cc1a3fa10c00", room: "exterior" },
+  { id: "1624204386084-dd8c05e32226", room: "exterior" }, { id: "1580216643062-cf460548a66a", room: "exterior" },
+  { id: "1580041065738-e72023775cdc", room: "exterior" }, { id: "1460317442991-0ec209397118", room: "exterior" },
+  { id: "1619542402915-dcaf30e4e2a1", room: "exterior" }, { id: "1551361415-69c87624334f", room: "exterior" },
+  { id: "1595330449916-e7c3e1962bd3", room: "exterior" }, { id: "1521831305363-c69576d4072f", room: "exterior" },
+  { id: "1550945888-ce50c03c8aeb", room: "exterior" }, { id: "1550297672-bf5fcd844283", room: "exterior" },
+  { id: "1621873979079-2d0467290c69", room: "exterior" }, { id: "1721623905125-af5f7b7fb18b", room: "exterior" },
+  { id: "1707919106870-9f8787092297", room: "exterior" }, { id: "1648104265219-e72852f67726", room: "exterior" },
+  { id: "1644489263565-dab79ae4fe5c", room: "exterior" }, { id: "1644489263923-e60425f6531d", room: "exterior" },
+  { id: "1644489263559-70d7e3be2936", room: "exterior" },
+];
+const WAVE2_POOLS: PhotoPools = {
+  living: WAVE2_LIVING_ROOM_PHOTOS, bedroom: WAVE2_BEDROOM_PHOTOS, bathroom: WAVE2_BATHROOM_PHOTOS, extra: WAVE2_EXTRA_PHOTOS,
+};
+/** Portraits for wave 2 — none shared with the first wave. */
+const WAVE2_PORTRAITS = [
+  "1614204424926-196a80bf0be8", "1570158268183-d296b2892211", "1581403341630-a6e0b9d2d257",
+  "1531746020798-e6953c6e8e04", "1506863530036-1efeddceb993", "1629425733761-caae3b5f2e50",
+  "1573496358961-3c82861ab8f4", "1543949806-2c9935e6aa78", "1699899657680-421c2c2d5064",
+  "1540569014015-19a7be504e3a", "1705645930353-0e335311ef20", "1535295972055-1c762f4483e5",
+  "1548382131-e0ebb1f0cdea", "1617812191081-2a24e3f30e45", "1542596594-649edbc13630",
+  "1611695434369-a8f5d76ceb7b", "1484863137850-59afcfe05386", "1506277886164-e25aa3f4ef7f",
+  "1544507888-56d73eb6046e", "1599566219227-2efe0c9b7f5f", "1611695434398-4f4b330623e6",
+  "1593757107729-eae8bcc74f8e", "1614321375197-c5083895b054", "1604494747044-2e080876c5f1",
+  "1647593782884-1a6779139eb5", "1681097561932-36d0df02b379", "1695737679868-de7eb09df3d0",
+  "1584984647264-7e6f4e6d6b91", "1540222797359-e9b786124d4b", "1600603406200-5b2a104684ac",
+  "1632765854612-9b02b6ec2b15", "1526510747491-58f928ec870f", "1553514029-1318c9127859",
+  "1609505848912-b7c3b8b4beda", "1557053910-d9eadeed1c58", "1600486913747-55e5470d6f40",
+  "1590086782792-42dd2350140d", "1557296387-5358ad7997bb", "1590702841774-45166f031529",
+  "1560787313-5dff3307e257", "1593529467220-9d721ceb9a78", "1548142542-c53707f8b05b",
+  "1662850886700-4ec19bd30d11", "1554727242-741c14fa561c", "1612994451093-c6791c8989cd",
+  "1598625873873-52f9aefd7d9d", "1508002366005-75a695ee2d17", "1690444963408-9573a17a8058",
+  "1614436201459-156d322d38c6", "1725866546799-4cc16f6cba23", "1633367583895-08545d733dfe",
+  "1614023342667-6f060e9d1e04", "1659714962352-434900f95a91", "1625241152315-4a698f74ceb7",
+  "1613419441661-6a5af1751d30", "1629185752040-57f6fa9b4f53", "1656338997878-279d71d48f6e",
+  "1562124638-724e13052daf", "1618355776464-8666794d2520", "1529068755536-a5ade0dcb4e8",
+  "1522529599102-193c0d76b5b6", "1621274790572-7c32596bc67f", "1568880893176-fb2bdab44e41",
+  "1517256673644-36ad11246d21", "1622319107576-cca7c8a906f7", "1619431667975-e93b820cde63",
+  "1612115958726-9af4b6bd28d1", "1692048098453-109979b87e10", "1654027879796-b9dee8caabb6",
+  "1581841064838-a470c740e8ee", "1517462964-21fdcec3f25b", "1519744434498-a0de604df9db",
+  "1611178204388-1deef70ec66a", "1667053508464-eb11b394df83", "1493136289900-28660d718589",
+  "1740102075520-fe22a53035cf", "1738511980236-c670a95a3970", "1654110455429-cf322b40a906",
+  "1603415526960-f7e0328c63b1", "1695927621677-ec96e048dce2",
+];
+
+export const WAVE2: Wave = {
+  prngSeed: 20260826,
+  cityPlan: WAVE2_CITY_PLAN,
+  firstUser: HANDCRAFTED_BASE.length + GENERATED_COUNT + 1,
+  portraits: WAVE2_PORTRAITS,
+  photos: (i, withExtra) => photoStory(WAVE2_POOLS, i, withExtra),
+};
+
+const WAVE1_SEEDS = generateSeeds();
+export const SEEDS: Seed[] = [
+  ...HANDCRAFTED,
+  ...WAVE1_SEEDS,
+  ...generateSeeds(WAVE2_COUNT, { ...WAVE2, takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS].map((s) => s.profile.full_name) }),
+];

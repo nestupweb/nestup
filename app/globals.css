@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Password fields carry our own eye button (components/auth/PasswordInput);
+   hide Edge's built-in reveal/clear controls so there's only one. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 :root {
   --paper: #faf7f2;
   --ink: #201d1a;
