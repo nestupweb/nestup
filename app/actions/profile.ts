@@ -32,9 +32,18 @@ export async function upsertProfileAction(
     cleanliness: formData.get("cleanliness"),
     sleep_schedule: formData.get("sleep_schedule"),
     guests_freq: formData.get("guests_freq"),
+    // Optional so older forms (and the onboarding form) still validate; the
+    // schema defaults them. `?? undefined`: a missing field is undefined, not null.
+    noise_level: formData.get("noise_level") ?? undefined,
+    diet: formData.get("dietary") ?? undefined,
     interests: formData.getAll("interests"),
     ok_with_smoker: formData.get("ok_with_smoker") === "on",
     ok_with_pets: formData.get("ok_with_pets") === "on",
+    pref_cleanliness: formData.get("pref_cleanliness") ?? undefined,
+    pref_sleep: formData.get("pref_sleep") ?? undefined,
+    pref_guests: formData.get("pref_guests") ?? undefined,
+    pref_noise: formData.get("pref_noise") ?? undefined,
+    pref_diet: formData.get("pref_diet") ?? undefined,
     budget_min: formData.get("budget_min") || 0,
     budget_max: formData.get("budget_max") || 0,
     preferred_cities: formData.getAll("preferred_cities"),

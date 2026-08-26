@@ -10,6 +10,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     sleep_schedule: "flexible", guests_freq: "sometimes",
     interests: ["Music", "Cooking", "Travel"],
     ok_with_smoker: true, ok_with_pets: true,
+    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any",
     budget_min: 0, budget_max: 3000, preferred_cities: ["Tel Aviv"],
     earliest_move_in: "2026-10-01", created_at: "", updated_at: "",
     ...overrides,
@@ -62,12 +63,15 @@ describe("buildDeck", () => {
   test("keeps a room sitting exactly on the threshold", () => {
     // Lifestyle 100 (identical profile, ideal listing) with no interests on
     // the owner's side → social null → combined = lifestyle. Push lifestyle
-    // to exactly 60 via city (−20), pets (−10), sleep early/late (−5),
-    // guests sometimes/often two steps apart (−5).
+    // to exactly 60: city (−18), pets (−8), sleep early/late (−4), guests
+    // rare/often two steps apart (−4), a lively owner against "quiet, please"
+    // (−4), and asking for tidiness 4 of a 3 (−2).
     const edgeOwner = profile({
-      user_id: "o4", interests: [], has_pet: true, sleep_schedule: "early", guests_freq: "often",
+      user_id: "o4", interests: [], has_pet: true, sleep_schedule: "early", guests_freq: "often", noise_level: "lively",
     });
-    const edgeSeeker = profile({ ok_with_pets: false, sleep_schedule: "late", guests_freq: "rare" });
+    const edgeSeeker = profile({
+      ok_with_pets: false, sleep_schedule: "late", guests_freq: "rare", pref_noise: "quiet", pref_cleanliness: 4,
+    });
     const deck = buildDeck(edgeSeeker, [listing({ id: "edge", owner_id: "o4", city: "Haifa" })], [edgeOwner], []);
     expect(deck.map((e) => e.listing.id)).toEqual(["edge"]);
     expect(deck[0].lifestyle).toBe(MIN_DECK_SCORE);

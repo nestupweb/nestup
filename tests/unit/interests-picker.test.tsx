@@ -11,11 +11,15 @@ test("toggles interests and enforces the max", async () => {
   await userEvent.click(screen.getByRole("checkbox", { name: "Cooking" }));
   expect(screen.getByRole("checkbox", { name: "Cooking" })).toBeChecked();
 
-  // check up to the cap, then one more must stay unchecked
+  // check up to the cap, then two more must stay unchecked
   const boxes = screen.getAllByRole("checkbox");
+  let clicks = 0;
   for (const box of boxes) {
-    if (!(box as HTMLInputElement).checked) await userEvent.click(box);
+    if ((box as HTMLInputElement).checked) continue;
+    await userEvent.click(box);
+    if (++clicks >= MAX_INTERESTS) break; // enough to pass the cap by two
   }
   const checked = boxes.filter((b) => (b as HTMLInputElement).checked);
   expect(checked.length).toBe(MAX_INTERESTS);
-});
+  expect(screen.getByText(new RegExp(`${MAX_INTERESTS} selected`))).toBeInTheDocument();
+}, 20_000);

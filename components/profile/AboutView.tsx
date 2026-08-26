@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { profileGroups, type PublicDetails } from "@/lib/people";
+import { DailyLifeView } from "@/components/profile/DailyLifeView";
 import type { Profile } from "@/lib/types";
 
 /**
@@ -49,6 +50,13 @@ export function AboutView({
       ) : (
         <p className="mt-5 text-sm text-muted">{first} hasn&rsquo;t written an introduction yet.</p>
       )}
+
+      <section className="mt-6 border-t border-hairline pt-5">
+        <h3 className="text-[15px] font-bold uppercase tracking-[0.18em] text-accent">Daily life</h3>
+        <div className="mt-3">
+          <DailyLifeView profile={profile} />
+        </div>
+      </section>
 
       <div className="mt-6 space-y-6">
         {groups.map((g) => (

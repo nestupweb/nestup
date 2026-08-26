@@ -17,9 +17,9 @@ export function InterestsPicker({ initial }: { initial: string[] }) {
   }
 
   return (
-    <fieldset className="mt-4">
-      <legend className="text-xs font-medium uppercase tracking-widest text-muted">
-        Interests <span className="normal-case">(pick {MIN_INTERESTS}–{MAX_INTERESTS} — powers your Social score)</span>
+    <fieldset>
+      <legend className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+        Pick {MIN_INTERESTS}–{MAX_INTERESTS} <span className="normal-case tracking-normal">· {selected.length} selected</span>
       </legend>
       <div className="mt-2 flex flex-wrap gap-2">
         {INTERESTS.map((tag) => {
@@ -27,8 +27,8 @@ export function InterestsPicker({ initial }: { initial: string[] }) {
           return (
             <label
               key={tag}
-              className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium ${
-                on ? "border-accent bg-accent text-accent-contrast" : "border-hairline bg-surface text-muted"
+              className={`cursor-pointer select-none rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                on ? "border-accent bg-accent text-accent-contrast" : "border-hairline bg-surface text-muted hover:border-accent/60 hover:text-ink"
               }`}
             >
               <input

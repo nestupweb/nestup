@@ -1,16 +1,100 @@
-import type { PhotoRoom, PropertyType, SafeRoom } from "@/lib/types";
+import type {
+  Diet,
+  GuestsFreq,
+  NoiseLevel,
+  PhotoRoom,
+  PrefDiet,
+  PrefGuests,
+  PrefNoise,
+  PrefSleep,
+  PropertyType,
+  SafeRoom,
+  SleepSchedule,
+} from "@/lib/types";
 
 // Every city/town in Israel lives in lib/cities.ts (with the type-ahead helpers).
 export { CITIES } from "@/lib/cities";
 
 export const INTERESTS = [
-  "Music", "Concerts", "Cooking", "Fitness", "Yoga", "Running", "Hiking",
-  "Travel", "Gaming", "Movies & TV", "Reading", "Art", "Photography", "Tech",
-  "Football", "Basketball", "Board games", "Nightlife", "Vegan food", "Volunteering",
+  "Music", "Concerts", "Cooking", "Baking", "Coffee", "Foodie", "Wine & beer", "Vegan food",
+  "Fitness", "Yoga", "Pilates", "Running", "Cycling", "Swimming", "Surfing", "Climbing", "Hiking", "Camping", "Beach",
+  "Football", "Basketball", "Tennis", "Dancing", "Meditation",
+  "Travel", "Languages", "Volunteering", "Politics", "Startups", "Tech", "Science",
+  "Gaming", "Board games", "Chess", "Anime", "Movies & TV", "Podcasts", "Theatre", "Live music", "Nightlife",
+  "Reading", "Writing", "Art", "Photography", "Crafts & DIY", "Fashion", "Design", "Plants", "Pets & animals",
 ] as const;
 
 export const MIN_INTERESTS = 3;
-export const MAX_INTERESTS = 10;
+export const MAX_INTERESTS = 12;
+
+/** Budget slider on the profile: ₪0 … ₪15,000 in ₪100 steps; the top means "no max". */
+export const BUDGET_CAP = 15000;
+export const BUDGET_STEP = 100;
+
+// --- Daily life: how I live (left column) vs. what I want in flatmates (right) ---
+export const SLEEP_SCHEDULES = [
+  { key: "early", label: "Early riser" },
+  { key: "late", label: "Night owl" },
+  { key: "flexible", label: "Flexible" },
+] as const satisfies readonly { key: SleepSchedule; label: string }[];
+export const GUEST_FREQS = [
+  { key: "rare", label: "Rarely" },
+  { key: "sometimes", label: "Sometimes" },
+  { key: "often", label: "Often" },
+] as const satisfies readonly { key: GuestsFreq; label: string }[];
+export const NOISE_LEVELS = [
+  { key: "quiet", label: "Quiet" },
+  { key: "moderate", label: "Moderate" },
+  { key: "lively", label: "Lively" },
+] as const satisfies readonly { key: NoiseLevel; label: string }[];
+export const DIETS = [
+  { key: "none", label: "No restrictions" },
+  { key: "kosher", label: "Kosher" },
+  { key: "vegetarian", label: "Vegetarian" },
+  { key: "vegan", label: "Vegan" },
+  { key: "halal", label: "Halal" },
+  { key: "gluten_free", label: "Gluten-free" },
+  { key: "other", label: "Other" },
+] as const satisfies readonly { key: Diet; label: string }[];
+export const CLEANLINESS_LEVELS = [
+  { key: 1, label: "1 · Relaxed" },
+  { key: 2, label: "2 · Easygoing" },
+  { key: 3, label: "3 · Tidy enough" },
+  { key: 4, label: "4 · Neat" },
+  { key: 5, label: "5 · Spotless" },
+] as const;
+export const PREF_CLEANLINESS = [
+  { key: 1, label: "Any level" },
+  { key: 2, label: "At least 2 · Easygoing" },
+  { key: 3, label: "At least 3 · Tidy enough" },
+  { key: 4, label: "At least 4 · Neat" },
+  { key: 5, label: "5 · Spotless only" },
+] as const;
+export const PREF_SLEEP = [
+  { key: "any", label: "Any schedule" },
+  { key: "early", label: "Early risers" },
+  { key: "late", label: "Night owls" },
+] as const satisfies readonly { key: PrefSleep; label: string }[];
+export const PREF_GUESTS = [
+  { key: "any", label: "Guests are fine" },
+  { key: "sometimes", label: "Sometimes is fine" },
+  { key: "rare", label: "Rarely, please" },
+] as const satisfies readonly { key: PrefGuests; label: string }[];
+export const PREF_NOISE = [
+  { key: "any", label: "Any noise level" },
+  { key: "moderate", label: "Moderate at most" },
+  { key: "quiet", label: "Quiet, please" },
+] as const satisfies readonly { key: PrefNoise; label: string }[];
+export const PREF_DIET = [
+  { key: "any", label: "No requirement" },
+  { key: "kosher", label: "Keeps kosher" },
+  { key: "vegetarian", label: "Vegetarian or vegan" },
+  { key: "vegan", label: "Vegan" },
+] as const satisfies readonly { key: PrefDiet; label: string }[];
+
+export function optionLabel<K extends string | number>(options: readonly { key: K; label: string }[], key: K): string {
+  return options.find((o) => o.key === key)?.label ?? String(key);
+}
 export const MIN_LISTING_PHOTOS = 3; // the swipe deck shows every room as a photo story
 export const MAX_LISTING_PHOTOS = 10;
 

@@ -22,7 +22,8 @@ const profile: Profile = {
   user_id: "u1", full_name: "Noa Peretz", age: 26, occupation: "Product designer", bio: "",
   avatar_url: null, smoker: false, has_pet: true, cleanliness: 4, sleep_schedule: "early",
   guests_freq: "sometimes", interests: ["Music", "Cooking", "Yoga"], ok_with_smoker: false,
-  ok_with_pets: true, budget_min: 3000, budget_max: 5000, preferred_cities: ["Tel Aviv"],
+  ok_with_pets: true,
+    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", budget_min: 3000, budget_max: 5000, preferred_cities: ["Tel Aviv"],
   earliest_move_in: "2026-10-01", created_at: "", updated_at: "",
 };
 

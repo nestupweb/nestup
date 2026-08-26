@@ -34,6 +34,14 @@ export interface SeedProfile {
   interests: string[];
   ok_with_smoker: boolean;
   ok_with_pets: boolean;
+  // Daily life (optional — the database defaults are neutral)
+  noise_level?: "quiet" | "moderate" | "lively";
+  diet?: "none" | "kosher" | "vegetarian" | "vegan" | "halal" | "gluten_free" | "other";
+  pref_cleanliness?: number;
+  pref_sleep?: "any" | "early" | "late";
+  pref_guests?: "any" | "rare" | "sometimes";
+  pref_noise?: "any" | "quiet" | "moderate";
+  pref_diet?: "any" | "kosher" | "vegetarian" | "vegan";
   budget_min: number;
   budget_max: number;
   preferred_cities: string[];
@@ -82,9 +90,12 @@ export const CITIES = [
 ] as const;
 
 export const INTERESTS = [
-  "Music", "Concerts", "Cooking", "Fitness", "Yoga", "Running", "Hiking",
-  "Travel", "Gaming", "Movies & TV", "Reading", "Art", "Photography", "Tech",
-  "Football", "Basketball", "Board games", "Nightlife", "Vegan food", "Volunteering",
+  "Music", "Concerts", "Cooking", "Baking", "Coffee", "Foodie", "Wine & beer", "Vegan food",
+  "Fitness", "Yoga", "Pilates", "Running", "Cycling", "Swimming", "Surfing", "Climbing", "Hiking", "Camping", "Beach",
+  "Football", "Basketball", "Tennis", "Dancing", "Meditation",
+  "Travel", "Languages", "Volunteering", "Politics", "Startups", "Tech", "Science",
+  "Gaming", "Board games", "Chess", "Anime", "Movies & TV", "Podcasts", "Theatre", "Live music", "Nightlife",
+  "Reading", "Writing", "Art", "Photography", "Crafts & DIY", "Fashion", "Design", "Plants", "Pets & animals",
 ] as const;
 
 const photo = (id: string) => `https://images.unsplash.com/photo-${id}?w=1200&q=80`;
@@ -639,9 +650,12 @@ const TITLES: Record<PropertyType, string[]> = {
 
 /** Popular interests are drawn more often so most owners overlap with a seeker. */
 const INTEREST_WEIGHTS: Record<(typeof INTERESTS)[number], number> = {
-  Music: 9, Cooking: 9, Travel: 6, "Movies & TV": 6, Tech: 5, Photography: 5, Fitness: 4,
-  Hiking: 3, Reading: 3, Basketball: 3, Running: 2, Yoga: 2, Concerts: 2, Gaming: 2, Art: 2,
-  Football: 2, "Board games": 2, Nightlife: 2, "Vegan food": 1, Volunteering: 1,
+  Music: 9, Cooking: 9, Travel: 6, "Movies & TV": 6, Coffee: 5, Tech: 5, Photography: 5, Fitness: 4, Beach: 4,
+  Foodie: 3, Hiking: 3, Reading: 3, Basketball: 3, Podcasts: 3, "Live music": 3, Baking: 2, Running: 2, Yoga: 2,
+  Concerts: 2, Gaming: 2, Art: 2, Football: 2, "Board games": 2, Nightlife: 2, Cycling: 2, Swimming: 2, Dancing: 2,
+  Plants: 2, "Pets & animals": 2, Startups: 2, Design: 2, "Wine & beer": 2, Camping: 1, Surfing: 1, Climbing: 1,
+  Pilates: 1, Tennis: 1, Meditation: 1, Languages: 1, Politics: 1, Science: 1, Chess: 1, Anime: 1, Theatre: 1,
+  Writing: 1, "Crafts & DIY": 1, Fashion: 1, "Vegan food": 1, Volunteering: 1,
 };
 
 const MOVE_IN_DATES = [
@@ -715,6 +729,13 @@ export function generateSeeds(count = GENERATED_COUNT): Seed[] {
         avatar_url: i < portraits.length ? portrait(portraits[i]) : null,
         smoker,
         has_pet,
+        noise_level: pick(["quiet", "moderate", "moderate", "lively"] as const),
+        diet: chance(0.3) ? pick(["kosher", "kosher", "vegetarian", "vegan", "gluten_free"] as const) : "none",
+        pref_cleanliness: chance(0.4) ? int(2, 4) : 1,
+        pref_sleep: chance(0.2) ? pick(["early", "late"] as const) : "any",
+        pref_guests: chance(0.3) ? pick(["rare", "sometimes"] as const) : "any",
+        pref_noise: chance(0.35) ? pick(["quiet", "moderate"] as const) : "any",
+        pref_diet: chance(0.15) ? pick(["kosher", "vegetarian"] as const) : "any",
         cleanliness: int(2, 5),
         sleep_schedule: pick(["early", "late", "flexible", "flexible"] as const),
         guests_freq: pick(["rare", "sometimes", "sometimes", "often"] as const),

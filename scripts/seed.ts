@@ -57,6 +57,14 @@ async function main() {
         .update({ photo_urls: s.listing.photo_urls, photo_labels: s.listing.photo_labels })
         .eq("owner_id", existingId);
       if (photoErr) throw new Error(`photos(${s.email}): ${photoErr.message}`);
+      if (s.profile.noise_level) {
+        const { noise_level, diet, pref_cleanliness, pref_sleep, pref_guests, pref_noise, pref_diet } = s.profile;
+        const { error: dailyErr } = await admin
+          .from("profiles")
+          .update({ noise_level, diet, pref_cleanliness, pref_sleep, pref_guests, pref_noise, pref_diet })
+          .eq("user_id", existingId);
+        if (dailyErr) throw new Error(`daily life(${s.email}): ${dailyErr.message}`);
+      }
       if (s.profile.avatar_url) {
         // Older seed runs didn't set portraits; fill in only where still empty.
         await admin

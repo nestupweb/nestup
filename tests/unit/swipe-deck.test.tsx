@@ -31,6 +31,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     avatar_url: null, smoker: false, has_pet: false, cleanliness: 3,
     sleep_schedule: "flexible", guests_freq: "sometimes",
     interests: ["Music", "Cooking"], ok_with_smoker: true, ok_with_pets: true,
+    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any",
     budget_min: 0, budget_max: 3000, preferred_cities: [], earliest_move_in: null,
     created_at: "", updated_at: "", ...overrides,
   };

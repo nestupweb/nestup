@@ -8,6 +8,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     avatar_url: null, smoker: false, has_pet: true, cleanliness: 4,
     sleep_schedule: "early", guests_freq: "sometimes",
     interests: ["Cooking"], ok_with_smoker: false, ok_with_pets: true,
+    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any",
     budget_min: 2500, budget_max: 4000, preferred_cities: ["Tel Aviv", "Haifa"],
     earliest_move_in: "2026-10-01", created_at: "", updated_at: "",
     ...overrides,
@@ -46,14 +47,16 @@ describe("profileGroups", () => {
   test("groups the shareable details and never includes contact info", () => {
     const groups = profileGroups(profile(), details);
     const titles = groups.map((g) => g.title);
-    expect(titles).toEqual(["Daily life", "Habits & home", "Social", "Looking for"]);
+    // Smoking / pets / tidiness / schedule / guests / noise / diet are the
+    // Daily life table (lib/daily-life.ts), not rows here.
+    expect(titles).toEqual(["My day", "Habits & home", "Social", "Looking for"]);
     const rows = Object.fromEntries(groups.flatMap((g) => g.rows.map((r) => [r.label, r])));
     expect(rows["Wake-up time"].value).toBe("7:30");
     expect(rows["Shabbat"].value).toBe("Traditional");
-    expect(rows["Sleep schedule"].value).toBe("Early bird");
+    expect(rows["Sleep schedule"]).toBeUndefined();
     expect(rows["Languages"].value).toBe("Hebrew, English");
-    expect(rows["Pets"].value).toBe("Yes — a cat named Tuna");
-    expect(rows["Smoking"].value).toBe("Non-smoker");
+    expect(rows["Pet"].value).toBe("a cat named Tuna");
+    expect(rows["Smoking"]).toBeUndefined();
     expect(rows["Budget"].value).toBe("₪2,500–₪4,000 / month");
     expect(rows["Move-in"].value).toBe("1 Oct 2026");
     expect(rows["Preferred cities"].value).toBe("Tel Aviv, Haifa");
@@ -68,8 +71,9 @@ describe("profileGroups", () => {
       profile({ occupation: "", has_pet: false, budget_min: 0, budget_max: 0, preferred_cities: [], earliest_move_in: null }),
       null
     );
-    expect(groups.map((g) => g.title)).toEqual(["Daily life", "Habits & home"]);
-    expect(groups[0].rows.map((r) => r.label)).toEqual(["Sleep schedule"]);
-    expect(groups[1].rows.map((r) => r.value)).toEqual(["No pets", "Non-smoker", "4/5", "Guests sometimes"]);
+    expect(groups).toEqual([]); // everything else lives in the Daily life table
+    const withJob = profileGroups(profile({ has_pet: false, budget_min: 0, budget_max: 0, preferred_cities: [], earliest_move_in: null }), null);
+    expect(withJob.map((g) => g.title)).toEqual(["My day"]);
+    expect(withJob[0].rows.map((r) => r.label)).toEqual(["Occupation"]);
   });
 });
