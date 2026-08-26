@@ -74,7 +74,7 @@ export interface ProfileDetails {
   instagram: string;
   facebook: string;
   linkedin: string;
-  /** Own default "hello" for Swipe likes; {name} = host first name; "" = app default. */
+  /** Own default "hello" for Swipe likes; "" = the built-in text (no host name). */
   intro_template: string;
   updated_at: string;
 }

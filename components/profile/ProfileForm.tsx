@@ -210,7 +210,7 @@ export function ProfileForm({
               className={`${input} text-[16px] leading-6`}
             />
             <span className="mt-1.5 block text-xs font-normal normal-case tracking-normal text-muted">
-              Write {"{name}"} where the host&rsquo;s first name should go. Leave empty for the standard text.
+              Leave empty for the standard text.
             </span>
           </label>
         </Section>

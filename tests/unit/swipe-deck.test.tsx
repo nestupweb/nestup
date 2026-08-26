@@ -127,7 +127,7 @@ test("the intro sheet sends a pre-written, editable hello, then the card slides 
   render(<SwipeDeck entries={entries} seeker={profile()} />);
   await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
   const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
-  expect(box.value).toBe("Hi Dana, I liked the room — can we schedule a viewing?");
+  expect(box.value).toBe("Hi, I liked the room — can we schedule a viewing?");
   await userEvent.clear(box);
   await userEvent.type(box, "Hello from the deck");
   await userEvent.click(screen.getByRole("button", { name: /send message/i }));

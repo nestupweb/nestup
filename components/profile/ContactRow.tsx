@@ -50,10 +50,10 @@ function Glyph({ kind }: { kind: Kind | "phone" | "mail" }) {
   }
 }
 
-const linkPill =
-  "inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-accent transition-colors hover:bg-accent hover:text-accent-contrast";
+// One quiet chip for every contact, link or not (user decision: no green chips here); accent only on hover.
 const plainPill =
   "inline-flex max-w-full items-center gap-1.5 rounded-full border border-hairline px-3 py-1 text-[12px] text-ink transition-colors hover:border-accent hover:text-accent";
+const linkPill = plainPill;
 
 /**
  * Contact details in the profile header: social profiles as opening links,

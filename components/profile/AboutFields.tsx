@@ -138,7 +138,7 @@ export function AboutFields({
             className={`${input} text-[16px] leading-6`}
           />
           <span className="mt-1.5 block text-xs font-normal normal-case tracking-normal text-muted">
-            Offered every time you like a room — you can still edit it before sending. Write {"{name}"} where the host&rsquo;s first name should go. Leave empty for the standard text.
+            Offered every time you like a room — you can still edit it before sending. Leave empty for the standard text.
           </span>
         </label>
       </Section>

@@ -105,11 +105,12 @@ test("formatMoveIn renders the calendar date regardless of timezone", () => {
   expect(formatMoveIn("not-a-date")).toBe("not-a-date");
 });
 
-test("introMessage is a short hello with the host's first name, or the seeker's own template", () => {
+test("introMessage is a short hello without the host's name, or the seeker's own template", () => {
   const owner = profile({ user_id: "o1", full_name: "Dana Levi" });
   const entry = { listing: listing(), owner, residents: [], lifestyle: 80, social: 50 };
-  expect(introMessage(entry)).toBe("Hi Dana, I liked the room — can we schedule a viewing?");
-  expect(introMessage(entry, "  ")).toBe("Hi Dana, I liked the room — can we schedule a viewing?");
+  expect(introMessage(entry)).toBe("Hi, I liked the room — can we schedule a viewing?");
+  expect(introMessage(entry, "  ")).toBe("Hi, I liked the room — can we schedule a viewing?");
+  expect(introMessage(entry)).not.toMatch(/Dana/);
   expect(introMessage(entry, "Hey {name}! Free this week? {NAME} again")).toBe("Hey Dana! Free this week? Dana again");
   expect(introMessage(entry, "Shalom, is the room still free?")).toBe("Shalom, is the room still free?");
 });
