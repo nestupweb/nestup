@@ -44,7 +44,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   const { data: livedRows } = livedIds.length
     ? await supabase.from("listings").select("*").in("id", livedIds).eq("is_active", true).order("created_at", { ascending: false })
     : { data: [] as Listing[] };
-  const listings = [...owned, ...((livedRows as Listing[] | null) ?? [])];
+  // The household the visitor came from (Roommates tab) is the room this member lives in — show it first.
+  const listings = [...((livedRows as Listing[] | null) ?? []), ...owned];
   const first = profile.full_name.split(" ")[0] || profile.full_name;
 
   return (
