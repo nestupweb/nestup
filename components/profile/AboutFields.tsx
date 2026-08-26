@@ -1,4 +1,5 @@
 import { SHABBAT_OPTIONS } from "@/lib/validation/about";
+import { PhoneField } from "@/components/profile/PhoneField";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import type { Profile, ProfileDetails } from "@/lib/types";
@@ -111,9 +112,7 @@ export function AboutFields({
       </Section>
 
       <Section title="Contact">
-        <label className={label}>Phone number
-          <input name="phone" type="tel" maxLength={30} defaultValue={d?.phone ?? ""} className={input} />
-        </label>
+        <PhoneField defaultValue={d?.phone ?? ""} labelClassName={label} inputClassName={input.replace("mt-1 w-full ", "")} />
         <label className={label}>Email address
           <input name="contact_email" type="email" maxLength={120} defaultValue={d?.contact_email || email} className={input} />
         </label>

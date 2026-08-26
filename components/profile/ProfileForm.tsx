@@ -8,6 +8,7 @@ import { ChoresPicker } from "@/components/profile/ChoresPicker";
 import { CityMultiPicker } from "@/components/profile/CityMultiPicker";
 import { BudgetRange } from "@/components/profile/BudgetRange";
 import { DailyLifeFields } from "@/components/profile/DailyLifeFields";
+import { PhoneField } from "@/components/profile/PhoneField";
 import { SocialLinkInput } from "@/components/profile/SocialLinkInput";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimeSelect } from "@/components/ui/Select";
@@ -129,9 +130,7 @@ export function ProfileForm({
       {about ? (
         <Section step={stepNo()} title="Contact" hint="Phone and e-mail stay private. Social usernames show on your profile as links.">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className={label}>Phone number
-              <input name="phone" type="tel" maxLength={30} defaultValue={d?.phone ?? ""} className={input} />
-            </label>
+            <PhoneField defaultValue={d?.phone ?? ""} labelClassName={label} inputClassName={input.replace("mt-1 w-full ", "")} />
             <label className={label}>Email address
               <input name="contact_email" type="email" maxLength={120} defaultValue={d?.contact_email || about.email} className={input} />
             </label>

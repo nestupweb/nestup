@@ -100,7 +100,13 @@ export function ProfileTabs({
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5">
             {current.items.map(({ listing, caption }) => (
-              <PropertyTile key={listing.id} listing={listing} caption={caption} />
+              <PropertyTile
+                key={listing.id}
+                listing={listing}
+                caption={caption}
+                // Liked: a filled heart on each tile — tap to unlike, tap again to like back.
+                heart={current.key === "liked" ? { signedIn: true, saved: true } : undefined}
+              />
             ))}
           </div>
         )}
