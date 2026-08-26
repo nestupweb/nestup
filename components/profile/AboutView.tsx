@@ -4,7 +4,7 @@ import type { Profile } from "@/lib/types";
 
 /**
  * A member's About-me, read-only, exactly as other members see it: interest
- * chips, the introduction, then the details in groups (never phone / e-mail —
+ * chips (the green bubbles from the swipe Roommates page), the introduction, then the details in groups (never phone / e-mail —
  * `profileGroups` leaves those out). Used on `/people/[id]` and, when
  * `PROFILE_EDIT_ON_PENCIL_PAGE` is on, on the owner's own Profile tab.
  */
@@ -28,7 +28,7 @@ export function AboutView({
           {profile.interests.map((s) => (
             <span
               key={s}
-              className="rounded-full border border-hairline px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted"
+              className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent"
             >
               {s}
             </span>
