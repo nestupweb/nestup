@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, test } from "vitest";
 import {
   CITIES as SEED_CITIES,
@@ -5,6 +6,8 @@ import {
   HANDCRAFTED,
   INTERESTS as SEED_INTERESTS,
   SEEDS,
+  WAVE2,
+  WAVE2_COUNT,
   generateSeeds,
 } from "../../scripts/seed-data";
 import { CITIES, INTERESTS, MAX_INTERESTS, MAX_LISTING_PHOTOS, MIN_INTERESTS, MIN_LISTING_PHOTOS, PROPERTY_TYPES } from "@/lib/constants";
@@ -18,9 +21,11 @@ describe("seed data", () => {
     expect([...SEED_INTERESTS]).toEqual([...INTERESTS]);
   });
 
-  test("has 12 handcrafted + 80 generated owners with unique emails and names", () => {
+  test("has 12 handcrafted + 80 generated + 62 second-wave owners with unique emails and names", () => {
     expect(HANDCRAFTED).toHaveLength(12);
-    expect(SEEDS).toHaveLength(12 + GENERATED_COUNT);
+    expect(GENERATED_COUNT).toBe(80);
+    expect(WAVE2_COUNT).toBe(62);
+    expect(SEEDS).toHaveLength(12 + GENERATED_COUNT + WAVE2_COUNT);
     expect(new Set(SEEDS.map((s) => s.email)).size).toBe(SEEDS.length);
     expect(new Set(SEEDS.map((s) => s.profile.full_name)).size).toBe(SEEDS.length);
     expect(SEEDS.map((s) => s.email)).toEqual(SEEDS.map((_, i) => `seed.user${i + 1}@nestup.dev`));
@@ -28,6 +33,30 @@ describe("seed data", () => {
 
   test("generation is deterministic", () => {
     expect(generateSeeds()).toEqual(generateSeeds());
+    expect(generateSeeds(WAVE2_COUNT, WAVE2)).toEqual(generateSeeds(WAVE2_COUNT, WAVE2));
+  });
+
+  test("the first 92 owners are frozen — new waves never rewrite what is already live", () => {
+    // Fingerprint of the handcrafted twelve + first generated wave as seeded to the
+    // live project on 2026-08-25/26. `scripts/seed.ts` re-syncs photos and lease
+    // terms of existing owners from this data, so a change here would silently
+    // edit real listings. Bump the hash only when that is the intention.
+    const fingerprint = createHash("sha256").update(JSON.stringify(SEEDS.slice(0, 92))).digest("hex");
+    expect(fingerprint).toBe("c13c9fb5b720f49d63e5453cff00c2fa70fbf43a809fd8cb5dfbf2d5bc453a47");
+    expect(SEEDS.slice(0, 92)).toEqual([...HANDCRAFTED, ...generateSeeds()]);
+  });
+
+  test("the second wave has its own portraits and room photos, none shared with the first", () => {
+    const first = SEEDS.slice(0, 92);
+    const second = SEEDS.slice(92);
+    const firstPhotos = new Set(first.flatMap((s) => s.listing.photo_urls));
+    const firstPortraits = new Set(first.map((s) => s.profile.avatar_url).filter(Boolean));
+    for (const s of second) {
+      expect(s.email).toMatch(/^seed\.user(9[3-9]|1[0-4]\d|15[0-4])@nestup\.dev$/);
+      expect(s.profile.avatar_url).toBeTruthy();
+      expect(firstPortraits.has(s.profile.avatar_url)).toBe(false);
+      for (const u of s.listing.photo_urls) expect(firstPhotos.has(u)).toBe(false);
+    }
   });
 
   test("every profile satisfies the profiles table checks", () => {
@@ -92,7 +121,8 @@ describe("seed data", () => {
   test("covers every city and skews toward the centre with affordable rooms", () => {
     const byCity = new Map<string, number>();
     for (const { listing } of SEEDS) byCity.set(listing.city, (byCity.get(listing.city) ?? 0) + 1);
-    for (const c of SEED_CITIES) expect(byCity.get(c) ?? 0).toBeGreaterThanOrEqual(2);
+    // Every city offers a real choice (user request 2026-08-26), Tel Aviv the most.
+    for (const c of SEED_CITIES) expect(byCity.get(c) ?? 0).toBeGreaterThanOrEqual(9);
     expect(byCity.get("Tel Aviv")).toBeGreaterThanOrEqual(25);
     const affordable = SEEDS.filter((s) => s.listing.rent <= 4000).length;
     expect(affordable).toBeGreaterThanOrEqual(45);
