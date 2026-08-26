@@ -101,9 +101,9 @@ test("read-only mode shows the About me section as other members see it — no i
   expect(screen.queryByText("noa@example.com")).not.toBeInTheDocument();
 });
 
-test("read-only mode with no details points at Edit profile", () => {
+test("read-only mode with no details points at Edit Profile", () => {
   render(<ProfileTabs mine={[]} liked={[]} history={[]} about={{ profile, details: null, email: "", readOnly: true }} />);
-  expect(screen.getByRole("link", { name: /tap Edit profile/i })).toHaveAttribute("href", "/profile/edit");
+  expect(screen.getByRole("link", { name: /tap Edit Profile/i })).toHaveAttribute("href", "/profile/edit");
   expect(screen.queryByText(/pencil/i)).toBeNull();
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 });

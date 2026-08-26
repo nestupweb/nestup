@@ -73,7 +73,7 @@ export default async function ProfilePage({
           href="/profile/edit"
           className="shrink-0 rounded-full border border-hairline px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
         >
-          Edit profile
+          Edit Profile
         </Link>
       </div>
 

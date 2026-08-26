@@ -47,7 +47,7 @@ export function AboutView({
         <p className="mt-5 text-sm text-muted">
           You haven&rsquo;t written an introduction yet —{" "}
           <Link href="/profile/edit" className="text-accent underline-offset-2 hover:underline">
-            tap Edit profile
+            tap Edit Profile
           </Link>{" "}
           to add one.
         </p>

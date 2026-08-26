@@ -24,14 +24,14 @@ test("clicking the picture opens it full-size; Escape and the close button dismi
 
 test("no pencil overlay: the picture only zooms; editing is the header button", () => {
   render(<ProfileAvatar url={PHOTO} name="Noa Peretz" />);
-  expect(screen.queryByRole("link", { name: "Edit profile" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Edit Profile" })).toBeNull();
   expect(screen.queryByRole("link")).toBeNull();
 });
 
 test("without a photo, the placeholder leads to the editor", () => {
   render(<ProfileAvatar url={null} name="Noa Peretz" />);
   expect(screen.getByRole("link", { name: "Add a profile photo" })).toHaveAttribute("href", "/profile/edit");
-  expect(screen.queryByRole("link", { name: "Edit profile" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Edit Profile" })).toBeNull();
   expect(screen.queryByRole("button", { name: "View profile photo" })).toBeNull();
 });
 

@@ -26,7 +26,7 @@ export function fullSizeUrl(url: string): string {
 
 /**
  * The profile picture on /profile. Clicking the picture opens it full-size —
- * editing lives behind the header's "Edit profile" button. Without a photo
+ * editing lives behind the header's "Edit Profile" button. Without a photo
  * there is nothing to enlarge, so the placeholder itself leads to the editor.
  */
 export function ProfileAvatar({ url, name }: { url: string | null; name: string }) {

@@ -13,7 +13,8 @@
     "test": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest run",
     "test:watch": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest",
     "seed": "node --env-file=.env.local scripts/seed.ts",
-    "check:nav": "node scripts/check-same-tab-nav.mjs"
+    "check:nav": "node scripts/check-same-tab-nav.mjs",
+    "auth:config": "node --env-file=.env.local scripts/auth-config.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
