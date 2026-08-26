@@ -145,6 +145,21 @@ export default async function ListingDetailPage({
           </div>
         </section>
 
+        {/* Order (user request): Property details → House rules → Amenities, then viewing hours. */}
+        {features.length > 0 ? (
+          <section className="border-t border-hairline pt-7">
+            <h2 className={sectionHeading}>Amenities</h2>
+            <div className={itemRow}>
+              {features.map((f) => (
+                <span key={f.key} className={item}>
+                  <DetailIcon name={AMENITY_ICONS[f.key] ?? "building"} />
+                  {f.label}
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {viewingHours.length > 0 ? (
           <section className="border-t border-hairline pt-7">
             <h2 className={sectionHeading}>Viewing hours</h2>
@@ -157,20 +172,6 @@ export default async function ListingDetailPage({
               ))}
             </div>
             <p className="mt-3 text-sm text-muted">Request a time in the chat — the host approves it before it goes on the calendar.</p>
-          </section>
-        ) : null}
-
-        {features.length > 0 ? (
-          <section className="border-t border-hairline pt-7">
-            <h2 className={sectionHeading}>Amenities</h2>
-            <div className={itemRow}>
-              {features.map((f) => (
-                <span key={f.key} className={item}>
-                  <DetailIcon name={AMENITY_ICONS[f.key] ?? "building"} />
-                  {f.label}
-                </span>
-              ))}
-            </div>
           </section>
         ) : null}
 
