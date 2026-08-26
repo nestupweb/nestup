@@ -92,7 +92,9 @@ test("read-only mode shows the About me section as other members see it — no i
   expect(screen.getByText("Plants and shakshuka.")).toBeInTheDocument();
   expect(screen.getByText("Hebrew, English")).toBeInTheDocument();
   expect(screen.getByText("7:30")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "@noa" })).toHaveAttribute("href", "https://instagram.com/noa");
+  // Social links live in the page header's ContactRow now, not in the About panel.
+  expect(screen.queryByRole("link", { name: /instagram|@noa/i })).toBeNull();
+  expect(screen.getByRole("table", { name: "Daily life" })).toBeInTheDocument();
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument();
   expect(screen.queryByText("050-1234567")).not.toBeInTheDocument();
