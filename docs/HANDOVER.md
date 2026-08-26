@@ -17,12 +17,12 @@ Next.js 16.3.2 App Router (Turbopack; `proxy.ts` replaces `middleware.ts`; `para
 
 ## Commands
 - `npm run dev` → http://localhost:3000
-- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **44 files / 229 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
+- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **44 files / 231 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
 - `npm run seed` — idempotent demo data (see below). `npm run check:nav [baseUrl]` — real-browser check that internal navigation stays in one tab.
 - Handy one-off Playwright probes against production live in Temp; pattern: log in as a seed user, assert, screenshot. Screenshots as proof are appreciated.
 
 ## Demo data
-92 seed owners `seed.user1..92@nestup.dev` / `Demo1234!` (12 handcrafted + 80 generated deterministically in `scripts/seed-data.ts`), each with an active listing (31 in Tel Aviv, ≤4k rent for most), a portrait and roommates. One demo chat with a **confirmed upcoming viewing**: seed.user1 (seeker) ↔ seed.user2's Jerusalem room — shows the "Viewing scheduled" chip and the ring. Real accounts: lichtguy@gmail.com (mine), daniellevy0008@gmail.com (friend).
+154 seed owners `seed.user1..154@nestup.dev` / `Demo1234!` (12 handcrafted + 80 generated + a 62-owner second wave added 2026-08-26, all deterministic in `scripts/seed-data.ts`), each with an active listing (Tel Aviv 36, every other city 9–14), a portrait and roommates. Room photos are eye-checked per tag (living room / bedroom / bathroom slots only ever show that room). The first 92 are frozen by a sha256 fingerprint in `tests/unit/seed-data.test.ts` — re-running `npm run seed` never changes them. One demo chat with a **confirmed upcoming viewing**: seed.user1 (seeker) ↔ seed.user2's Jerusalem room — shows the "Viewing scheduled" chip and the ring. Real accounts: lichtguy@gmail.com (mine), daniellevy0008@gmail.com (friend).
 
 ## What's built and live (all verified on production)
 - Auth, onboarding, open-redirect-hardened `next` handling (`lib/redirect.ts sanitizeNextPath` — keep using it).
