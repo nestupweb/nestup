@@ -22,7 +22,21 @@ export const DECK_SIZE = 60;
 export const MIN_DECK_SCORE = 60;
 
 /**
- * Pure ranking step: attach owners/residents, score from the seeker's
+ * Hard filters before any scoring (user decision, 2026-08-26): the deck shows
+ * only rooms in the seeker's preferred cities and inside their budget. A
+ * preference that isn't set doesn't filter — no cities means any city, no
+ * max means any rent. Rooms outside stay reachable through Browse.
+ */
+export function fitsHardFilters(seeker: Profile, listing: Listing): boolean {
+  if (seeker.preferred_cities.length > 0 && !seeker.preferred_cities.includes(listing.city)) return false;
+  if (seeker.budget_max > 0 && listing.rent > seeker.budget_max) return false;
+  if (seeker.budget_min > 0 && listing.rent < seeker.budget_min) return false;
+  return true;
+}
+
+/**
+ * Pure ranking step: drop rooms outside the seeker's cities / budget
+ * (`fitsHardFilters`), attach owners/residents, score from the seeker's
  * questionnaire, keep only rooms at or above `MIN_DECK_SCORE`, sort best-fit
  * first. A listing whose owner profile is unavailable can't be scored and is
  * skipped.
@@ -44,6 +58,7 @@ export function buildDeck(
 
   const entries: DeckEntry[] = [];
   for (const listing of listings) {
+    if (!fitsHardFilters(seeker, listing)) continue;
     const owner = ownerById.get(listing.owner_id);
     if (!owner) continue;
     const roommates = (residentsByListing.get(listing.id) ?? []).filter(

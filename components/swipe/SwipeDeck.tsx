@@ -110,9 +110,10 @@ function EmptyDeck({ seenAny }: { seenAny: boolean }) {
         {seenAny ? "That's every strong match for now." : "No strong matches yet."}
       </h1>
       <p className="mt-3 text-sm leading-6 text-muted">
-        Only rooms that score Good or better with your profile show up here. New high-scoring
-        listings land the moment they&rsquo;re posted &mdash; until then, revisit the rooms you liked,
-        or browse every listing.
+        Only rooms in your preferred cities, inside your budget, that score Good or better with
+        your profile show up here. New matching listings land the moment they&rsquo;re posted &mdash;
+        until then, widen your cities or budget in Edit Profile, revisit the rooms you liked, or
+        browse every listing.
       </p>
       <div className="mt-7 flex justify-center gap-3">
         <Link

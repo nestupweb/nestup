@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { MIN_DECK_SCORE, buildDeck, formatMoveIn, introMessage, sharedInterests } from "@/lib/swipe";
+import { MIN_DECK_SCORE, buildDeck, fitsHardFilters, formatMoveIn, introMessage, sharedInterests } from "@/lib/swipe";
 import { sortKey } from "@/lib/compatibility";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -63,19 +63,45 @@ describe("buildDeck", () => {
   test("keeps a room sitting exactly on the threshold", () => {
     // Lifestyle 100 (identical profile, ideal listing) with no interests on
     // the owner's side → social null → combined = lifestyle. Push lifestyle
-    // to exactly 60: city (−18), pets (−8), sleep early/late (−4), guests
-    // rare/often two steps apart (−4), a lively owner against "quiet, please"
-    // (−4), and asking for tidiness 4 of a 3 (−2).
+    // to exactly 60 without leaving the seeker's cities / budget (those are
+    // hard filters now): no preferred cities → neutral city (−7), move-in 45
+    // days apart (−5), a pet against "no pets" (−8), a smoker against
+    // "non-smokers only" (−10), lively against "quiet, please" (−4), no diet
+    // against "vegetarian or vegan" (−4), and asking for tidiness 4 of a 3 (−2).
     const edgeOwner = profile({
-      user_id: "o4", interests: [], has_pet: true, sleep_schedule: "early", guests_freq: "often", noise_level: "lively",
+      user_id: "o4", interests: [], has_pet: true, smoker: true, noise_level: "lively",
     });
     const edgeSeeker = profile({
-      ok_with_pets: false, sleep_schedule: "late", guests_freq: "rare", pref_noise: "quiet", pref_cleanliness: 4,
+      preferred_cities: [], ok_with_pets: false, ok_with_smoker: false, pref_noise: "quiet", pref_diet: "vegetarian", pref_cleanliness: 4,
     });
-    const deck = buildDeck(edgeSeeker, [listing({ id: "edge", owner_id: "o4", city: "Haifa" })], [edgeOwner], []);
+    const deck = buildDeck(edgeSeeker, [listing({ id: "edge", owner_id: "o4", available_from: "2026-11-15" })], [edgeOwner], []);
     expect(deck.map((e) => e.listing.id)).toEqual(["edge"]);
     expect(deck[0].lifestyle).toBe(MIN_DECK_SCORE);
     expect(deck[0].social).toBeNull();
+  });
+
+  // --- Hard filters: never a room outside my cities or my budget, however well the people match ---
+
+  test("a perfect match in another city never makes the deck", () => {
+    const deck = buildDeck(seeker, [listing({ id: "haifa", city: "Haifa" }), listing({ id: "tlv" })], [goodOwner], []);
+    expect(deck.map((e) => e.listing.id)).toEqual(["tlv"]);
+    expect(fitsHardFilters(seeker, listing({ city: "Haifa" }))).toBe(false);
+    expect(fitsHardFilters(seeker, listing({ city: "Tel Aviv" }))).toBe(true);
+  });
+
+  test("rent above the max budget is out — even one shekel, no 10% grace on the deck", () => {
+    const deck = buildDeck(seeker, [listing({ id: "over", rent: 3001 }), listing({ id: "at", rent: 3000 })], [goodOwner], []);
+    expect(deck.map((e) => e.listing.id)).toEqual(["at"]);
+  });
+
+  test("rent below the min budget is out too; unset preferences don't filter", () => {
+    const picky = profile({ budget_min: 2500 });
+    expect(fitsHardFilters(picky, listing({ rent: 2000 }))).toBe(false);
+    expect(fitsHardFilters(picky, listing({ rent: 2500 }))).toBe(true);
+    const open = profile({ preferred_cities: [], budget_min: 0, budget_max: 0 });
+    expect(fitsHardFilters(open, listing({ city: "Eilat", rent: 99999 }))).toBe(true);
+    const deck = buildDeck(open, [listing({ id: "far", city: "Haifa", rent: 9000 })], [goodOwner], []);
+    expect(deck.map((e) => e.listing.id)).toEqual(["far"]); // still scored, and the people match
   });
 
   test("attaches extra roommates and never repeats the host", () => {
