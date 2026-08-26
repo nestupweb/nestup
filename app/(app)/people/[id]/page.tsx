@@ -21,7 +21,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   const { supabase, user } = await requireUser();
   if (id === user.id) redirect("/profile");
 
-  const [{ data: profileData }, { data: detailRows }, { data: listingRows }] = await Promise.all([
+  const [{ data: profileData }, { data: detailRows }, { data: ownedRows }, { data: residentRows }] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", id).maybeSingle(),
     supabase.rpc("public_profile_details", { p_user: id }),
     supabase
@@ -30,11 +30,21 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       .eq("owner_id", id)
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
+    // Rooms this member lives in as a flatmate — every member of a household
+    // shows the same listing (and the same bedroom photo) on their page.
+    supabase.from("listing_residents").select("listing_id").eq("resident_id", id),
   ]);
   const profile = profileData as Profile | null;
   if (!profile) notFound();
   const details = ((detailRows as PublicDetails[] | null) ?? [])[0] ?? null;
-  const listings = (listingRows as Listing[] | null) ?? [];
+  const owned = (ownedRows as Listing[] | null) ?? [];
+  const livedIds = ((residentRows as { listing_id: string }[] | null) ?? [])
+    .map((r) => r.listing_id)
+    .filter((lid) => !owned.some((l) => l.id === lid));
+  const { data: livedRows } = livedIds.length
+    ? await supabase.from("listings").select("*").in("id", livedIds).eq("is_active", true).order("created_at", { ascending: false })
+    : { data: [] as Listing[] };
+  const listings = [...owned, ...((livedRows as Listing[] | null) ?? [])];
   const first = profile.full_name.split(" ")[0] || profile.full_name;
 
   return (
