@@ -188,7 +188,7 @@ export function CityCombobox({
                 {newLetter ? (
                   <div
                     aria-hidden="true"
-                    className="sticky top-0 z-10 border-b border-hairline bg-surface px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent"
+                    className="sticky top-0 z-10 border-b border-hairline bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-accent"
                   >
                     {letter}
                   </div>

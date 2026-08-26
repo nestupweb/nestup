@@ -83,7 +83,7 @@ export function IntroSheet({ entry, template = "", onClose }: { entry: DeckEntry
             ))}
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">You liked this room</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent">You liked this room</p>
             <h2 id="intro-title" className="truncate text-xl font-semibold leading-tight">
               Say hi to {who}?
             </h2>

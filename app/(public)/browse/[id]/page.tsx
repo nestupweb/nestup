@@ -81,11 +81,11 @@ export default async function ListingDetailPage({
       <ListingGallery photos={listing.photo_urls} labels={listing.photo_labels ?? []} title={listing.title} />
 
       <div className="mt-6 flex items-baseline justify-between gap-3">
-        <h1 className="text-3xl font-semibold sm:text-4xl">
+        <h1 className="text-3xl font-bold sm:text-4xl">
           {listing.city}, {listing.address || listing.neighborhood}
         </h1>
         <div className="flex shrink-0 items-center gap-3">
-          <p className="whitespace-nowrap text-2xl font-semibold sm:text-3xl">
+          <p className="whitespace-nowrap text-2xl font-bold sm:text-3xl">
             ₪{listing.rent.toLocaleString()}<span className="text-sm font-normal text-muted"> /mo</span>
           </p>
           <SaveButton listingId={listing.id} signedIn={Boolean(user)} initialSaved={saved} />

@@ -74,7 +74,7 @@ export function ViewingHoursEditor({ initial }: { initial: ViewingSlot[] }) {
         <button
           type="button"
           onClick={add}
-          className="mt-3 rounded-full border border-hairline px-4 py-2 text-[12px] font-semibold uppercase tracking-wider text-ink transition-colors hover:border-accent hover:text-accent"
+          className="mt-3 rounded-full border border-hairline px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-ink transition-colors hover:border-accent hover:text-accent"
         >
           + Add hours
         </button>

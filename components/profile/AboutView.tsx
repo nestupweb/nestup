@@ -53,7 +53,7 @@ export function AboutView({
       <div className="mt-6 space-y-6">
         {groups.map((g) => (
           <section key={g.title} className="border-t border-hairline pt-5">
-            <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-accent">{g.title}</h3>
+            <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-accent">{g.title}</h3>
             <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
               {g.rows.map((r) => (
                 <div key={r.label} className="min-w-0">

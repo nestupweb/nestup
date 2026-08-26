@@ -30,7 +30,7 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
 
   return (
     <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
-      <h1 className="text-3xl font-semibold">{listing ? "Your listing" : "List your room"}</h1>
+      <h1 className="text-3xl font-bold">{listing ? "Your listing" : "List your room"}</h1>
       <p className="mt-1 text-sm text-muted">
         {listing ? "Edit details or pause the listing." : "Post a room and start reviewing interested seekers."}
       </p>

@@ -46,7 +46,7 @@ export function BackButton({ className = "" }: { className?: string }) {
       <button
         type="button"
         onClick={back}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-accent underline-offset-4 hover:underline"
+        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.16em] text-accent underline-offset-4 hover:underline"
       >
         <span aria-hidden="true">←</span>
         {label}

@@ -12,7 +12,7 @@ const check = "flex items-center gap-2 text-sm";
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="border-t border-hairline pt-5">
-      <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-accent">{title}</h3>
+      <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-accent">{title}</h3>
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
     </section>
   );

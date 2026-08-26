@@ -3,7 +3,7 @@
 :root {
   --paper: #faf7f2;
   --ink: #201d1a;
-  --accent: #2f5d50;
+  --accent: #2e7d5e;
   --accent-contrast: #faf7f2;
   --surface: #ffffff;
   /* hairline & muted already carry alpha — don't stack /NN opacity modifiers on them */

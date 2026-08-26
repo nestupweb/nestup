@@ -27,7 +27,7 @@ export function ConversationList({
   return (
     <div className="flex flex-col">
       <div className="flex items-baseline justify-between px-4 pb-3 pt-5 sm:px-0 lg:px-5">
-        <h1 className="text-3xl font-semibold lg:text-2xl">Chats</h1>
+        <h1 className="text-3xl font-bold lg:text-2xl">Chats</h1>
         <span className="text-[11px] font-semibold uppercase tracking-widest text-muted">
           {conversations.length} {conversations.length === 1 ? "conversation" : "conversations"}
         </span>
@@ -35,7 +35,7 @@ export function ConversationList({
 
       {conversations.length === 0 ? (
         <div className="mx-auto max-w-sm px-6 py-16 text-center">
-          <p className="text-2xl font-semibold">No conversations yet</p>
+          <p className="text-2xl font-bold">No conversations yet</p>
           <p className="mt-2 text-sm text-muted">Like a room on Swipe or message the roommates from any listing to start one.</p>
           <Link
             href="/browse"

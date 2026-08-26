@@ -3,22 +3,28 @@ import Image from "next/image";
 import { NoPhoto } from "@/components/listings/NoPhoto";
 import type { Listing } from "@/lib/types";
 
-/** Compact image-first card for profile grids (My Listings / Liked / History). */
+/**
+ * Compact image-first card for profile grids (My Listings / Liked / History).
+ * `cover` swaps the picture shown — e.g. the bedroom photo on a member page.
+ */
 export function PropertyTile({
   listing,
   badge,
   caption,
+  cover,
 }: {
   listing: Listing;
   badge?: string;
   caption?: string;
+  cover?: string | null;
 }) {
+  const photo = cover ?? listing.photo_urls[0];
   return (
     <Link href={`/browse/${listing.id}`} className="group block min-w-0">
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-hairline">
-        {listing.photo_urls[0] ? (
+        {photo ? (
           <Image
-            src={listing.photo_urls[0]}
+            src={photo}
             alt=""
             fill
             sizes="(min-width: 1024px) 200px, (min-width: 640px) 25vw, 33vw"

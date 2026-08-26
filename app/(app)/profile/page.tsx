@@ -62,7 +62,7 @@ export default async function ProfilePage({
   return (
     <main className="px-4 pb-8 pt-2 sm:px-6">
       <div className="flex items-start justify-between gap-4">
-        <h1 className="text-4xl font-semibold">Profile</h1>
+        <h1 className="text-4xl font-bold">Profile</h1>
         <Link
           href="/listing"
           aria-label="List a room"

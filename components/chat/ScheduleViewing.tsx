@@ -121,14 +121,14 @@ export function ScheduleViewing({
         <input type="hidden" name="time_zone" value={timeZone} />
         <input type="hidden" name="duration" value={duration} />
 
-        <h2 id="viewing-title" className="text-2xl font-semibold">Request a viewing</h2>
+        <h2 id="viewing-title" className="text-2xl font-bold">Request a viewing</h2>
         <p className="mt-1 text-sm text-muted">
           {conversation.listing_title}
           {where ? ` · ${where}` : ""}
         </p>
         {hours.length > 0 ? (
           <p className="mt-2 text-xs text-muted">
-            <span className="font-semibold uppercase tracking-wider text-accent">Viewing hours</span>{" "}
+            <span className="font-bold uppercase tracking-wider text-accent">Viewing hours</span>{" "}
             {hours.join(" · ")}
           </p>
         ) : null}

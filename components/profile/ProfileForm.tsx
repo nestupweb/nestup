@@ -33,7 +33,7 @@ export function ProfileForm({
   return (
     <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
       {next ? <input type="hidden" name="next" value={next} /> : null}
-      <h1 className="text-3xl font-semibold">
+      <h1 className="text-3xl font-bold">
         {onboarding ? "Tell us about you" : "Your profile"}
       </h1>
       {onboarding ? (

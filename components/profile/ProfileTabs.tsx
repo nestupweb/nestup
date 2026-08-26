@@ -152,7 +152,7 @@ function Empty({ tab }: { tab: Exclude<TabKey, "about"> }) {
   }[tab];
   return (
     <div className="mx-auto max-w-sm py-12 text-center">
-      <p className="text-2xl font-semibold">{copy.title}</p>
+      <p className="text-2xl font-bold">{copy.title}</p>
       <p className="mt-2 text-sm text-muted">{copy.hint}</p>
       <Link
         href={copy.href}

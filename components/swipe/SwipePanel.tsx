@@ -108,14 +108,14 @@ function Essentials({ entry }: { entry: DeckEntry }) {
       <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-hairline pt-5">
         <div>
           <dt className={eyebrow}>Monthly</dt>
-          <dd className="mt-1.5 text-2xl font-semibold">
+          <dd className="mt-1.5 text-2xl font-bold">
             ₪{listing.rent.toLocaleString()}
             <span className="text-sm font-normal text-muted"> / mo</span>
           </dd>
         </div>
         <div>
           <dt className={eyebrow}>Move in</dt>
-          <dd className="mt-1.5 text-2xl font-semibold">{formatMoveIn(listing.available_from)}</dd>
+          <dd className="mt-1.5 text-2xl font-bold">{formatMoveIn(listing.available_from)}</dd>
         </div>
       </dl>
 
@@ -124,7 +124,7 @@ function Essentials({ entry }: { entry: DeckEntry }) {
       ) : null}
       <Link
         href={`/browse/${listing.id}`}
-        className="mt-4 inline-block text-xs font-semibold uppercase tracking-[0.16em] text-accent"
+        className="mt-4 inline-block text-xs font-bold uppercase tracking-[0.16em] text-accent"
       >
         Full listing →
       </Link>
@@ -225,7 +225,7 @@ function Roommates({ entry, seeker }: { entry: DeckEntry; seeker: Profile }) {
                   {shared.map((s) => (
                     <span
                       key={s}
-                      className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-accent"
+                      className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent"
                     >
                       {s}
                     </span>

@@ -39,7 +39,7 @@ export function ViewingScheduledChip({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3.5 py-2 text-[12px] font-semibold uppercase tracking-wider text-accent transition-colors hover:border-accent hover:bg-accent/15"
+        className="flex shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3.5 py-2 text-[12px] font-bold uppercase tracking-wider text-accent transition-colors hover:border-accent hover:bg-accent/15"
       >
         <CalendarIcon className="h-4 w-4" />
         Viewing scheduled
@@ -119,7 +119,7 @@ export function ViewingDetails({
           </span>
           <div className="min-w-0 flex-1">
             <p className={key}>Viewing scheduled</p>
-            <h2 id="viewing-details-title" className="mt-0.5 text-2xl font-semibold leading-tight">{longDate}</h2>
+            <h2 id="viewing-details-title" className="mt-0.5 text-2xl font-bold leading-tight">{longDate}</h2>
             <p className="text-sm text-muted">{time}</p>
           </div>
           <button
@@ -180,7 +180,7 @@ export function ViewingDetails({
               Add to Google Calendar ↗
             </a>
           )}
-          <span className="rounded-full bg-accent/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
+          <span className="rounded-full bg-accent/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-accent">
             Confirmed by both
           </span>
         </div>
