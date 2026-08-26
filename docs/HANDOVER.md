@@ -17,7 +17,7 @@ Next.js 16.3.2 App Router (Turbopack; `proxy.ts` replaces `middleware.ts`; `para
 
 ## Commands
 - `npm run dev` → http://localhost:3000
-- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **32 files / 163 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
+- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **32 files / 168 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
 - `npm run seed` — idempotent demo data (see below). `npm run check:nav [baseUrl]` — real-browser check that internal navigation stays in one tab.
 - Handy one-off Playwright probes against production live in Temp; pattern: log in as a seed user, assert, screenshot. Screenshots as proof are appreciated.
 

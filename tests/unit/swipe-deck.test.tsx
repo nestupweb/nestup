@@ -99,16 +99,19 @@ test("information panel has three pages with address, home details and roommates
   expect(screen.queryByRole("button", { name: /next page/i })).not.toBeInTheDocument(); // tabs only, no chevrons
 });
 
-test("liking records the swipe and loads the next room; the last rejection empties the deck", async () => {
+test("liking records the swipe, offers the hello first, then loads the next room; the last rejection empties the deck", async () => {
   render(<SwipeDeck entries={entries} seeker={profile()} />);
   await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
   expect(recordSwipeAction).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", "like");
-  await waitFor(() => expect(screen.getByRole("article", { name: "Quiet room by the park" })).toBeInTheDocument());
-  // The optional hello appears immediately; "Not now" dismisses it.
+  // The optional hello opens over the liked room, which stays put until the sheet closes.
   expect(screen.getByRole("dialog", { name: /say hi to dana & noa/i })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Florentin 12" })).toBeInTheDocument();
+  expect(screen.queryByRole("article", { name: "Quiet room by the park" })).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: /not now/i }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(sendIntroAction).not.toHaveBeenCalled();
+  // Only now does the card slide away and the next room arrive.
+  await waitFor(() => expect(screen.getByRole("article", { name: "Quiet room by the park" })).toBeInTheDocument());
   expect(screen.getByRole("img", { name: /social match unavailable/i })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /next photo/i })).not.toBeInTheDocument(); // single photo: no arrows
 
@@ -121,7 +124,7 @@ test("the intro sheet sends a pre-written, editable hello to the household", asy
   render(<SwipeDeck entries={entries} seeker={profile()} />);
   await userEvent.click(screen.getByRole("button", { name: /like this room/i }));
   const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
-  expect(box.value).toMatch(/^Hi Dana and everyone! I just liked your room at Florentin 12, Tel Aviv/);
+  expect(box.value).toBe("Hi Dana and everyone! I liked your room at Florentin 12, Tel Aviv — could I come see it?");
   await userEvent.clear(box);
   await userEvent.type(box, "Hello from the deck");
   await userEvent.click(screen.getByRole("button", { name: /send message/i }));

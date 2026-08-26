@@ -73,15 +73,15 @@ export function formatMoveIn(iso: string): string {
 }
 
 /**
- * The ready-made hello offered right after a like. Addresses the household
- * by first name and names the room, so it reads as written, not canned.
+ * The ready-made hello offered right after a like: one short line that
+ * greets the household by first name, names the room and asks to see it.
  */
 export function introMessage(entry: DeckEntry): string {
   const { listing, owner, residents } = entry;
   const first = owner.full_name.split(" ")[0];
   const greeting = residents.length > 0 ? `Hi ${first} and everyone` : `Hi ${first}`;
   const where = [listing.address || listing.neighborhood, listing.city].filter(Boolean).join(", ");
-  return `${greeting}! I just liked your room${where ? ` at ${where}` : ""} on NestUp. I'd love to hear a bit more about the place and who lives there — could we set up a viewing?`;
+  return `${greeting}! I liked your room${where ? ` at ${where}` : ""} — could I come see it?`;
 }
 
 /** Interests two people share, in the seeker's order. */

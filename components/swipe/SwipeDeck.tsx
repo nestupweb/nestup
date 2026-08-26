@@ -14,15 +14,30 @@ const EXIT_MS = 360;
 
 /**
  * One room at a time. The decision is persisted in the background while the
- * card animates out, so the next room appears without a round-trip.
+ * card animates out, so the next room appears without a round-trip. A like
+ * first opens the "say hi" sheet over the card; the card slides away only
+ * once the sheet is closed (sent or "Not now").
  */
 export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: Profile }) {
   const [queue, setQueue] = useState(entries);
   const [leaving, setLeaving] = useState<SwipeDirection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intro, setIntro] = useState<DeckEntry | null>(null); // "say hi" sheet after a like
-  const closeIntro = useCallback(() => setIntro(null), []);
   const timer = useRef<number | null>(null);
+
+  /** Animate the current card out, then bring up the next room. */
+  const leave = useCallback((direction: SwipeDirection) => {
+    setLeaving(direction);
+    timer.current = window.setTimeout(() => {
+      setQueue((q) => q.slice(1));
+      setLeaving(null);
+      timer.current = null;
+    }, EXIT_MS);
+  }, []);
+  const closeIntro = useCallback(() => {
+    setIntro(null);
+    leave("like");
+  }, [leave]);
 
   useEffect(
     () => () => {
@@ -35,29 +50,22 @@ export function SwipeDeck({ entries, seeker }: { entries: DeckEntry[]; seeker: P
   const upcoming = queue[1];
 
   const decide = (direction: SwipeDirection) => {
-    if (!current || leaving) return;
-    setLeaving(direction);
+    if (!current || leaving || intro) return;
     setError(null);
-    if (direction === "like") setIntro(current);
     recordSwipeAction(current.listing.id, direction)
       .then((r) => {
         if (!r.ok) setError("That one didn't save — check your connection and try the next room.");
       })
       .catch(() => setError("That one didn't save — check your connection and try the next room."));
-    timer.current = window.setTimeout(() => {
-      setQueue((q) => q.slice(1));
-      setLeaving(null);
-      timer.current = null;
-    }, EXIT_MS);
+    if (direction === "like") {
+      setIntro(current); // the card waits underneath until the sheet closes
+      return;
+    }
+    leave(direction);
   };
 
   if (!current) {
-    return (
-      <>
-        <EmptyDeck seenAny={entries.length > 0} />
-        {intro ? <IntroSheet key={`intro-${intro.listing.id}`} entry={intro} onClose={closeIntro} /> : null}
-      </>
-    );
+    return <EmptyDeck seenAny={entries.length > 0} />;
   }
 
   return (

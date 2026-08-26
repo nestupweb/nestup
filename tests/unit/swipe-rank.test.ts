@@ -104,7 +104,7 @@ test("formatMoveIn renders the calendar date regardless of timezone", () => {
 test("introMessage greets the household by first name and names the room", () => {
   const owner = profile({ user_id: "o1", full_name: "Dana Levi" });
   const entry = { listing: listing(), owner, residents: [], lifestyle: 80, social: 50 };
-  expect(introMessage(entry)).toMatch(/^Hi Dana! I just liked your room at Florentin 12, Tel Aviv on NestUp\./);
+  expect(introMessage(entry)).toBe("Hi Dana! I liked your room at Florentin 12, Tel Aviv — could I come see it?");
   const withRoommates = { ...entry, residents: [profile({ user_id: "r1", full_name: "Noa" })] };
   expect(introMessage(withRoommates)).toMatch(/^Hi Dana and everyone!/);
 });

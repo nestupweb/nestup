@@ -32,6 +32,8 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 
 - **Room page skeleton (2026-08-25):** `app/(public)/browse/loading.tsx` is now a client component that switches on `usePathname()` — the listings grid skeleton for `/browse`, a gallery (16/10) + title + detail-grid skeleton for `/browse/[id]`. Before, opening a card showed the filter-sidebar/cards skeleton under the room URL for ~1.9 s (that boundary covers the child segment too, and a nested `[id]/loading.tsx` would only appear after a round trip). Same pattern as `app/(app)/loading.tsx`.
 
+- **Swipe like order + shorter hello (2026-08-26, user-requested):** a ♥ now persists the swipe immediately but keeps the card on screen under the `IntroSheet`; the `.swipe-exit-like` slide and the next room happen only when the sheet closes (`SwipeDeck` `closeIntro` → `leave("like")`; `decide` ignores input while a sheet is open). Skips are unchanged. `introMessage()` is one line: "Hi Dana [and everyone]! I liked your room at <address, city> — could I come see it?". Tests updated in `swipe-deck.test.tsx` / `swipe-rank.test.ts`.
+
 ## For the scale doc
 
 - Unbounded page offsets in listing pagination (deep OFFSET scans).
