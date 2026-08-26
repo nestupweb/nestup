@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Listing } from "@/lib/types";
 
 vi.mock("next/image", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @next/next/no-img-element
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @next/next/no-img-element, jsx-a11y/alt-text
   default: ({ fill, sizes, ...props }: { fill?: boolean; sizes?: string; src: string; alt: string; className?: string }) => <img {...props} />,
 }));
 
