@@ -40,6 +40,8 @@ Living list of non-blocking findings from task reviews. Address at the flagged t
 
 - **Wording: "roommates", never "flatmates" (2026-08-26, user-requested):** the listing page spec line now reads "N roommate(s)" (`browse/[id]/page.tsx`); seed copy in `scripts/seed-data.ts` changed, and the live rows were patched in place via SQL (`listings.description` ×2, `profiles.bio` ×7) so no reseed was needed. Code comments/identifiers still say flatmate in places — fine, not user-visible.
 
+- **Profile header button (2026-08-26, user-requested):** the top-right "+" (→ `/listing`) on `/profile` is now an **Edit profile** pill (→ `/profile/edit`). Creating a listing is reached only from the My listing tab's "Add listing" tile (`components/profile/MyListing.tsx`). The avatar's pencil badge still links to `/profile/edit` too.
+
 ## For the scale doc
 
 - Unbounded page offsets in listing pagination (deep OFFSET scans).

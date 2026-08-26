@@ -64,12 +64,10 @@ export default async function ProfilePage({
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-4xl font-bold">Profile</h1>
         <Link
-          href="/listing"
-          aria-label="List a room"
-          title="List a room"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-hairline text-2xl font-light leading-none text-ink transition-colors hover:border-accent hover:text-accent"
+          href="/profile/edit"
+          className="shrink-0 rounded-full border border-hairline px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
         >
-          +
+          Edit profile
         </Link>
       </div>
 
