@@ -19,6 +19,29 @@ export function newMatchSubject(listing: Listing): string {
   return `A new room in ${listing.city} matches what you're looking for`;
 }
 
+/**
+ * The plain-text half of the multipart message. Written by hand rather than
+ * stripped from the HTML: this is what a text-only client shows, and it is
+ * read by spam filters as the honest version of the message.
+ */
+export function renderNewMatchText(listing: Listing, site: string): string {
+  const base = site.replace(/\/$/, "");
+  return [
+    `A room just went up in ${listing.city}.`,
+    "",
+    listing.title,
+    `₪${listing.rent.toLocaleString("en-US")} a month · ${listing.city}`,
+    "",
+    `See the room: ${base}/browse/${listing.id}`,
+    "",
+    "It's in one of your cities, inside your budget, and a good match for how you live,",
+    "so it's in your Swipe deck too.",
+    "",
+    `You asked to hear about new matches. Turn these e-mails off: ${base}/settings`,
+    "NestUp · find your next home and the people in it",
+  ].join("\n");
+}
+
 export function renderNewMatch(listing: Listing, site: string): string {
   const base = site.replace(/\/$/, "");
   const url = `${base}/browse/${listing.id}`;

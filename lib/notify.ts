@@ -1,6 +1,6 @@
 import { lifestyleScore, socialScore, sortKey } from "@/lib/compatibility";
 import { MIN_DECK_SCORE, fitsHardFilters } from "@/lib/swipe";
-import { newMatchSubject, renderNewMatch } from "@/lib/email/new-match";
+import { newMatchSubject, renderNewMatch, renderNewMatchText } from "@/lib/email/new-match";
 import type { Listing, Profile } from "@/lib/types";
 
 export { renderNewMatch };
@@ -81,13 +81,18 @@ export async function notifyNewListing(listingId: string): Promise<number> {
     if (recipients.length === 0) return 0;
 
     const { sendMail } = await import("@/lib/mail");
-    const html = renderNewMatch(listing, SITE());
+    const site = SITE();
+    const html = renderNewMatch(listing, site);
+    // Multipart + a List-Unsubscribe header: this is opt-in mail, and both are
+    // what keeps a small sender out of the junk folder.
+    const text = renderNewMatchText(listing, site);
+    const unsubscribeUrl = `${site}/settings`;
     const subject = newMatchSubject(listing);
     let sent = 0;
     // One at a time: Gmail is the transport, and a burst of parallel sends is
     // the fastest way to be throttled.
     for (const r of recipients) {
-      if (await sendMail({ to: r.email, subject, html })) sent += 1;
+      if (await sendMail({ to: r.email, subject, html, text, unsubscribeUrl })) sent += 1;
     }
     console.info(`[notify] new listing ${listing.id}: ${sent}/${recipients.length} e-mails sent`);
     return sent;

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { matchingSeekers, renderNewMatch, type Candidate } from "@/lib/notify";
+import { renderNewMatchText } from "@/lib/email/new-match";
 import type { Listing, Profile } from "@/lib/types";
 
 function profile(overrides: Partial<Profile> = {}): Profile {
@@ -95,5 +96,20 @@ describe("renderNewMatch", () => {
 
   test("leaves no placeholder unreplaced", () => {
     expect(html).not.toMatch(/\{\{/);
+  });
+});
+
+describe("renderNewMatchText", () => {
+  const text = renderNewMatchText(room, "https://nestup-kappa.vercel.app");
+
+  test("is real prose with the room, price and link — not stripped markup", () => {
+    expect(text).toContain("Sunlit room in Florentin");
+    expect(text).toContain("2,800");
+    expect(text).toContain("https://nestup-kappa.vercel.app/browse/l1");
+    expect(text).not.toContain("<");
+  });
+
+  test("carries the way to switch these e-mails off", () => {
+    expect(text).toContain("https://nestup-kappa.vercel.app/settings");
   });
 });
