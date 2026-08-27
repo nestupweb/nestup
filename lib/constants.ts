@@ -127,7 +127,8 @@ export const MAX_LISTING_PHOTOS = 10;
 /** What a listing photo shows. `hints` pre-tag uploads from their file names. */
 export const PHOTO_ROOMS = [
   { key: "living_room", label: "Living room", hints: ["living", "salon", "lounge"] },
-  { key: "bedroom", label: "Bedroom", hints: ["bed", "room"] },
+  // No bare "room" hint: it also matches bathroom.jpg and living-room.jpg.
+  { key: "bedroom", label: "Bedroom", hints: ["bed"] },
   { key: "bathroom", label: "Bathroom", hints: ["bath", "shower", "toilet", "wc"] },
   { key: "kitchen", label: "Kitchen", hints: ["kitchen"] },
   { key: "balcony", label: "Balcony", hints: ["balcony", "terrace", "garden", "yard"] },

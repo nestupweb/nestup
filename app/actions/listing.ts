@@ -10,6 +10,8 @@ import { buildListingTitle } from "@/lib/listing-title";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/constants";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 import { notifyNewListing } from "@/lib/notify";
+import { auditPhotos, isPhotoCheckEnabled } from "@/lib/photo-check";
+import type { PhotoRoom } from "@/lib/types";
 
 export type ListingFormState = { error?: string };
 
@@ -78,11 +80,15 @@ export async function saveListingAction(
   if (formData.get("photos_uploading")) {
     return { error: "Your photos are still uploading — give it a moment and publish again." };
   }
+  if (formData.get("photos_flagged")) {
+    return { error: "One of your photos doesn't match its tag — fix or remove the flagged photo first." };
+  }
 
   // Photos arrive as public URLs (uploaded from the browser) with a room label
   // each; `photos` files are still accepted for older clients.
   const keptUrls = formData.getAll("existing_photos").map(String).filter((u) => u.startsWith("https://"));
   const keptLabels = formData.getAll("existing_labels").map((l) => photoRoomSchema.parse(String(l)));
+  const keptTokens = formData.getAll("photo_tokens").map(String);
   const newFiles = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
   const newLabels = formData.getAll("new_labels").map((l) => photoRoomSchema.parse(String(l)));
 
@@ -101,6 +107,32 @@ export async function saveListingAction(
     return { error: `Add a photo of the ${names.join(", the ")} — and tag each photo with the room it shows.` };
   }
 
+  // Every photo was looked at when it was uploaded; publish only accepts photos
+  // whose signed verdict fits the tag (or pairs already saved on this listing).
+  const listingId = String(formData.get("listing_id") ?? "");
+  if (isPhotoCheckEnabled()) {
+    if (newFiles.length > 0) return { error: "Please add photos through the photo picker so they can be checked." };
+    const trusted = new Map<string, PhotoRoom>();
+    if (listingId) {
+      const { data } = await supabase
+        .from("listings")
+        .select("photo_urls, photo_labels")
+        .eq("id", listingId)
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      const row = data as { photo_urls: string[]; photo_labels: string[] | null } | null;
+      row?.photo_urls.forEach((u, i) => trusted.set(u, photoRoomSchema.parse(row.photo_labels?.[i] ?? "other")));
+    }
+    const bad = auditPhotos({
+      urls: keptUrls,
+      labels: keptUrls.map((_, i) => keptLabels[i] ?? "other"),
+      tokens: keptTokens,
+      trusted,
+      secret: process.env.ANTHROPIC_API_KEY!,
+    });
+    if (bad) return { error: `Photo ${bad.index + 1}: ${bad.message}` };
+  }
+
   const photo_urls = [...keptUrls];
   for (const file of newFiles) {
     try {
@@ -110,7 +142,6 @@ export async function saveListingAction(
     }
   }
 
-  const listingId = String(formData.get("listing_id") ?? "");
   const is_active = formData.get("is_active") !== null ? formData.get("is_active") === "on" : true;
   const address = `${parsed.data.street} ${parsed.data.house_number}`.trim();
   const title = buildListingTitle(parsed.data);

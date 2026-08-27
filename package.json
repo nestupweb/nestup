@@ -14,9 +14,11 @@
     "test:watch": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest",
     "seed": "node --env-file=.env.local scripts/seed.ts",
     "check:nav": "node scripts/check-same-tab-nav.mjs",
+    "check:photos": "node --env-file=.env.local scripts/photo-check-probe.mjs",
     "auth:config": "node --env-file=.env.local scripts/auth-config.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.121.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.4",
     "next": "16.3.2",

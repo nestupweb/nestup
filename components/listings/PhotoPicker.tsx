@@ -3,17 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-client";
+import { checkListingPhotoAction } from "@/app/actions/photo-check";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, photoRoomLabel } from "@/lib/constants";
+import { photoProblem, suggestedRoom, type PhotoSubject } from "@/lib/photo-rules";
 import { REQUIRED_PHOTO_ROOMS } from "@/lib/validation/listing";
 import type { PhotoRoom } from "@/lib/types";
 
 type Item = {
   id: string;
   url: string | null; // public URL once uploaded
+  path: string | null; // storage path (only for photos uploaded in this session)
   preview: string; // what the tile shows (object URL until uploaded)
   label: PhotoRoom;
-  status: "uploading" | "ready" | "failed";
+  status: "uploading" | "checking" | "ready" | "failed" | "rejected";
   error?: string;
+  /** What the check saw, plus the signed verdict the server will trust at publish. */
+  subject?: PhotoSubject;
+  token?: string;
+  note?: string;
 };
 
 const select =
@@ -28,12 +35,20 @@ function guessRoom(fileName: string): PhotoRoom {
   return "other";
 }
 
+/** The message shown on a tile whose photo doesn't fit its tag (null when it does). */
+function problemOf(it: Item): string | null {
+  if (it.status !== "ready" || !it.subject) return null;
+  return photoProblem(it.subject, it.label);
+}
+
 /**
  * 3–10 photos, each tagged with the room it shows. Photos are compressed and
  * uploaded straight from the browser to the `listing-photos` bucket the
- * moment they're picked (the owner's folder — storage RLS), so the form
- * itself only submits URLs: `existing_photos` + `existing_labels`. That keeps
- * a 10-photo listing far below Vercel's request-body limit.
+ * moment they're picked (the owner's folder — storage RLS), then looked at by
+ * the photo check: a photo that isn't of the apartment is rejected on the
+ * spot, and a living room / bedroom / bathroom tag must match what the photo
+ * shows. The form itself only submits URLs: `existing_photos` +
+ * `existing_labels` + `photo_tokens` (the signed verdicts).
  */
 export function PhotoPicker({
   userId,
@@ -48,6 +63,7 @@ export function PhotoPicker({
     initialUrls.map((url, i) => ({
       id: url,
       url,
+      path: null,
       preview: url,
       label: (PHOTO_ROOMS.some((r) => r.key === initialLabels[i]) ? initialLabels[i] : "other") as PhotoRoom,
       status: "ready",
@@ -67,24 +83,65 @@ export function PhotoPicker({
   );
 
   const count = items.length;
-  const covered = new Set(items.filter((i) => i.status === "ready").map((i) => i.label));
-  const uploading = items.some((i) => i.status === "uploading");
+  const covered = new Set(items.filter((i) => i.status === "ready" && !problemOf(i)).map((i) => i.label));
+  const busy = items.some((i) => i.status === "uploading" || i.status === "checking");
+  const flagged = items.some((i) => problemOf(i) !== null);
 
-  const update = (id: string, patch: Partial<Item>) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const update = (id: string, patch: Partial<Item> | ((it: Item) => Partial<Item>)) =>
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, ...(typeof patch === "function" ? patch(it) : patch) } : it))
+    );
 
-  const upload = async (id: string, file: File) => {
+  const discard = async (path: string | null) => {
+    if (!path) return;
+    await createClient().storage.from("listing-photos").remove([path]);
+  };
+
+  /** Ask the server what the photo shows; retags it when the photo clearly shows another room. */
+  const check = async (id: string, url: string, path: string | null, label: PhotoRoom) => {
+    update(id, { status: "checking", error: undefined });
+    const result = await checkListingPhotoAction(url, label);
+    if (!result.ok) {
+      update(id, { status: "failed", error: result.error });
+      return;
+    }
+    if (!result.checked) {
+      update(id, { status: "ready" });
+      return;
+    }
+    if (result.subject === "not_apartment") {
+      update(id, { status: "rejected", url: null, error: `${result.reason} Only photos of the apartment are accepted.` });
+      void discard(path);
+      return;
+    }
+    const room = suggestedRoom(result.subject);
+    update(id, (it) => {
+      const fits = photoProblem(result.subject, it.label) === null;
+      const next = fits || !room ? it.label : room;
+      return {
+        status: "ready",
+        subject: result.subject,
+        token: result.token,
+        label: next,
+        note: next !== it.label ? `Tagged as ${photoRoomLabel(next)} — that is what the photo shows.` : undefined,
+      };
+    });
+  };
+
+  const upload = async (id: string, file: File, label: PhotoRoom) => {
+    let path: string | null = null;
     try {
       const blob = await compressImage(file);
       const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      path = `${userId}/${crypto.randomUUID()}.${ext}`;
       const supabase = createClient();
       const { error } = await supabase.storage
         .from("listing-photos")
         .upload(path, blob, { contentType: blob.type || "image/jpeg" });
       if (error) throw new Error("Upload failed — check your connection and try again.");
       const url = supabase.storage.from("listing-photos").getPublicUrl(path).data.publicUrl;
-      update(id, { url, status: "ready" });
+      update(id, { url, path });
+      await check(id, url, path, label);
     } catch (e) {
       update(id, { status: "failed", error: e instanceof Error ? e.message : "Upload failed." });
     }
@@ -97,13 +154,20 @@ export function PhotoPicker({
     const next: Item[] = fresh.map((file) => ({
       id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
       url: null,
+      path: null,
       preview: URL.createObjectURL(file),
       label: guessRoom(file.name),
       status: "uploading",
     }));
     setItems((prev) => [...prev, ...next]);
-    next.forEach((it, i) => void upload(it.id, fresh[i]));
+    next.forEach((it, i) => void upload(it.id, fresh[i], it.label));
     if (fileInput.current) fileInput.current.value = "";
+  };
+
+  const retag = (it: Item, label: PhotoRoom) => {
+    update(it.id, { label, note: undefined });
+    // A photo saved before the check existed has no verdict yet — get one for its new tag.
+    if (it.status === "ready" && !it.subject && it.url) void check(it.id, it.url, it.path, label);
   };
 
   const remove = (id: string) =>
@@ -116,11 +180,12 @@ export function PhotoPicker({
   return (
     <div>
       {items
-        .filter((it) => it.status === "ready" && it.url)
+        .filter((it) => it.status === "ready" && it.url && !problemOf(it))
         .map((it) => (
           <span key={it.id}>
             <input type="hidden" name="existing_photos" value={it.url!} />
             <input type="hidden" name="existing_labels" value={it.label} />
+            <input type="hidden" name="photo_tokens" value={it.token ?? ""} />
           </span>
         ))}
       {/* Picker only — never submitted (photos are already in storage by then). */}
@@ -133,54 +198,65 @@ export function PhotoPicker({
         onChange={(e) => addFiles(e.target.files)}
         className="sr-only"
       />
-      {uploading ? <input type="hidden" name="photos_uploading" value="1" /> : null}
+      {busy ? <input type="hidden" name="photos_uploading" value="1" /> : null}
+      {flagged ? <input type="hidden" name="photos_flagged" value="1" /> : null}
 
       <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-        {items.map((it, i) => (
-          <figure key={it.id} className="min-w-0">
-            <div className="relative aspect-square overflow-hidden rounded-xl bg-hairline">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={it.preview}
-                alt={`Photo ${i + 1}: ${photoRoomLabel(it.label)}`}
-                className={`h-full w-full object-cover transition-opacity ${it.status === "ready" ? "opacity-100" : "opacity-50"}`}
-              />
-              {it.status === "uploading" ? (
-                <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[11px] font-semibold uppercase tracking-widest text-white">
-                  Uploading…
-                </span>
-              ) : null}
-              {it.status === "failed" ? (
-                <span role="alert" className="absolute inset-x-0 bottom-0 bg-danger/90 px-1 py-1 text-center text-[11px] font-semibold leading-tight text-white">
-                  {it.error ?? "Upload failed"}
-                </span>
-              ) : null}
-              <button
-                type="button"
-                aria-label={`Remove photo ${i + 1}`}
-                onClick={() => remove(it.id)}
-                className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-xs text-white backdrop-blur hover:bg-black/75"
+        {items.map((it, i) => {
+          const problem = problemOf(it);
+          const overlay = it.status === "failed" || it.status === "rejected" ? (it.error ?? "Upload failed") : problem;
+          const dim = it.status !== "ready" || problem !== null;
+          return (
+            <figure key={it.id} className="min-w-0">
+              <div className="relative aspect-square overflow-hidden rounded-xl bg-hairline">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={it.preview}
+                  alt={`Photo ${i + 1}: ${photoRoomLabel(it.label)}`}
+                  className={`h-full w-full object-cover transition-opacity ${dim ? "opacity-50" : "opacity-100"}`}
+                />
+                {it.status === "uploading" || it.status === "checking" ? (
+                  <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[11px] font-semibold uppercase tracking-widest text-white">
+                    {it.status === "uploading" ? "Uploading…" : "Checking…"}
+                  </span>
+                ) : null}
+                {overlay ? (
+                  <span
+                    role="alert"
+                    className="absolute inset-x-0 bottom-0 max-h-full overflow-y-auto bg-danger/90 px-1.5 py-1 text-center text-[11px] font-semibold leading-tight text-white"
+                  >
+                    {overlay}
+                  </span>
+                ) : null}
+                <button
+                  type="button"
+                  aria-label={`Remove photo ${i + 1}`}
+                  onClick={() => remove(it.id)}
+                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-xs text-white backdrop-blur hover:bg-black/75"
+                >
+                  ×
+                </button>
+              </div>
+              <label className="sr-only" htmlFor={`photo-room-${i}`}>
+                Room shown in photo {i + 1}
+              </label>
+              <select
+                id={`photo-room-${i}`}
+                value={it.label}
+                disabled={it.status === "rejected"}
+                onChange={(e) => retag(it, e.target.value as PhotoRoom)}
+                className={select}
               >
-                ×
-              </button>
-            </div>
-            <label className="sr-only" htmlFor={`photo-room-${i}`}>
-              Room shown in photo {i + 1}
-            </label>
-            <select
-              id={`photo-room-${i}`}
-              value={it.label}
-              onChange={(e) => update(it.id, { label: e.target.value as PhotoRoom })}
-              className={select}
-            >
-              {PHOTO_ROOMS.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </figure>
-        ))}
+                {PHOTO_ROOMS.map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+              {it.note ? <figcaption className="mt-1 text-[11px] leading-tight text-accent">{it.note}</figcaption> : null}
+            </figure>
+          );
+        })}
         {count < MAX_LISTING_PHOTOS ? (
           <button
             type="button"
@@ -202,7 +278,12 @@ export function PhotoPicker({
             {covered.has(room) ? "✓" : "○"} {photoRoomLabel(room)}
           </span>
         ))}
-        {uploading ? <span aria-live="polite">Uploading photos…</span> : null}
+        {busy ? (
+          <span aria-live="polite">
+            {items.some((i) => i.status === "uploading") ? "Uploading photos…" : "Checking photos…"}
+          </span>
+        ) : null}
+        {flagged ? <span className="text-danger">Fix or remove the flagged photo to publish.</span> : null}
       </div>
     </div>
   );

@@ -17,7 +17,16 @@ const section = "mt-9 border-t border-hairline pt-6";
 const heading = "text-lg font-semibold";
 const check = "flex items-center gap-2 text-sm";
 
-export function ListingForm({ listing, userId }: { listing: Listing | null; userId: string }) {
+export function ListingForm({
+  listing,
+  userId,
+  photoCheck = false,
+}: {
+  listing: Listing | null;
+  userId: string;
+  /** True when the photo check is configured — only then is the promise in the copy true. */
+  photoCheck?: boolean;
+}) {
   const [state, formAction, pending] = useActionState<ListingFormState, FormData>(
     saveListingAction,
     {}
@@ -43,6 +52,9 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
         <p className="mt-1 text-sm text-muted">
           {MIN_LISTING_PHOTOS}–{MAX_LISTING_PHOTOS} photos. Include the living room, a bedroom and the bathroom, and tag each
           photo with the room it shows.
+          {photoCheck
+            ? " Photos are checked as you add them — each one has to show the room it’s tagged with, and only photos of the apartment are accepted."
+            : null}
         </p>
         <PhotoPicker userId={userId} initialUrls={listing?.photo_urls ?? []} initialLabels={listing?.photo_labels ?? []} />
       </section>
