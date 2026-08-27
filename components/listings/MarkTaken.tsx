@@ -11,7 +11,7 @@ import { defaultTakenMessage, takenOnLabel, tellCountLabel } from "@/lib/listing
 import { useStickyForm } from "@/lib/hooks";
 
 const BUTTON =
-  "mt-4 inline-flex items-center gap-2 rounded-full border border-hairline px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent";
+  "inline-flex items-center gap-2 rounded-full border border-hairline px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent";
 const PRIMARY =
   "rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-contrast disabled:opacity-60";
 const QUIET = "rounded-full px-4 py-2 text-sm font-semibold text-muted hover:text-ink";
@@ -43,10 +43,10 @@ export function MarkTaken({
 
   if (takenAt) {
     return (
-      <div className="mt-4">
+      <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm text-muted">
-          <span className="font-semibold text-ink">Taken.</span> {takenOnLabel(takenAt)} — the room is out of Listings
-          and Swipe, and everyone you were chatting with was told.
+          <span className="font-semibold text-ink">Taken.</span> {takenOnLabel(takenAt)} — everyone you were chatting
+          with was told.
         </p>
         <button
           type="button"
@@ -61,7 +61,7 @@ export function MarkTaken({
         >
           {reopening ? "Putting it back…" : "Put the room back up"}
         </button>
-        {reopenError ? <p role="alert" className="mt-2 text-sm text-danger">{reopenError}</p> : null}
+        {reopenError ? <p role="alert" className="basis-full text-sm text-danger">{reopenError}</p> : null}
       </div>
     );
   }
@@ -82,7 +82,7 @@ export function MarkTaken({
   }
 
   return (
-    <form {...form} className="mt-4 rounded-2xl border border-hairline p-4">
+    <form {...form} className="mt-1 w-full basis-full rounded-2xl border border-hairline p-4">
       <input type="hidden" name="listing_id" value={listingId} />
       <h3 className="text-sm font-semibold text-ink">Tell everyone the room is taken</h3>
       <p className="mt-1 text-sm text-muted">

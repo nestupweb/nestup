@@ -99,8 +99,15 @@ function ListingPhotos({ listing }: { listing: Listing }) {
         ) : null}
       </div>
 
-      {photos.length > 0 ? <ListingActions listingId={listing.id} editHref={EDIT_PHOTOS_HREF} /> : null}
-      <MarkTaken listingId={listing.id} title={listing.title} takenAt={listing.taken_at} />
+      {photos.length > 0 ? (
+        <ListingActions listingId={listing.id} editHref={EDIT_PHOTOS_HREF}>
+          <MarkTaken listingId={listing.id} title={listing.title} takenAt={listing.taken_at} />
+        </ListingActions>
+      ) : (
+        <div className="mt-4">
+          <MarkTaken listingId={listing.id} title={listing.title} takenAt={listing.taken_at} />
+        </div>
+      )}
     </section>
   );
 }
