@@ -6,6 +6,11 @@ import type { Conversation, ConversationSummary } from "@/lib/types";
 /**
  * Inbox rows for the signed-in user (empty for anonymous). RLS-scoped by the
  * SQL function; memoized per request so the chat layout and thread page share one call.
+ *
+ * Chats the member deleted are still in here — the thread page looks a
+ * conversation up by id through this call, and re-opening a deleted chat from
+ * its listing has to land on an empty thread rather than a 404. The inbox list
+ * itself goes through `visibleConversations`.
  */
 export const getConversations = cache(async (): Promise<ConversationSummary[]> => {
   const { supabase, user } = await getAuthContext();
@@ -14,6 +19,15 @@ export const getConversations = cache(async (): Promise<ConversationSummary[]> =
   const rows = (data as ConversationSummary[] | null) ?? [];
   return rows.map((r) => ({ ...r, unread_count: Number(r.unread_count) }));
 });
+
+/**
+ * What the Chats list shows: everything except a chat this member deleted that
+ * has had nothing new said in it since. One message from the other side (or
+ * from the member) puts the row straight back, WhatsApp-style.
+ */
+export function visibleConversations(rows: ConversationSummary[]): ConversationSummary[] {
+  return rows.filter((c) => !c.cleared_at || c.last_message_at);
+}
 
 export async function getUnreadCount(): Promise<number> {
   const { supabase, user } = await getAuthContext();
@@ -60,6 +74,18 @@ export async function findOrCreateConversation(
  * Stamp "read up to now" for the caller on one conversation. The database
  * picks the timestamp so a message inserted the same instant still counts as read.
  */
+/**
+ * WhatsApp's "Delete chat": stamp a cutoff for the caller alone. Nothing is
+ * deleted for the other side, and the database picks the timestamp.
+ */
+export async function clearConversation(
+  supabase: SupabaseClient,
+  conversationId: string
+): Promise<boolean> {
+  const { error } = await supabase.rpc("clear_conversation", { p_conversation: conversationId });
+  return !error;
+}
+
 export async function markConversationRead(
   supabase: SupabaseClient,
   conversationId: string

@@ -20,7 +20,16 @@ export default async function PublicLayout({ children }: { children: React.React
           <div className="flex items-center gap-2">
             <ThemeToggle />
             {user ? null : (
-              <Link href="/login" className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-contrast">Log in</Link>
+              <>
+                <Link href="/login" className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-contrast">Log in</Link>
+                {/* Quieter than Log in so the two pills don't compete for the same glance. */}
+                <Link
+                  href="/signup"
+                  className="rounded-full border border-hairline px-4 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
+                >
+                  Sign up
+                </Link>
+              </>
             )}
           </div>
         </div>

@@ -190,6 +190,12 @@ export interface ConversationSummary {
   /** Next confirmed viewing that hasn't ended (null when none) — ring + "Viewing scheduled". */
   next_viewing_starts_at: string | null;
   next_viewing_ends_at: string | null;
+  /**
+   * When this member deleted the chat (null if never). Everything at or before
+   * it is hidden from them alone; with no `last_message_at` past it the row is
+   * left out of the inbox entirely — see `visibleConversations`.
+   */
+  cleared_at: string | null;
 }
 
 export type ViewingStatus = "proposed" | "confirmed" | "declined" | "cancelled";

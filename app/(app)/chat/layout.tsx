@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getConversations } from "@/lib/chat";
+import { getConversations, visibleConversations } from "@/lib/chat";
 import { ChatRealtime } from "@/components/chat/ChatRealtime";
 import { ChatShell } from "@/components/chat/ChatShell";
 import { ConversationList } from "@/components/chat/ConversationList";
@@ -10,7 +10,7 @@ import { ConversationList } from "@/components/chat/ConversationList";
 export default async function ChatLayout({ children }: { children: React.ReactNode }) {
   const { user } = await requireUser();
   const userId = user.id;
-  const conversations = await getConversations();
+  const conversations = visibleConversations(await getConversations());
 
   return (
     <>

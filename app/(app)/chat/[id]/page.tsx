@@ -6,6 +6,8 @@ import { ChatThread } from "@/components/chat/ChatThread";
 import type { Message, Viewing } from "@/lib/types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** "Nothing was ever deleted here" — matches `coalesce(cleared_at, 'epoch')` in SQL. */
+const EPOCH = "1970-01-01T00:00:00Z";
 
 export default async function ChatThreadPage({
   params,
@@ -23,9 +25,15 @@ export default async function ChatThreadPage({
   const conversation = (await getConversations()).find((c) => c.id === id);
   if (!conversation) notFound();
 
+  // "Delete chat" is a per-member cutoff, not a delete: everything up to it
+  // stays in the table and stays readable to the other side, and is filtered
+  // out here (the epoch stands in for "never deleted", as it does in the SQL).
+  // Re-opening a deleted chat therefore lands on an empty thread.
+  const since = conversation.cleared_at ?? EPOCH;
+
   const [{ data: messageRows }, { data: viewingRows }, { data: googleRow }] = await Promise.all([
-    supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true }),
-    supabase.from("viewings").select("*").eq("conversation_id", id).order("created_at", { ascending: true }),
+    supabase.from("messages").select("*").eq("conversation_id", id).gt("created_at", since).order("created_at", { ascending: true }),
+    supabase.from("viewings").select("*").eq("conversation_id", id).gt("created_at", since).order("created_at", { ascending: true }),
     supabase.from("google_tokens").select("email").eq("user_id", user.id).maybeSingle(),
   ]);
   await markConversationRead(supabase, id);

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { markConversationRead } from "@/lib/chat";
+import { clearConversation, markConversationRead } from "@/lib/chat";
 import { messageSchema } from "@/lib/validation/message";
 import type { Message } from "@/lib/types";
 
@@ -75,6 +75,25 @@ export async function sendMessageAction(input: SendMessageInput): Promise<SendMe
   revalidatePath(`/chat/${conversationId}`);
   revalidatePath("/chat");
   return { ok: true, message };
+}
+
+/**
+ * "Delete chat" from the Chats list — WhatsApp's version of it. The thread
+ * leaves this member's inbox and its history stops being shown *to them*;
+ * the other side keeps every message, and the next one they send brings the
+ * chat back holding that message alone. Nothing is destroyed, so this needs no
+ * second confirmation beyond the one the list already asks for.
+ */
+export async function deleteConversationAction(
+  conversationId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!UUID_RE.test(conversationId)) return { ok: false, error: "Could not delete this chat." };
+  const { supabase } = await requireUser();
+  // RLS: the cutoff only inserts for a conversation this member takes part in.
+  const ok = await clearConversation(supabase, conversationId);
+  if (!ok) return { ok: false, error: "Could not delete this chat. Please try again." };
+  revalidatePath("/chat", "layout");
+  return { ok: true };
 }
 
 /** Called when a thread is opened so the unread badge clears. */
