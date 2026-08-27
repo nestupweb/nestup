@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FEATURES } from "@/lib/constants";
+import { FEATURES, LEASE_TERMS } from "@/lib/constants";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { Select } from "@/components/ui/Select";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent";
@@ -110,6 +111,14 @@ export function FilterBar() {
             </label>
             <label className={label}>Move in by
               <DatePicker name="move_in_by" defaultValue={params.get("move_in_by") ?? ""} clearable placeholder="Any date" />
+            </label>
+            <label className={label}>For how long
+              <Select name="lease_term" defaultValue={params.get("lease_term") ?? ""}>
+                <option value="">Any length</option>
+                {LEASE_TERMS.map((t) => (
+                  <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+              </Select>
             </label>
             <label className={label}>Max roommates
               <input name="roommates_max" type="number" min={0} max={10} defaultValue={params.get("roommates_max") ?? ""} className={input} />

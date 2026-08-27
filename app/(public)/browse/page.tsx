@@ -8,7 +8,7 @@ import { SortMenu } from "@/components/listings/SortMenu";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 const FILTER_KEYS = [
-  "city", "rent_min", "rent_max", "move_in_by", "roommates_max",
+  "city", "rent_min", "rent_max", "move_in_by", "lease_term", "roommates_max",
   "pets_allowed", "smoking_allowed", "balcony", "air_conditioning",
   "parking", "elevator", "furnished",
 ] as const;

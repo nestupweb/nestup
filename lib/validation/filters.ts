@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { CITIES } from "@/lib/constants";
+import { CITIES, LEASE_TERMS } from "@/lib/constants";
+import type { LeaseTerm } from "@/lib/types";
 
 const optionalInt = z.preprocess((v) => {
   if (v === undefined || v === null || v === "") return undefined;
@@ -20,6 +21,7 @@ export const LISTING_SORTS = [
 ] as const;
 export type ListingSort = (typeof LISTING_SORTS)[number]["key"];
 const sortKeys = LISTING_SORTS.map((s) => s.key) as [ListingSort, ...ListingSort[]];
+const leaseTermKeys = LEASE_TERMS.map((t) => t.key) as [LeaseTerm, ...LeaseTerm[]];
 
 export const listingFiltersSchema = z.object({
   sort: z.enum(sortKeys).default("newest").catch("newest"),
@@ -27,6 +29,7 @@ export const listingFiltersSchema = z.object({
   rent_min: optionalInt.catch(undefined),
   rent_max: optionalInt.catch(undefined),
   move_in_by: z.iso.date().optional().catch(undefined),
+  lease_term: z.enum(leaseTermKeys).optional().catch(undefined), // "for how long" — exact term
   roommates_max: optionalInt.catch(undefined),
   pets_allowed: optionalBool.catch(undefined),
   smoking_allowed: optionalBool.catch(undefined),

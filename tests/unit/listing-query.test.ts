@@ -32,6 +32,17 @@ describe("applyListingFilters", () => {
     expect(calls).toContainEqual(["range", 10, 19]); // page 2, size 10
   });
 
+  test("'for how long' filters on the exact lease term and drops junk values", () => {
+    const { q, calls } = fakeQuery();
+    applyListingFilters(q, listingFiltersSchema.parse({ lease_term: "half_year" }));
+    expect(calls).toContainEqual(["eq", "lease_term", "half_year"]);
+    expect(listingFiltersSchema.parse({ lease_term: "forever" }).lease_term).toBeUndefined();
+    expect(listingFiltersSchema.parse({ lease_term: "" }).lease_term).toBeUndefined();
+    const none = fakeQuery();
+    applyListingFilters(none.q, listingFiltersSchema.parse({ lease_term: "" }));
+    expect(none.calls.some(([m, col]) => m === "eq" && col === "lease_term")).toBe(false);
+  });
+
   test("omitted filters add no calls besides order/range", () => {
     const { q, calls } = fakeQuery();
     applyListingFilters(q, listingFiltersSchema.parse({}));

@@ -21,6 +21,7 @@ export function applyListingFilters<Q extends FilterableQuery>(q: Q, f: ListingF
   if (f.rent_min !== undefined) q.gte("rent", f.rent_min);
   if (f.rent_max !== undefined) q.lte("rent", f.rent_max);
   if (f.move_in_by) q.lte("available_from", f.move_in_by);
+  if (f.lease_term) q.eq("lease_term", f.lease_term);
   if (f.roommates_max !== undefined) q.lte("roommates_count", f.roommates_max);
   for (const key of BOOL_KEYS) {
     if (f[key] !== undefined) q.eq(key, f[key]);
