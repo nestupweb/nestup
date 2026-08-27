@@ -1,7 +1,8 @@
 /**
  * Demo data for `scripts/seed.ts`: 12 handcrafted owners, 80 generated ones
  * (first wave), 62 more (second wave), a third wave covering every remaining
- * city in the country and a fourth adding two rooms to every city there is —
+ * city in the country, a fourth adding two rooms to every city there is and a
+ * fifth topping up the towns whose swipe deck was still empty —
  * each with a portrait and one active listing. Pure module — no env,
  * no I/O — so `tests/unit/seed-data.test.ts` can check it against the DB
  * constraints. Generation is deterministic (fixed PRNG seed): running the
@@ -1110,6 +1111,88 @@ export const WAVE4: Wave = {
   cyclePortraits: true,
 };
 
+
+// ---------------------------------------------------------------------------
+// Fifth wave (2026-08-28): a top-up for the towns whose Swipe deck was still
+// empty after the fourth. The deck only shows rooms scoring "Good" or better
+// (MIN_DECK_SCORE = 60), so a city can hold five rooms and still greet a
+// seeker with "No strong matches yet" — which reads as a broken app, not as a
+// strict filter. Measured across all 124 cities, 25 of them had no room that
+// cleared the bar for any local seeker; three more rooms each gives every city
+// at least one real card. `tests/unit/seed-data.test.ts` re-measures it, so if
+// this list ever goes stale the test says so instead of the live site.
+// Append-only like every wave before it: seed.user739…, its own PRNG seed,
+// waves 1–4 byte-identical.
+// ---------------------------------------------------------------------------
+
+/** Cities where waves 1–4 leave every local seeker with an empty deck. */
+const WAVE5_CITIES = [
+  "Abu Ghosh", "Acre", "Afula", "Arad", "Even Yehuda", "Eilat", "Giv'at Ada",
+  "Givat Ze'ev", "Hadera", "Hatzor HaGlilit", "Karnei Shomron", "Kiryat Ekron",
+  "Kiryat Motzkin", "Metula", "Mitzpe Ramon", "Modi'in Illit",
+  "Modi'in-Maccabim-Re'ut", "Nazareth", "Nesher", "Omer", "Pardes Hanna-Karkur",
+  "Rosh Pinna", "Safed", "Tel Mond", "Tirat Carmel",
+];
+
+/** Rooms added per city in the fifth wave. */
+export const WAVE5_PER_CITY = 3;
+
+export const WAVE5_COUNT = WAVE5_CITIES.length * WAVE5_PER_CITY;
+
+/**
+ * The twelve most-drawn interests, so a wave-5 host shares something with
+ * almost any seeker. `socialScore` is half of the deck's combined score and
+ * the usual reason a small town scores below the bar: five strangers with four
+ * hobbies each rarely overlap.
+ */
+const BROAD_INTERESTS: string[] = [...INTERESTS]
+  .sort((a, b) => INTEREST_WEIGHTS[b] - INTEREST_WEIGHTS[a] || INTERESTS.indexOf(a) - INTERESTS.indexOf(b))
+  .slice(0, 12); // MAX_INTERESTS
+
+/**
+ * Turns a generated owner into the kind of host who matches broadly: no
+ * demands of a roommate, nothing that scores a hard zero (`smokingPoints` and
+ * `petPoints` return 0 outright), a middling tidiness everyone clears, and a
+ * wide spread of interests. Everything else — name, age, job, bio, the room
+ * itself — is left exactly as generated, so these read as people, not as
+ * copies of each other.
+ */
+function easyGoingHost(s: Seed): Seed {
+  return {
+    ...s,
+    profile: {
+      ...s.profile,
+      smoker: false,
+      has_pet: false,
+      ok_with_smoker: true,
+      ok_with_pets: true,
+      cleanliness: 4,
+      sleep_schedule: "flexible",
+      guests_freq: "rare",
+      noise_level: "quiet",
+      diet: "none",
+      shabbat: "", // preferred not to say — never a mismatch, only neutral
+      pref_cleanliness: 1,
+      pref_sleep: "any",
+      pref_guests: "any",
+      pref_noise: "any",
+      pref_diet: "any",
+      pref_shabbat: "any",
+      interests: BROAD_INTERESTS,
+    },
+    listing: { ...s.listing, smoking_allowed: true, pets_allowed: true },
+  };
+}
+
+export const WAVE5: Wave = {
+  prngSeed: 20260829,
+  cityPlan: WAVE5_CITIES.map((c) => [c, WAVE5_PER_CITY] as const),
+  firstUser: HANDCRAFTED_BASE.length + GENERATED_COUNT + WAVE2_COUNT + WAVE3_COUNT + WAVE4_COUNT + 1,
+  portraits: WAVE2_PORTRAITS,
+  photos: (i, withExtra) => photoStory(WAVE2_POOLS, i * 11 + 5, withExtra),
+  cyclePortraits: true,
+};
+
 const WAVE1_SEEDS = generateSeeds();
 const WAVE2_SEEDS = generateSeeds(WAVE2_COUNT, {
   ...WAVE2,
@@ -1123,5 +1206,13 @@ const WAVE4_SEEDS = generateSeeds(WAVE4_COUNT, {
   ...WAVE4,
   takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS].map((s) => s.profile.full_name),
 });
+const WAVE5_SEEDS = generateSeeds(WAVE5_COUNT, {
+  ...WAVE5,
+  takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS, ...WAVE4_SEEDS].map(
+    (s) => s.profile.full_name
+  ),
+}).map(easyGoingHost);
 
-export const SEEDS: Seed[] = [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS, ...WAVE4_SEEDS];
+export const SEEDS: Seed[] = [
+  ...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS, ...WAVE4_SEEDS, ...WAVE5_SEEDS,
+];

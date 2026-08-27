@@ -2,7 +2,8 @@
  * Seeds demo owners + their listings so Listings and the swipe deck look like a
  * real marketplace: 12 handcrafted + 80 generated + a second wave of 62 that
  * fills the smaller cities + a third wave of 336 that reaches every remaining
- * city + a fourth of 248 that adds two rooms to every city there is
+ * city + a fourth of 248 that adds two rooms to every city there is + a fifth
+ * of 75 that tops up the towns whose swipe deck was still empty
  * (see `seed-data.ts`).
  *
  * Idempotent — safe to re-run:
@@ -33,8 +34,8 @@ const admin = createClient(url, serviceKey, {
 const PASSWORD = "Demo1234!";
 
 /**
- * PostgREST puts `.in(...)` lists in the query string, so asking about all 738
- * seed owners at once builds a ~27 KB URL and the request dies with a bare
+ * PostgREST puts `.in(...)` lists in the query string, so asking about all 813
+ * seed owners at once builds a ~30 KB URL and the request dies with a bare
  * "fetch failed" (seen 2026-08-27, once the third wave landed). Every `.in()`
  * over the whole seed set is chunked.
  */
