@@ -9,6 +9,16 @@
 -- The fix is not to weaken the public policy: a paused room still must not turn
 -- up in Listings or Swipe for anyone. It is to let the handful of members whose
 -- conversations hang off that room keep reading the row itself.
+--
+-- "Delete chat" (0024) leaves the `conversations` row in place — it only stamps
+-- a cutoff — so someone who deleted the chat still counts as linked here and
+-- keeps reading the room. That is deliberate: it is what lets the "room is
+-- taken" notice arrive after their cutoff and bring the thread back, the way a
+-- new message does anywhere else.
+--
+-- Both EXISTS below hit an existing unique index — `conversations
+-- (listing_id, seeker_id)` and `listing_residents (listing_id, resident_id)` —
+-- so the extra check per row is an index probe, not a scan.
 
 -- SECURITY DEFINER on purpose, and it is the reason this is a function at all:
 -- `conversations` policies read `listings`, so a policy on `listings` that read
