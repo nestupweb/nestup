@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
+import { SUSPENDED_MESSAGE } from "@/lib/moderation";
 
 export type AuthState = { error?: string; sent?: boolean; email?: string; throttled?: boolean };
 
@@ -88,12 +89,29 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
   if (!emailOk(email) || password.length === 0) return { error: "Email and password are required." };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.code === "email_not_confirmed") {
       return { error: "Please confirm your email first — check your inbox." };
     }
     return { error: "Wrong email or password." };
+  }
+
+  // The credentials were right, so a session now exists — a suspended account
+  // must not keep it. Checked after sign-in rather than before because
+  // `suspensions` is readable only by its owner (migration 0029), which is
+  // also what stops this being a way to ask whether someone is suspended.
+  const signedInId = data.user?.id;
+  if (signedInId) {
+    const { data: suspension } = await supabase
+      .from("suspensions")
+      .select("user_id")
+      .eq("user_id", signedInId)
+      .maybeSingle();
+    if (suspension) {
+      await supabase.auth.signOut();
+      return { error: SUSPENDED_MESSAGE };
+    }
   }
   redirect(sanitizeNextPath(next));
 }

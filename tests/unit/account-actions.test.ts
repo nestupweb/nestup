@@ -9,8 +9,13 @@ import { beforeEach, expect, test, vi } from "vitest";
 const updateUser = vi.fn();
 const signInWithPassword = vi.fn();
 const getUser = vi.fn();
+/** `requireUser` checks `suspensions` on every call (migration 0029). */
+const suspensionRow = vi.fn();
+const from = vi.fn(() => ({
+  select: () => ({ eq: () => ({ maybeSingle: suspensionRow }) }),
+}));
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { updateUser, signInWithPassword, getUser } }),
+  createClient: async () => ({ auth: { updateUser, signInWithPassword, getUser }, from }),
 }));
 vi.mock("next/headers", () => ({ headers: async () => ({ get: () => null }) }));
 vi.mock("next/navigation", () => ({
@@ -23,6 +28,7 @@ beforeEach(() => {
   updateUser.mockReset().mockResolvedValue({ data: {}, error: null });
   signInWithPassword.mockReset().mockResolvedValue({ data: {}, error: null });
   getUser.mockReset().mockResolvedValue({ data: { user: { id: "me-111", email: "me@nestup.dev" } } });
+  suspensionRow.mockReset().mockResolvedValue({ data: null });
 });
 
 function form(fields: Record<string, string>): FormData {
@@ -87,4 +93,13 @@ test("re-using the same password is explained, not shrugged off", async () => {
   const { changePasswordAction } = await import("@/app/actions/auth");
   const state = await changePasswordAction({}, form({ current: "old-one-123", password: "old-one-123", confirm: "old-one-123" }));
   expect(state.error).toMatch(/haven't used before/i);
+});
+
+test("a suspended member is bounced out of the account actions, not served them", async () => {
+  suspensionRow.mockResolvedValue({ data: { user_id: "me-111" } });
+  const { changeEmailAction } = await import("@/app/actions/auth");
+  await expect(changeEmailAction({}, form({ email: "new@nestup.dev" }))).rejects.toThrow(
+    "REDIRECT:/login?error=suspended"
+  );
+  expect(updateUser).not.toHaveBeenCalled();
 });

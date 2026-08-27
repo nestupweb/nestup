@@ -4,6 +4,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ListingPhotoGrid } from "@/components/listings/ListingPhotoGrid";
 import { AboutView } from "@/components/profile/AboutView";
 import { ContactRow } from "@/components/profile/ContactRow";
+import { ReportBlockMenu } from "@/components/profile/ReportBlockMenu";
+import { hasReported } from "@/lib/moderation";
 import type { PublicDetails } from "@/lib/people";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -30,7 +32,14 @@ export default async function PersonPage({
   const { supabase, user } = await requireUser();
   if (id === user.id) redirect("/profile");
 
-  const [{ data: profileData }, { data: detailRows }, { data: ownedRows }, { data: residentRows }] = await Promise.all([
+  const [
+    { data: profileData },
+    { data: detailRows },
+    { data: ownedRows },
+    { data: residentRows },
+    { data: blockRow },
+    alreadyReported,
+  ] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", id).maybeSingle(),
     supabase.rpc("public_profile_details", { p_user: id }),
     supabase
@@ -42,6 +51,10 @@ export default async function PersonPage({
     // Rooms this member lives in as a roommate — every member of a household
     // shows the same listing (and the same bedroom photo) on their page.
     supabase.from("listing_residents").select("listing_id").eq("resident_id", id),
+    // Only this viewer's own block row is readable (0029), which is exactly
+    // what the menu needs: whether *they* blocked this member.
+    supabase.from("blocks").select("blocked_id").eq("blocker_id", user.id).eq("blocked_id", id).maybeSingle(),
+    hasReported(supabase, user.id, id),
   ]);
   const profile = profileData as Profile | null;
   if (!profile) notFound();
@@ -62,8 +75,18 @@ export default async function PersonPage({
 
   return (
     <main className="px-4 pb-8 pt-2 sm:px-6">
+      {/* Moderation sits where the owner's own profile keeps "Edit Profile". */}
+      <div className="flex items-start justify-end">
+        <ReportBlockMenu
+          memberId={id}
+          memberName={profile.full_name}
+          blocked={Boolean(blockRow)}
+          reported={alreadyReported}
+        />
+      </div>
+
       {/* General information: portrait, name, occupation, bio — and how to find them online. */}
-      <div className="flex items-start gap-4">
+      <div className="mt-3 flex items-start gap-4">
         <Avatar url={profile.avatar_url} name={profile.full_name} size={20} className="ring-2 ring-accent ring-offset-2 ring-offset-paper" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-2xl font-bold">

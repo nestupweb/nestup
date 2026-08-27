@@ -3,6 +3,8 @@ import { AccountSection } from "@/components/settings/AccountSection";
 import { PrivacySection } from "@/components/settings/PrivacySection";
 import { NotificationsSection } from "@/components/settings/NotificationsSection";
 import { DangerZone } from "@/components/settings/DangerZone";
+import { BlockedSection } from "@/components/settings/BlockedSection";
+import { getBlockedProfiles } from "@/lib/moderation";
 import type { Listing, ProfileDetails } from "@/lib/types";
 
 /**
@@ -14,7 +16,7 @@ export default async function SettingsPage() {
   const { profile, userId } = await requireProfile("/settings");
   const { supabase, user } = await getAuthContext();
 
-  const [detailsRes, listingRes] = await Promise.all([
+  const [detailsRes, listingRes, blocked] = await Promise.all([
     supabase.from("profile_details").select("*").eq("user_id", userId).maybeSingle(),
     supabase
       .from("listings")
@@ -24,6 +26,7 @@ export default async function SettingsPage() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    getBlockedProfiles(supabase, userId),
   ]);
   // Owner-only read: the privacy flags decide what OTHER members get from
   // `public_profile_details()`, never what the owner sees of their own row.
@@ -52,6 +55,8 @@ export default async function SettingsPage() {
         notify={profile.notify_new_matches}
         address={details?.contact_email?.trim() || authEmail}
       />
+
+      <BlockedSection blocked={blocked} />
 
       <DangerZone email={authEmail} />
     </main>

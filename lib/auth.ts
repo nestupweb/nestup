@@ -15,9 +15,31 @@ export const getAuthContext = cache(async () => {
   return { supabase, user };
 });
 
+/**
+ * Is the signed-in account suspended? Memoized per request, so the extra
+ * round-trip happens once however many times `requireUser` is called while
+ * rendering a page.
+ */
+export const getSuspended = cache(async (): Promise<boolean> => {
+  const { supabase, user } = await getAuthContext();
+  if (!user) return false;
+  const { data } = await supabase.from("suspensions").select("user_id").eq("user_id", user.id).maybeSingle();
+  return Boolean(data);
+});
+
+/**
+ * Every authenticated page funnels through here, so this is where a suspension
+ * that landed mid-session takes effect: sign-in is refused separately, but an
+ * account suspended while its owner was already using the app has to stop
+ * working immediately rather than at the next login. The session cookie is
+ * left alone on purpose — writing cookies from a Server Component is a no-op,
+ * and RLS (migration 0029) already refuses their writes, so bouncing every
+ * page is enough to close the app.
+ */
 export async function requireUser() {
   const { supabase, user } = await getAuthContext();
   if (!user) redirect("/login");
+  if (await getSuspended()) redirect("/login?error=suspended");
   return { supabase, user };
 }
 

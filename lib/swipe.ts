@@ -1,6 +1,7 @@
 import { renderIntro } from "@/lib/swipe-intro";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { lifestyleScore, socialScore, sortKey } from "@/lib/compatibility";
+import { getBlockedIds } from "@/lib/moderation";
 import type { Listing, Profile } from "@/lib/types";
 
 /** One card in the swipe deck: the room, who lives there, and the seeker's scores for it. */
@@ -132,5 +133,19 @@ export async function getSwipeDeck(supabase: SupabaseClient, seeker: Profile): P
   const residents = (
     (residentRows as unknown as { listing_id: string; profiles: Profile | null }[] | null) ?? []
   ).map((r) => ({ listing_id: r.listing_id, profile: r.profiles }));
-  return buildDeck(seeker, listings, (owners as Profile[] | null) ?? [], residents).slice(0, DECK_SIZE);
+
+  // Migration 0030 already hides a room whose OWNER is blocked, in both
+  // directions and for every reader. A room where a blocked member is only a
+  // roommate still comes back, though, so drop those here: "must not appear in
+  // each other's Swipe" is about the person, not about who signed the lease.
+  const hidden = await getBlockedIds(supabase);
+  const visibleListings = hidden.size
+    ? listings.filter(
+        (l) =>
+          !hidden.has(l.owner_id) &&
+          !residents.some((r) => r.listing_id === l.id && r.profile && hidden.has(r.profile.user_id))
+      )
+    : listings;
+
+  return buildDeck(seeker, visibleListings, (owners as Profile[] | null) ?? [], residents).slice(0, DECK_SIZE);
 }
