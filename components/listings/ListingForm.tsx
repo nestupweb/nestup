@@ -177,7 +177,6 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
       ) : null}
 
       {state.error ? <p ref={alertRef} role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
-      {state.saved ? <p role="status" className="mt-4 text-sm text-accent">Saved.</p> : null}
 
       <button
         type="submit"

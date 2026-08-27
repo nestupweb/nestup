@@ -9,7 +9,7 @@ import { buildListingTitle } from "@/lib/listing-title";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/constants";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 
-export type ListingFormState = { error?: string; saved?: boolean };
+export type ListingFormState = { error?: string };
 
 const FIELD_NAMES: Record<string, string> = {
   city: "City",
@@ -133,7 +133,9 @@ export async function saveListingAction(
   revalidatePath("/browse");
   revalidatePath("/profile");
   revalidatePath("/swipe");
-  if (listingId) return { saved: true };
+  // Saving is silent: no confirmation line — the form hands the member back to
+  // their profile, on the My-listing tab, where the saved room is on screen.
+  if (listingId) redirect("/profile?tab=listings");
   // Freshly published: show it where it now lives (Listings, My Listings, seekers' decks).
   redirect("/profile?tab=listings&published=1");
 }

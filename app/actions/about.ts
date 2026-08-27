@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { aboutDetailsFromForm, aboutSchema } from "@/lib/validation/about";
 
-export type AboutFormState = { error?: string; saved?: boolean; nonce?: number };
+export type AboutFormState = { error?: string };
 
 const LABELS: Record<string, string> = {
   contact_email: "Email",
@@ -47,5 +48,6 @@ export async function saveAboutAction(_prev: AboutFormState, formData: FormData)
   if (detailsRes.error || profileRes.error) return { error: "Could not save. Please try again." };
 
   revalidatePath("/profile");
-  return { saved: true, nonce: Date.now() };
+  // No confirmation line — a save drops the member straight back on their profile.
+  redirect("/profile");
 }

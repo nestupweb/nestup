@@ -26,7 +26,6 @@ export function AboutMe({ profile, details, email }: { profile: Profile; details
           {pending ? "Saving…" : "Save"}
         </button>
         {state.error ? <p role="alert" className="text-sm text-danger">{state.error}</p> : null}
-        {state.saved && !state.error ? <p role="status" className="text-sm text-accent">Saved.</p> : null}
       </div>
     </form>
   );

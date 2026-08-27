@@ -113,7 +113,9 @@ export function FilterBar() {
               <DatePicker name="move_in_by" defaultValue={params.get("move_in_by") ?? ""} clearable placeholder="Any date" />
             </label>
             <label className={label}>For how long
-              <Select name="lease_term" defaultValue={params.get("lease_term") ?? ""}>
+              {/* keyed by the URL value: React resets the form after the action and a
+                  <select> only takes its defaultValue on mount, so remount it per navigation */}
+              <Select key={params.get("lease_term") ?? ""} name="lease_term" defaultValue={params.get("lease_term") ?? ""}>
                 <option value="">Any length</option>
                 {LEASE_TERMS.map((t) => (
                   <option key={t.key} value={t.key}>{t.label}</option>

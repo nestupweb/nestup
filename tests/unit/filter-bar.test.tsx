@@ -1,11 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 
 const push = vi.fn();
+let currentSearch = "city=Haifa";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
-  useSearchParams: () => new URLSearchParams("city=Haifa"),
+  useSearchParams: () => new URLSearchParams(currentSearch),
   usePathname: () => "/browse",
 }));
 
@@ -25,4 +26,19 @@ test("submits chosen filters into the URL and resets page", async () => {
   expect(url).toContain("pets_allowed=true");
   expect(url).toContain("lease_term=half_year");
   expect(url).not.toContain("page=");
+});
+
+test("'for how long' follows the URL after a navigation, not just on first render", () => {
+  cleanup();
+  currentSearch = "lease_term=year";
+  const { rerender } = render(<FilterBar />);
+  const select = screen.getByLabelText(/for how long/i) as HTMLSelectElement;
+  expect(select).toHaveValue("year");
+  select.form?.reset(); // what React does after the form action runs
+  currentSearch = "lease_term=three_months";
+  rerender(<FilterBar />);
+  expect(screen.getByLabelText(/for how long/i)).toHaveValue("three_months");
+  currentSearch = "";
+  rerender(<FilterBar />);
+  expect(screen.getByLabelText(/for how long/i)).toHaveValue("");
 });
