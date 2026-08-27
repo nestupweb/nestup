@@ -19,7 +19,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 beforeEach(() => {
-  signUp.mockReset().mockResolvedValue({ data: { user: { id: "u1" }, session: null }, error: null });
+  // A brand-new address comes back with its "email" identity (measured against
+  // the live project) — an empty array is how Supabase says "already taken".
+  signUp
+    .mockReset()
+    .mockResolvedValue({ data: { user: { id: "u1", identities: [{ provider: "email" }] }, session: null }, error: null });
   resend.mockReset().mockResolvedValue({ data: {}, error: null });
   getUser.mockReset().mockResolvedValue({ data: { user: null } });
 });
@@ -85,6 +89,52 @@ test("a signup inside the 60s window shows the inbox screen, not 'try a differen
   expect(state.email).toBe("new@nestup.dev");
   expect(state.throttled).toBe(true);
   expect(state.error).toBeUndefined();
+});
+
+/**
+ * Supabase's e-mail enumeration protection answers a sign-up for an address
+ * that already has a confirmed account with 200 and a decoy user — same shape
+ * as success, but with no identities. Read as success it strands the member on
+ * "Check your inbox" waiting for a mail that will never be sent.
+ */
+test("an address that already has an account is called out, not sent to the inbox screen", async () => {
+  signUp.mockResolvedValue({
+    data: { user: { id: "decoy-uuid", identities: [] }, session: null },
+    error: null,
+  });
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "Taken@Nestup.dev", password: "goodpassword" }));
+  expect(state.error).toMatch(/already in use/i);
+  expect(state.taken).toBe(true);
+  expect(state.sent).toBeUndefined();
+  expect(state.email).toBe("taken@nestup.dev");
+});
+
+/**
+ * The other side of it: an address that exists but was never confirmed comes
+ * back with its real identity and a fresh link already on its way, so it must
+ * still reach the inbox screen — telling that member "already in use" would
+ * strand them with an account they can't confirm.
+ */
+test("an existing but unconfirmed address still gets the inbox screen", async () => {
+  signUp.mockResolvedValue({
+    data: { user: { id: "u9", identities: [{ provider: "email", identity_data: { email_verified: false } }] }, session: null },
+    error: null,
+  });
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "unconfirmed@nestup.dev", password: "goodpassword" }));
+  expect(state.sent).toBe(true);
+  expect(state.taken).toBeUndefined();
+  expect(state.error).toBeUndefined();
+});
+
+/** An API that stops sending `identities` must cost the warning, never invent one. */
+test("a response with no identities field at all is not read as 'taken'", async () => {
+  signUp.mockResolvedValue({ data: { user: { id: "u1" }, session: null }, error: null });
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword" }));
+  expect(state.sent).toBe(true);
+  expect(state.taken).toBeUndefined();
 });
 
 test("a signup that fails for any other reason still reports an error", async () => {

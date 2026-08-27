@@ -56,7 +56,20 @@ export function AuthForm({
         </p>
       ) : null}
 
-      {state.error ? <p role="alert" className="mt-3 text-sm text-danger">{state.error}</p> : null}
+      {state.error ? (
+        <div className="mt-3">
+          <p role="alert" className="text-sm text-danger">{state.error}</p>
+          {/* An address that already has an account is a dead end on this form —
+              say so, and put both ways forward right next to the message. */}
+          {state.taken ? (
+            <p className="mt-1.5 text-sm">
+              <Link href="/login" className="text-accent underline">Log in instead</Link>
+              <span className="mx-2 text-muted">&middot;</span>
+              <Link href="/forgot-password" className="text-accent underline">Forgot your password?</Link>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <button type="submit" disabled={pending} className={submitClass}>
         {pending ? "One moment…" : mode === "login" ? "Log in" : "Sign up"}

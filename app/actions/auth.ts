@@ -7,7 +7,14 @@ import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { SUSPENDED_MESSAGE } from "@/lib/moderation";
 
-export type AuthState = { error?: string; sent?: boolean; email?: string; throttled?: boolean };
+export type AuthState = {
+  error?: string;
+  sent?: boolean;
+  email?: string;
+  throttled?: boolean;
+  /** The address already has an account — the screen offers Log in / reset alongside the error. */
+  taken?: boolean;
+};
 
 const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
@@ -36,7 +43,7 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) {
     // Pressing Sign up again while waiting for the first mail lands inside the
     // one-per-minute window. The account is already there and a link is
@@ -45,6 +52,19 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
     // account they don't need.
     if (isSendRateLimit(error)) return { sent: true, email, throttled: true };
     return { error: "Could not create the account. Try a different email." };
+  }
+  // Supabase's e-mail enumeration protection never fails a sign-up for an
+  // address that is already taken — it answers 200 with a decoy user: a random
+  // id, no session, and, the one tell, an empty `identities` array. Without
+  // this the member is sent to "Check your inbox" to wait for a mail that is
+  // never coming. Measured against the live project: a new address comes back
+  // with its "email" identity, a confirmed account comes back with none, and
+  // an account that exists but was never confirmed comes back with its real
+  // identity and a fresh link already sent — which is the inbox screen below,
+  // not this. `identities` missing entirely is treated as "not taken", so an
+  // API change can only cost the warning, never invent one.
+  if (data.user?.identities?.length === 0) {
+    return { error: "That email is already in use.", taken: true, email };
   }
   // Email confirmation is ON (`mailer_autoconfirm: false`), so signUp creates the
   // row but no session: the account cannot be used until the emailed link is
