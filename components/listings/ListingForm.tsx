@@ -6,6 +6,8 @@ import { CityCombobox } from "@/components/ui/CityCombobox";
 import { PhotoPicker } from "@/components/listings/PhotoPicker";
 import { ViewingHoursEditor } from "@/components/listings/ViewingHoursEditor";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { PinField } from "@/components/map/PinField";
+import { pointOf } from "@/lib/geo";
 import { normalizeSlots } from "@/lib/availability";
 import { useStickyForm } from "@/lib/hooks";
 import { FEATURES, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
@@ -66,6 +68,13 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
             House number *
             <input name="house_number" required maxLength={10} defaultValue={listing?.house_number ?? ""} className={input} />
           </label>
+        </div>
+        <div className="mt-3">
+          <PinField
+            initial={pointOf({ lat: listing?.lat ?? null, lng: listing?.lng ?? null })}
+            city={listing?.city ?? ""}
+            hasPoint={Boolean(listing?.lat && listing?.lng)}
+          />
         </div>
       </section>
 

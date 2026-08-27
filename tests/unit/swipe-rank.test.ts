@@ -24,7 +24,7 @@ function listing(overrides: Partial<Listing> = {}): Listing {
     available_from: "2026-10-01", lease_term: "flexible", property_type: "apartment", rooms: 3, size_sqm: null,
     roommates_count: 2, pets_allowed: true, smoking_allowed: false,
     balcony: false, air_conditioning: false, parking: false, elevator: false, furnished: false,
-    safe_room: "none", food_restrictions: "", street: "Florentin", house_number: "12",
+    safe_room: "none", food_restrictions: "", street: "Florentin", house_number: "12", lat: null, lng: null, coords_source: "none",
     photo_urls: [], photo_labels: [], viewing_slots: [], is_active: true, taken_at: null, removed_at: null, created_at: "", updated_at: "",
     ...overrides,
   };

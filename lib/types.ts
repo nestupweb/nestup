@@ -14,6 +14,8 @@ export type PrefShabbat = "any" | "observant" | "traditional" | "not_observant";
 export type SwipeDirection = "like" | "skip";
 export type ListerResponse = "pending" | "liked" | "skipped";
 export type SafeRoom = "none" | "apartment" | "building";
+/** Where a listing's map point came from; see migration 0026. */
+export type CoordsSource = "none" | "city" | "geocoded" | "owner";
 /** How long the room is offered for — a rough duration, never an end date. */
 export type LeaseTerm = "flexible" | "month" | "two_months" | "three_months" | "half_year" | "year" | "two_years" | "long_term";
 /** The same durations on the seeker side, plus "no preference". */
@@ -97,6 +99,11 @@ export interface Listing {
   address: string; // display string: "{street} {house_number}"
   street: string;
   house_number: string;
+  /** Map position; null until the address is geocoded. See `coords_source`. */
+  lat: number | null;
+  lng: number | null;
+  /** How the point was obtained — an owner-placed pin outranks a later geocode. */
+  coords_source: CoordsSource;
   rent: number;
   available_from: string; // ISO date — the entrance date
   lease_term: LeaseTerm; // for how long (rough duration)

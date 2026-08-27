@@ -14,6 +14,8 @@
     "test:watch": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest",
     "seed": "node --env-file=.env.local scripts/seed.ts",
     "check:nav": "node scripts/check-same-tab-nav.mjs",
+    "backfill:coords": "node --env-file=.env.local scripts/backfill-coords.mjs",
+    "geocode:cities": "node scripts/geocode-cities.mjs",
     "check:photos": "node --env-file=.env.local scripts/photo-check-probe.mjs",
     "auth:config": "node --env-file=.env.local scripts/auth-config.mjs"
   },
@@ -24,10 +26,12 @@
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow-models/mobilenet": "^2.1.1",
     "@tensorflow/tfjs": "^4.22.0",
+    "leaflet": "^1.9.4",
     "next": "16.3.2",
     "nodemailer": "^9.0.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-leaflet": "^5.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -35,6 +39,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.6",
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19",

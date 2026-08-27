@@ -12,9 +12,58 @@ import { defaultRemovedMessage } from "@/lib/listing-taken";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 import { notifyNewListing } from "@/lib/notify";
 import { auditPhotos, isPhotoCheckEnabled } from "@/lib/photo-check";
-import type { PhotoRoom } from "@/lib/types";
+import { geocodeAddress } from "@/lib/geocode";
+import { shouldGeocode } from "@/lib/geo";
+import type { CoordsSource, PhotoRoom } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ListingFormState = { error?: string };
+
+/**
+ * Where the room's pin goes.
+ *
+ * Order of authority: a pin the owner dragged wins outright; otherwise the
+ * address is looked up, but only when it actually changed (or there is no
+ * point yet) — so re-saving a listing to fix a typo in the description doesn't
+ * make a network call. A failed lookup falls back to the city centre inside
+ * `geocodeAddress`, and a total failure leaves the columns untouched, because a
+ * listing that cannot be placed on a map must still save.
+ */
+async function resolveCoords(
+  supabase: SupabaseClient,
+  listingId: string,
+  userId: string,
+  data: { street: string; house_number: string; city: string },
+  formData: FormData
+): Promise<{ lat: number; lng: number; coords_source: CoordsSource } | Record<string, never>> {
+  const pinLat = Number(formData.get("pin_lat"));
+  const pinLng = Number(formData.get("pin_lng"));
+  const pinned = formData.get("pin_moved") === "1" && Number.isFinite(pinLat) && Number.isFinite(pinLng);
+  if (pinned) return { lat: pinLat, lng: pinLng, coords_source: "owner" };
+
+  let current: CoordsSource = "none";
+  let addressChanged = true;
+  if (listingId) {
+    const { data: row } = await supabase
+      .from("listings")
+      .select("street, house_number, city, coords_source, lat")
+      .eq("id", listingId)
+      .eq("owner_id", userId)
+      .maybeSingle();
+    const prev = row as
+      | { street: string; house_number: string; city: string; coords_source: CoordsSource; lat: number | null }
+      | null;
+    if (prev) {
+      current = prev.lat === null ? "none" : prev.coords_source;
+      addressChanged =
+        prev.street !== data.street || prev.house_number !== data.house_number || prev.city !== data.city;
+    }
+  }
+  if (!shouldGeocode(current, addressChanged)) return {};
+
+  const hit = await geocodeAddress(data);
+  return hit ? { lat: hit.lat, lng: hit.lng, coords_source: hit.source } : {};
+}
 
 const FIELD_NAMES: Record<string, string> = {
   city: "City",
@@ -146,10 +195,12 @@ export async function saveListingAction(
   const is_active = formData.get("is_active") !== null ? formData.get("is_active") === "on" : true;
   const address = `${parsed.data.street} ${parsed.data.house_number}`.trim();
   const title = buildListingTitle(parsed.data);
+  const coords = await resolveCoords(supabase, listingId, user.id, parsed.data, formData);
   const row = {
     ...parsed.data,
     title,
     address,
+    ...coords,
     photo_urls,
     photo_labels,
     viewing_slots,

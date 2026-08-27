@@ -14,7 +14,7 @@ afterEach(cleanup);
 function room(id: string, title: string): Listing {
   return {
     id, owner_id: "o1", title, description: "",
-    city: "Tel Aviv", neighborhood: "Florentin", address: "Florentin 12", street: "Florentin", house_number: "12",
+    city: "Tel Aviv", neighborhood: "Florentin", address: "Florentin 12", street: "Florentin", house_number: "12", lat: null, lng: null, coords_source: "none",
     rent: 2800, available_from: "2026-10-01", lease_term: "flexible", property_type: "apartment", rooms: 3, size_sqm: null,
     roommates_count: 2, pets_allowed: true, smoking_allowed: false,
     balcony: false, air_conditioning: false, parking: false, elevator: false, furnished: false,
