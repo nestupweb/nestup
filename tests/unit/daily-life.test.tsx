@@ -17,7 +17,7 @@ const me: Profile = {
   smoker: false, has_pet: true, cleanliness: 4, sleep_schedule: "early", guests_freq: "sometimes",
   noise_level: "quiet", diet: "vegetarian", shabbat: "traditional", interests: [], chores: ["Dishes", "Laundry"],
   ok_with_smoker: false, ok_with_pets: true, pref_cleanliness: 3, pref_sleep: "any", pref_guests: "sometimes", pref_noise: "quiet", pref_diet: "vegetarian", pref_shabbat: "traditional",
-  budget_min: 2000, budget_max: 4500, preferred_cities: [], earliest_move_in: null, pref_lease_term: "any", created_at: "", updated_at: "",
+  budget_min: 2000, budget_max: 4500, preferred_cities: [], earliest_move_in: null, pref_lease_term: "any", notify_new_matches: false, created_at: "", updated_at: "",
 };
 
 test("dailyLifeRows puts every habit in words, my side and the roommate side", () => {

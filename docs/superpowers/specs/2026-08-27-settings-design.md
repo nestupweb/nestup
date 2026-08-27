@@ -128,8 +128,10 @@ the user on 2026-08-27. It is still never passed as a build argument.
 
 ### The message
 
-A small branded HTML template in `supabase/templates/new-match.html`, matching
-the existing `recovery.html` / `confirmation.html`: room title, city, rent, one
+A small branded HTML template in `lib/email/new-match.ts`, matching the existing
+`supabase/templates/recovery.html`. It is a TS module rather than an .html file
+because Vercel traces imports, not runtime `readFileSync` paths — a template
+read from disk would not survive the build. Contents: room title, city, rent, one
 photo, a button to `/browse/<id>`, and an unsubscribe line linking to
 `/settings`. Subject: `A new room in <city> matches what you're looking for`.
 
@@ -180,7 +182,7 @@ the live project (`eiykciushbnbwpxpvybi`) with the Supabase MCP, as 0021 and
 - `components/ui/GearIcon.tsx`
 - `lib/mail.ts`, `lib/notify.ts`, `lib/supabase/admin.ts`
 - `supabase/migrations/0023_settings.sql`
-- `supabase/templates/new-match.html`
+- `lib/email/new-match.ts`
 
 **Changed**
 - `app/(app)/layout.tsx` — the gear
@@ -230,5 +232,5 @@ member's view of the profile, and publishing a matching room delivers one mail.
 dependencies, no new secrets.
 
 **Phase 2** — Notifications: `nodemailer`, `lib/mail.ts`, `lib/notify.ts`,
-`lib/supabase/admin.ts`, the template, the `after()` hand-off, and
+`lib/supabase/admin.ts`, `lib/email/new-match.ts`, the `after()` hand-off, and
 `SUPABASE_SERVICE_ROLE_KEY` added to Vercel.

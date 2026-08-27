@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 
 export type AuthState = { error?: string; sent?: boolean };
@@ -99,4 +100,50 @@ export async function updatePasswordAction(_prev: AuthState, formData: FormData)
     return { error: "Could not update the password. Request a new reset link and try again." };
   }
   redirect("/swipe");
+}
+
+export type AccountState = { error?: string; sent?: boolean; done?: boolean };
+
+/**
+ * Change the address the account signs in with. Supabase mails a confirmation
+ * link to the NEW address and nothing moves until it is clicked, so the member
+ * can't lock themselves out with a typo.
+ */
+export async function changeEmailAction(_prev: AccountState, formData: FormData): Promise<AccountState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!emailOk(email)) return { error: "Please enter a valid email address." };
+
+  const { supabase, user } = await requireUser();
+  if (email === (user.email ?? "").toLowerCase()) return { error: "That's already your e-mail address." };
+
+  const { error } = await supabase.auth.updateUser({ email });
+  if (error) return { error: "Could not change the email. Try a different address." };
+  return { sent: true };
+}
+
+/**
+ * Change the password from Settings. Supabase would let a live session set a
+ * new password without the old one; we ask for it anyway, so someone at a
+ * borrowed unlocked laptop can't lock the owner out of their own account.
+ */
+export async function changePasswordAction(_prev: AccountState, formData: FormData): Promise<AccountState> {
+  const current = String(formData.get("current") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password !== confirm) return { error: "The two passwords don't match." };
+
+  const { supabase, user } = await requireUser();
+  const { error: reauth } = await supabase.auth.signInWithPassword({
+    email: user.email ?? "",
+    password: current,
+  });
+  if (reauth) return { error: "Your current password is not correct." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    if (error.code === "same_password") return { error: "Choose a password you haven't used before." };
+    return { error: "Could not update the password. Please try again." };
+  }
+  return { done: true };
 }

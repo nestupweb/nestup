@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { uploadImage } from "@/lib/storage";
@@ -8,6 +9,7 @@ import { listingSchema, missingPhotoRooms, photoRoomSchema } from "@/lib/validat
 import { buildListingTitle } from "@/lib/listing-title";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/constants";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
+import { notifyNewListing } from "@/lib/notify";
 
 export type ListingFormState = { error?: string };
 
@@ -124,10 +126,20 @@ export async function saveListingAction(
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = listingId
-    ? await supabase.from("listings").update(row).eq("id", listingId).eq("owner_id", user.id)
-    : await supabase.from("listings").insert(row);
-  if (error) return { error: "Could not save the listing. Please try again." };
+  let publishedId = "";
+  if (listingId) {
+    const { error } = await supabase.from("listings").update(row).eq("id", listingId).eq("owner_id", user.id);
+    if (error) return { error: "Could not save the listing. Please try again." };
+  } else {
+    const { data, error } = await supabase.from("listings").insert(row).select("id").single();
+    if (error) return { error: "Could not save the listing. Please try again." };
+    publishedId = (data as { id: string }).id;
+  }
+
+  // A brand-new room tells the seekers who asked to hear about matches. It runs
+  // after the response so publishing stays fast, and `notifyNewListing` swallows
+  // its own failures — mail must never turn a successful publish into an error.
+  if (publishedId && is_active) after(() => notifyNewListing(publishedId));
 
   revalidatePath("/listing");
   revalidatePath("/browse");

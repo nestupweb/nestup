@@ -24,7 +24,7 @@ const profile: Profile = {
   guests_freq: "sometimes", interests: ["Music", "Cooking", "Yoga"], ok_with_smoker: false,
   ok_with_pets: true,
     noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [], budget_min: 3000, budget_max: 5000, preferred_cities: ["Tel Aviv"],
-  earliest_move_in: "2026-10-01", pref_lease_term: "any", created_at: "", updated_at: "",
+  earliest_move_in: "2026-10-01", pref_lease_term: "any", notify_new_matches: false, created_at: "", updated_at: "",
 };
 
 test("aboutSchema splits languages, validates clock + email, mirrors profile basics", () => {
@@ -82,6 +82,7 @@ test("read-only mode shows the About me section as other members see it — no i
           user_id: "u1", about: "Plants and shakshuka.", languages: ["Hebrew", "English"], diet: "Vegetarian",
           pet_details: "a cat", lifestyle: "WFH", wake_time: "07:30", bed_time: "23:00", shabbat: "traditional",
           cooking: "Most evenings", phone: "050-1234567", contact_email: "noa@example.com",
+          show_phone: true, show_contact_email: true,
           instagram: "@noa", facebook: "", linkedin: "", intro_template: "", updated_at: "",
         },
         email: "noa@example.com",

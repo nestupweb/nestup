@@ -58,6 +58,7 @@ export interface Profile {
   preferred_cities: string[];
   earliest_move_in: string | null; // ISO date
   pref_lease_term: PrefLeaseTerm; // for how long I want to rent; "any" = no preference
+  notify_new_matches: boolean; // e-mail me when a newly published room matches my preferences
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +77,8 @@ export interface ProfileDetails {
   cooking: string;
   phone: string;
   contact_email: string;
+  show_phone: boolean; // other members may see my phone number
+  show_contact_email: boolean; // …and my contact e-mail
   instagram: string;
   facebook: string;
   linkedin: string;

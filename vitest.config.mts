@@ -8,5 +8,11 @@ export default defineConfig({
     setupFiles: "./tests/setup.ts",
     include: ["tests/unit/**/*.test.{ts,tsx}"],
   },
-  resolve: { alias: { "@": import.meta.dirname } },
+  resolve: {
+    alias: {
+      "@": import.meta.dirname,
+      // Next resolves this marker itself; Vitest needs a file to point at.
+      "server-only": `${import.meta.dirname}/tests/stubs/server-only.ts`,
+    },
+  },
 });
