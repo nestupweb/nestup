@@ -61,7 +61,7 @@ beforeEach(() => {
   state.seen = {};
 });
 
-test("deleting tells everyone the room is gone, with the same sentence 'taken' sends", async () => {
+test("deleting tells everyone the room is gone, without claiming it was taken", async () => {
   rpc.mockResolvedValue({ data: 3, error: null });
   const { deleteListingAction } = await import("@/app/actions/listing");
 
@@ -72,6 +72,8 @@ test("deleting tells everyone the room is gone, with the same sentence 'taken' s
     p_message: expect.stringContaining("Sunlit room in Florentin"),
   });
   expect(rpc.mock.calls[0][1].p_message).toMatch(/no longer available/i);
+  // A room can be pulled for any reason — the notice must not invent a deal.
+  expect(rpc.mock.calls[0][1].p_message).not.toMatch(/taken/i);
   // The lookup is scoped to the caller, not just to the id in the form.
   expect(state.seen).toEqual({ id: LISTING, owner: "me-111" });
 });

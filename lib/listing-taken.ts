@@ -17,6 +17,18 @@ export function defaultTakenMessage(title: string): string {
     : "Thanks for your interest — the room has been taken, so it is no longer available. Good luck with your search!";
 }
 
+/**
+ * What a deleted room's chats read. The same sentence as the taken notice
+ * without the part about a deal: a room can be pulled for any reason, and the
+ * only thing the other side needs to know is that it is gone.
+ */
+export function defaultRemovedMessage(title: string): string {
+  const room = title.trim();
+  return room
+    ? `Thanks for your interest in ${room} — it is no longer available. Good luck with your search!`
+    : "Thanks for your interest — it is no longer available. Good luck with your search!";
+}
+
 /** The line under the button once the room is closed: "Marked taken on 27 August 2026". */
 export function takenOnLabel(takenAt: string | null | undefined): string {
   if (!takenAt) return "";

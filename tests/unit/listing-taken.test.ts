@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import {
   TAKEN_MESSAGE_MAX,
   checkTakenMessage,
+  defaultRemovedMessage,
   defaultTakenMessage,
   takenMessageError,
   takenOnLabel,
@@ -17,6 +18,16 @@ test("the offered message names the room and says it is gone", () => {
 
 test("an untitled room still gets a sentence that reads", () => {
   expect(defaultTakenMessage("  ")).toMatch(/^Thanks for your interest — the room has been taken/);
+});
+
+test("a deleted room's notice says it is gone, without claiming a deal was done", () => {
+  const text = defaultRemovedMessage("Sunlit room in Florentin");
+  expect(text).toContain("Sunlit room in Florentin");
+  expect(text).toMatch(/no longer available/i);
+  // The only difference from the taken notice: no "the room has been taken".
+  expect(text).not.toMatch(/taken/i);
+  expect(defaultRemovedMessage("  ")).toMatch(/^Thanks for your interest — it is no longer available/);
+  expect(text.length).toBeLessThanOrEqual(TAKEN_MESSAGE_MAX);
 });
 
 test("the message must say something, and must fit in a chat message", () => {

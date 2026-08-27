@@ -8,7 +8,7 @@ import { uploadImage } from "@/lib/storage";
 import { listingSchema, missingPhotoRooms, photoRoomSchema } from "@/lib/validation/listing";
 import { buildListingTitle } from "@/lib/listing-title";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/constants";
-import { defaultTakenMessage } from "@/lib/listing-taken";
+import { defaultRemovedMessage } from "@/lib/listing-taken";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 import { notifyNewListing } from "@/lib/notify";
 import { auditPhotos, isPhotoCheckEnabled } from "@/lib/photo-check";
@@ -197,8 +197,9 @@ export type DeleteListingState = { error?: string };
  * destroyed with the thread. Instead `remove_listing` (0028) stamps
  * `removed_at`, which takes the room out of Listings, Swipe, the owner's
  * profile and its own page for good, and sends everyone in a conversation about
- * it the same message "The room is taken" sends. Chats keep working; the room
- * does not come back.
+ * it the same message "The room is taken" sends, minus the part about a deal —
+ * a room can be pulled for any reason. Chats keep working; the room does not
+ * come back.
  */
 export async function deleteListingAction(
   _prev: DeleteListingState,
@@ -220,7 +221,7 @@ export async function deleteListingAction(
 
   const { data, error } = await supabase.rpc("remove_listing", {
     p_listing: listingId,
-    p_message: defaultTakenMessage(String((row as { title: string }).title ?? "")),
+    p_message: defaultRemovedMessage(String((row as { title: string }).title ?? "")),
   });
   if (error) return { error: "Could not delete the listing. Please try again." };
   if (data === -1) return { error: "That listing is already gone." };
