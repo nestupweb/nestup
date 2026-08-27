@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import { Circle, MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
-import { ATTRIBUTION, MAX_ZOOM, ROOM_ZOOM, TILES } from "@/components/map/basemap";
+import { ATTRIBUTION, DARK_TILE_CLASS, MAX_ZOOM, ROOM_ZOOM, TILES } from "@/components/map/basemap";
 import { useIsTouch, useMapTheme } from "@/components/map/useMapTheme";
 import { pinIcon } from "@/components/map/pin";
 import { APPROX_RADIUS_M, type LatLng } from "@/lib/geo";
@@ -97,5 +97,13 @@ function ThemedTiles() {
     return () => window.clearTimeout(t);
   }, [map]);
 
-  return <TileLayer key={theme} url={TILES[theme]} attribution={ATTRIBUTION} maxZoom={MAX_ZOOM} />;
+  return (
+    <TileLayer
+      key={theme}
+      url={TILES[theme]}
+      attribution={ATTRIBUTION}
+      maxZoom={MAX_ZOOM}
+      className={theme === "dark" ? DARK_TILE_CLASS : undefined}
+    />
+  );
 }

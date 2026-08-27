@@ -16,7 +16,11 @@ const BOOL_KEYS = [
   "air_conditioning", "parking", "elevator", "furnished",
 ] as const;
 
-export function applyListingFilters<Q extends FilterableQuery>(q: Q, f: ListingFilters): Q {
+export function applyListingFilters<Q extends FilterableQuery>(
+  q: Q,
+  f: ListingFilters,
+  opts: { paginate?: boolean } = {}
+): Q {
   if (f.city) q.eq("city", f.city);
   if (f.rent_min !== undefined) q.gte("rent", f.rent_min);
   if (f.rent_max !== undefined) q.lte("rent", f.rent_max);
@@ -30,9 +34,73 @@ export function applyListingFilters<Q extends FilterableQuery>(q: Q, f: ListingF
     q.order("rent", { ascending: f.sort === "price_asc" });
   }
   q.order("created_at", { ascending: false }); // tie-break (and the default order)
-  const from = (f.page - 1) * f.page_size;
-  q.range(from, from + f.page_size - 1);
+  // The map wants every match at once, not one page of them.
+  if (opts.paginate !== false) {
+    const from = (f.page - 1) * f.page_size;
+    q.range(from, from + f.page_size - 1);
+  }
   return q;
+}
+
+/** One dot on the results map — only what the pin and its little card need. */
+export interface ListingPin {
+  id: string;
+  lat: number;
+  lng: number;
+  rent: number;
+  title: string;
+  city: string;
+  neighborhood: string;
+  photo: string | null;
+}
+
+/** How many pins the map will draw before it stops asking for more. */
+export const MAX_PINS = 1000;
+
+/**
+ * Every room matching the current filters that has a position, for the map
+ * view. Deliberately not paginated — the map shows the whole result set — and
+ * deliberately narrow: a pin needs eight fields, not a whole listing row.
+ *
+ * `is_active` and `removed_at` are filtered explicitly rather than left to RLS:
+ * since migration 0027 a member linked to a room can read it even when it is
+ * closed, so a query that relied on RLS alone would leak paused rooms onto
+ * their map.
+ */
+export async function queryListingPins(filters: ListingFilters): Promise<ListingPin[]> {
+  const supabase = await createClient();
+  const query = supabase
+    .from("listings")
+    .select("id, lat, lng, rent, title, city, neighborhood, photo_urls")
+    .eq("is_active", true)
+    .is("removed_at", null)
+    .not("lat", "is", null)
+    .limit(MAX_PINS);
+  applyListingFilters(query as unknown as FilterableQuery, filters, { paginate: false });
+  const { data, error } = await query;
+  if (error) return [];
+  const rows = (data ?? []) as {
+    id: string;
+    lat: number | null;
+    lng: number | null;
+    rent: number;
+    title: string;
+    city: string;
+    neighborhood: string;
+    photo_urls: string[] | null;
+  }[];
+  return rows
+    .filter((r): r is typeof r & { lat: number; lng: number } => r.lat !== null && r.lng !== null)
+    .map((r) => ({
+      id: r.id,
+      lat: r.lat,
+      lng: r.lng,
+      rent: r.rent,
+      title: r.title,
+      city: r.city,
+      neighborhood: r.neighborhood,
+      photo: r.photo_urls?.[0] ?? null,
+    }));
 }
 
 /** Public browse query — RLS exposes only active listings to anon. */

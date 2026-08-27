@@ -8,7 +8,11 @@ import {
   SEEDS,
   WAVE2,
   WAVE2_COUNT,
+  WAVE3_CITIES,
+  WAVE3_COUNT,
+  WAVE3_PER_CITY,
   generateSeeds,
+  wave3Rent,
 } from "../../scripts/seed-data";
 import { CITIES, INTERESTS, MAX_INTERESTS, MAX_LISTING_PHOTOS, MIN_INTERESTS, MIN_LISTING_PHOTOS, PROPERTY_TYPES } from "@/lib/constants";
 
@@ -21,11 +25,12 @@ describe("seed data", () => {
     expect([...SEED_INTERESTS]).toEqual([...INTERESTS]);
   });
 
-  test("has 12 handcrafted + 80 generated + 62 second-wave owners with unique emails and names", () => {
+  test("has 12 handcrafted + 80 generated + 62 second-wave + a third wave, all with unique emails and names", () => {
     expect(HANDCRAFTED).toHaveLength(12);
     expect(GENERATED_COUNT).toBe(80);
     expect(WAVE2_COUNT).toBe(62);
-    expect(SEEDS).toHaveLength(12 + GENERATED_COUNT + WAVE2_COUNT);
+    expect(WAVE3_COUNT).toBe(WAVE3_CITIES.length * WAVE3_PER_CITY);
+    expect(SEEDS).toHaveLength(12 + GENERATED_COUNT + WAVE2_COUNT + WAVE3_COUNT);
     expect(new Set(SEEDS.map((s) => s.email)).size).toBe(SEEDS.length);
     expect(new Set(SEEDS.map((s) => s.profile.full_name)).size).toBe(SEEDS.length);
     expect(SEEDS.map((s) => s.email)).toEqual(SEEDS.map((_, i) => `seed.user${i + 1}@nestup.dev`));
@@ -52,7 +57,7 @@ describe("seed data", () => {
     const firstPhotos = new Set(first.flatMap((s) => s.listing.photo_urls));
     const firstPortraits = new Set(first.map((s) => s.profile.avatar_url).filter(Boolean));
     for (const s of second) {
-      expect(s.email).toMatch(/^seed\.user(9[3-9]|1[0-4]\d|15[0-4])@nestup\.dev$/);
+      expect(s.email).toMatch(/^seed\.user\d+@nestup\.dev$/);
       expect(s.profile.avatar_url).toBeTruthy();
       expect(firstPortraits.has(s.profile.avatar_url)).toBe(false);
       for (const u of s.listing.photo_urls) expect(firstPhotos.has(u)).toBe(false);
@@ -81,13 +86,16 @@ describe("seed data", () => {
   });
 
   test("every listing satisfies the listings table checks", () => {
-    for (const { listing: l } of SEEDS) {
+    for (const [index, { listing: l }] of SEEDS.entries()) {
       expect(l.title.length).toBeGreaterThanOrEqual(5);
       expect(l.title.length).toBeLessThanOrEqual(80);
       expect(l.title).not.toContain("{n}");
       expect(l.description.length).toBeLessThanOrEqual(2000);
       expect(CITIES).toContain(l.city);
-      expect(l.neighborhood).not.toBe("");
+      // Waves 1 and 2 name a quarter; the third wave covers cities we have no
+      // real quarter names for and leaves it blank on purpose (the listing form
+      // marks Area optional too, and titles fall back to the city).
+      if (index < 154) expect(l.neighborhood).not.toBe("");
       expect(l.address.length).toBeLessThanOrEqual(120);
       expect(l.rent).toBeGreaterThan(0);
       expect(l.available_from).toMatch(ISO_DATE);
@@ -126,5 +134,52 @@ describe("seed data", () => {
     expect(byCity.get("Tel Aviv")).toBeGreaterThanOrEqual(25);
     const affordable = SEEDS.filter((s) => s.listing.rent <= 4000).length;
     expect(affordable).toBeGreaterThanOrEqual(45);
+  });
+});
+
+describe("third wave — a room in every city", () => {
+  test("covers exactly the cities the first two waves never reached", () => {
+    const earlier = new Set(SEEDS.slice(0, 154).map((s) => s.listing.city));
+    for (const city of WAVE3_CITIES) expect(earlier.has(city)).toBe(false);
+    for (const city of CITIES) {
+      expect(earlier.has(city) || WAVE3_CITIES.includes(city), `${city} is not covered`).toBe(true);
+    }
+  });
+
+  test("every city in the picker ends up with at least three rooms", () => {
+    const perCity = new Map<string, number>();
+    for (const s of SEEDS) perCity.set(s.listing.city, (perCity.get(s.listing.city) ?? 0) + 1);
+    expect(perCity.size).toBe(CITIES.length);
+    for (const city of CITIES) {
+      expect(perCity.get(city) ?? 0, `${city}`).toBeGreaterThanOrEqual(WAVE3_PER_CITY);
+    }
+  });
+
+  test("third-wave rooms carry a real street and a title that names the city", () => {
+    for (const s of SEEDS.slice(154)) {
+      expect(s.listing.neighborhood).toBe("");
+      expect(s.listing.address).toMatch(/^[A-Za-z'’\- ]+ \d+$/);
+      expect(s.listing.title).toContain(s.listing.city); // no "{n}" left over
+      expect(s.listing.title).not.toContain("{n}");
+      expect(s.profile.avatar_url).toBeTruthy(); // portraits cycle, nobody is faceless
+    }
+  });
+
+  test("rent bands stay believable, and the exceptions win over distance", () => {
+    for (const s of SEEDS.slice(154)) {
+      expect(s.listing.rent).toBeGreaterThanOrEqual(1500);
+      expect(s.listing.rent).toBeLessThanOrEqual(5400);
+    }
+    expect(wave3Rent("Kfar Shmaryahu").min).toBeGreaterThan(wave3Rent("Bnei Brak").min);
+    expect(wave3Rent("Bnei Brak").max).toBeLessThan(wave3Rent("Givat Shmuel").max); // central but modest
+    expect(wave3Rent("Mitzpe Ramon").max).toBeLessThan(wave3Rent("Ramat HaSharon").max);
+  });
+
+  test("nothing of the first two waves moved", () => {
+    // The third wave only appends: same emails, same rooms, same order.
+    expect(SEEDS.slice(0, 154).map((s) => s.email)).toEqual(
+      Array.from({ length: 154 }, (_, i) => `seed.user${i + 1}@nestup.dev`)
+    );
+    expect(SEEDS[154].email).toBe("seed.user155@nestup.dev");
   });
 });

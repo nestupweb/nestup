@@ -33,8 +33,11 @@ export function FilterBar() {
 
   function apply(formData: FormData) {
     const next = new URLSearchParams();
+    // Keep the chosen ordering and List/Map view across a filter change.
     const sort = params.get("sort");
-    if (sort) next.set("sort", sort); // keep the chosen ordering across filter changes
+    if (sort) next.set("sort", sort);
+    const view = params.get("view");
+    if (view) next.set("view", view);
     for (const [key, value] of formData.entries()) {
       const v = String(value);
       if (v === "" || v === "any") continue;

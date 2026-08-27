@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { getAuthContext } from "@/lib/auth";
 import { listingFiltersSchema } from "@/lib/validation/filters";
-import { queryListings } from "@/lib/listings";
+import { queryListingPins, queryListings } from "@/lib/listings";
 import { FilterBar } from "@/components/listings/FilterBar";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SortMenu } from "@/components/listings/SortMenu";
+import { ViewToggle } from "@/components/listings/ViewToggle";
+import { ResultsMap } from "@/components/listings/ResultsMap";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 const FILTER_KEYS = [
@@ -19,8 +21,10 @@ export default async function BrowsePage({
   searchParams: Promise<Record<string, string>>;
 }) {
   const filters = listingFiltersSchema.parse(await searchParams);
-  const [{ listings, total }, { supabase, user }] = await Promise.all([
+  const mapView = filters.view === "map";
+  const [{ listings, total }, pins, { supabase, user }] = await Promise.all([
     queryListings(filters),
+    mapView ? queryListingPins(filters) : Promise.resolve([]),
     getAuthContext(),
   ]);
   // Signed-in hearts come from the account (Profile › Liked); visitors use localStorage.
@@ -32,10 +36,13 @@ export default async function BrowsePage({
   const filtersActive = FILTER_KEYS.some((k) => filters[k] !== undefined);
   const lastPage = Math.max(1, Math.ceil(total / filters.page_size));
 
+  // Defaults are left out so the URL stays readable: /browse?page=2, not
+  // /browse?view=list&sort=newest&page=2.
+  const DEFAULTS: Record<string, string> = { view: "list", sort: "newest", page_size: "20" };
   const pageLink = (page: number) => {
     const params = new URLSearchParams(
       Object.entries(filters)
-        .filter(([, v]) => v !== undefined)
+        .filter(([k, v]) => v !== undefined && k !== "page" && String(v) !== DEFAULTS[k])
         .map(([k, v]) => [k, String(v)])
     );
     params.set("page", String(page));
@@ -69,10 +76,15 @@ export default async function BrowsePage({
                 </>
               ) : null}
             </p>
-            <SortMenu value={filters.sort} />
+            <div className="flex shrink-0 items-center gap-2">
+              {mapView ? null : <SortMenu value={filters.sort} />}
+              <ViewToggle value={filters.view} />
+            </div>
           </div>
 
-          {listings.length === 0 ? (
+          {mapView && total > 0 ? (
+            <ResultsMap pins={pins} unplaced={Math.max(0, total - pins.length)} />
+          ) : listings.length === 0 ? (
             total === 0 && !filtersActive ? (
               <EmptyState
                 title="No rooms listed yet"
@@ -99,7 +111,7 @@ export default async function BrowsePage({
             </div>
           )}
 
-          {lastPage > 1 ? (
+          {!mapView && lastPage > 1 ? (
             <div className="mt-6 flex items-center justify-center gap-4 text-sm">
               {filters.page > 1 ? (
                 <Link className="text-accent underline" href={pageLink(filters.page - 1)}>← Previous</Link>

@@ -30,6 +30,20 @@ const admin = createClient(url, serviceKey, {
 
 const PASSWORD = "Demo1234!";
 
+/**
+ * PostgREST puts `.in(...)` lists in the query string, so asking about all 490
+ * seed owners at once builds an ~18 KB URL and the request dies with a bare
+ * "fetch failed" (seen 2026-08-27, once the third wave landed). Every `.in()`
+ * over the whole seed set is chunked.
+ */
+const CHUNK = 80;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
 async function listSeedUsers(): Promise<Map<string, string>> {
   const byEmail = new Map<string, string>();
   for (let page = 1; ; page++) {
@@ -111,20 +125,24 @@ async function main() {
  */
 async function addRoommates(idByEmail: Map<string, string>) {
   const seedIds = [...idByEmail.values()];
-  const { data: listingRows, error: lErr } = await admin
-    .from("listings")
-    .select("id, owner_id, city, roommates_count")
-    .in("owner_id", seedIds)
-    .eq("is_active", true);
-  if (lErr) throw new Error(`listings for roommates: ${lErr.message}`);
-  const listings = (listingRows ?? []) as { id: string; owner_id: string; city: string; roommates_count: number }[];
 
-  const { data: residentRows, error: rErr } = await admin
-    .from("listing_residents")
-    .select("listing_id")
-    .in("listing_id", listings.map((l) => l.id));
-  if (rErr) throw new Error(`listing_residents: ${rErr.message}`);
-  const hasRoommates = new Set((residentRows ?? []).map((r) => r.listing_id as string));
+  const listings: { id: string; owner_id: string; city: string; roommates_count: number }[] = [];
+  for (const ids of chunk(seedIds, CHUNK)) {
+    const { data, error } = await admin
+      .from("listings")
+      .select("id, owner_id, city, roommates_count")
+      .in("owner_id", ids)
+      .eq("is_active", true);
+    if (error) throw new Error(`listings for roommates: ${error.message}`);
+    listings.push(...((data ?? []) as typeof listings));
+  }
+
+  const hasRoommates = new Set<string>();
+  for (const ids of chunk(listings.map((l) => l.id), CHUNK)) {
+    const { data, error } = await admin.from("listing_residents").select("listing_id").in("listing_id", ids);
+    if (error) throw new Error(`listing_residents: ${error.message}`);
+    for (const r of data ?? []) hasRoommates.add(r.listing_id as string);
+  }
 
   const ownersByCity = new Map<string, string[]>();
   for (const l of listings) {
@@ -144,10 +162,12 @@ async function addRoommates(idByEmail: Map<string, string>) {
     console.log("Roommates: nothing to add.");
     return;
   }
-  const { error } = await admin
-    .from("listing_residents")
-    .upsert(rows, { onConflict: "listing_id,resident_id", ignoreDuplicates: true });
-  if (error) throw new Error(`insert roommates: ${error.message}`);
+  for (const batch of chunk(rows, 200)) {
+    const { error } = await admin
+      .from("listing_residents")
+      .upsert(batch, { onConflict: "listing_id,resident_id", ignoreDuplicates: true });
+    if (error) throw new Error(`insert roommates: ${error.message}`);
+  }
   console.log(`Roommates: linked ${rows.length} resident(s) across ${new Set(rows.map((r) => r.listing_id)).size} room(s).`);
 }
 

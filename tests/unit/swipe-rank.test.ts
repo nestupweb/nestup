@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { MIN_DECK_SCORE, buildDeck, fitsHardFilters, formatMoveIn, introMessage, sharedInterests } from "@/lib/swipe";
+import { MIN_DECK_SCORE, buildDeck, fitsHardFilters, formatMoveIn, getSwipeDeck, introMessage, sharedInterests } from "@/lib/swipe";
 import { sortKey } from "@/lib/compatibility";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -145,4 +145,53 @@ test("sharedInterests keeps the seeker's order", () => {
   const a = profile({ interests: ["Yoga", "Music", "Art"] });
   const b = profile({ interests: ["Art", "Yoga", "Tech"] });
   expect(sharedInterests(a, b)).toEqual(["Yoga", "Art"]);
+});
+
+describe("getSwipeDeck query", () => {
+  /** Records what the deck asks the database for. */
+  function fakeSupabase(seeker: Profile) {
+    const calls: [string, ...unknown[]][] = [];
+    const builder: Record<string, (...a: unknown[]) => unknown> = {};
+    for (const m of ["select", "eq", "is", "neq", "in", "lte", "gte", "order"]) {
+      builder[m] = (...args: unknown[]) => {
+        calls.push([m, ...args]);
+        return builder;
+      };
+    }
+    builder.limit = (...args: unknown[]) => {
+      calls.push(["limit", ...args]);
+      return Promise.resolve({ data: [] });
+    };
+    const supabase = {
+      from: (table: string) => {
+        calls.push(["from", table]);
+        if (table === "swipes") {
+          const swipes: Record<string, (...a: unknown[]) => unknown> = {};
+          swipes.select = () => swipes;
+          swipes.eq = () => Promise.resolve({ data: [] });
+          return swipes;
+        }
+        return builder;
+      },
+    };
+    return { supabase: supabase as never, calls, seeker };
+  }
+
+  test("asks the database for the seeker's cities and budget, not the newest 300 of everything", async () => {
+    const { supabase, calls } = fakeSupabase(profile());
+    await getSwipeDeck(supabase, profile({ preferred_cities: ["Tel Aviv", "Givatayim"], budget_min: 2000, budget_max: 3000 }));
+    expect(calls).toContainEqual(["in", "city", ["Tel Aviv", "Givatayim"]]);
+    expect(calls).toContainEqual(["lte", "rent", 3000]);
+    expect(calls).toContainEqual(["gte", "rent", 2000]);
+    // and a closed or deleted room never reaches the deck
+    expect(calls).toContainEqual(["eq", "is_active", true]);
+    expect(calls).toContainEqual(["is", "removed_at", null]);
+  });
+
+  test("a seeker with no preferences set filters on nothing", async () => {
+    const { supabase, calls } = fakeSupabase(profile());
+    await getSwipeDeck(supabase, profile({ preferred_cities: [], budget_min: 0, budget_max: 0 }));
+    expect(calls.some(([m]) => m === "in")).toBe(false);
+    expect(calls.some(([m]) => m === "lte" || m === "gte")).toBe(false);
+  });
 });

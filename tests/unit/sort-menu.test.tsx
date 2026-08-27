@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const push = vi.fn();
 let search = "city=Haifa&page=3";
@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({
 import { SortMenu } from "@/components/listings/SortMenu";
 import { FilterBar } from "@/components/listings/FilterBar";
 
+afterEach(cleanup);
 beforeEach(() => push.mockClear());
 
 test("picking a price order writes ?sort=, keeps the city and resets the page", async () => {
@@ -31,10 +32,10 @@ test("picking a price order writes ?sort=, keeps the city and resets the page", 
 test("going back to Newest drops the param; Escape closes the menu", async () => {
   search = "sort=price_asc";
   render(<SortMenu value="price_asc" />);
-  await userEvent.click(screen.getByRole("button", { name: "Sort: Price: low to high" }));
+  await userEvent.click(screen.getByRole("button", { name: /^Sort:/ }));
   await userEvent.keyboard("{Escape}");
   expect(screen.queryByRole("menu")).toBeNull();
-  await userEvent.click(screen.getByRole("button", { name: "Sort: Price: low to high" }));
+  await userEvent.click(screen.getByRole("button", { name: /^Sort:/ }));
   await userEvent.click(screen.getByRole("menuitemradio", { name: /newest/i }));
   expect(push).toHaveBeenCalledWith("/browse");
 });

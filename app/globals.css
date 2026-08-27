@@ -188,3 +188,37 @@ body {
 }
 .dual-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dual-range:focus-visible::-moz-range-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== Maps (Leaflet) =====
+   There is no keyless dark raster basemap, so the dark theme reuses the light
+   OpenStreetMap tiles inverted: invert + hue-rotate keeps greens green and
+   water blue instead of turning the map into a negative. Only the tiles are
+   filtered — markers, circles and controls sit above and keep their colours. */
+.leaflet-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.75);
+}
+/* The map's own chrome should read as part of the app, not as Leaflet. */
+.leaflet-container {
+  background: var(--paper);
+  font: inherit;
+}
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--surface) 82%, transparent) !important;
+  color: var(--muted) !important;
+  font-size: 10px;
+}
+.leaflet-control-attribution a { color: var(--muted) !important; }
+.leaflet-bar a {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border-color: var(--hairline) !important;
+}
+.leaflet-bar a:hover { background: var(--paper) !important; }
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.45);
+}
+.leaflet-popup-content { margin: 0; }
+.leaflet-popup-close-button { color: var(--muted) !important; }

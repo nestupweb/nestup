@@ -1,7 +1,7 @@
 /**
- * Demo data for `scripts/seed.ts`: 12 handcrafted owners plus 80 generated
- * ones (first wave) and 62 more (second wave), each with a portrait and one
- * active listing. Pure module — no env,
+ * Demo data for `scripts/seed.ts`: 12 handcrafted owners, 80 generated ones
+ * (first wave), 62 more (second wave) and a third wave covering every
+ * remaining city in the country — each with a portrait and one active listing. Pure module — no env,
  * no I/O — so `tests/unit/seed-data.test.ts` can check it against the DB
  * constraints. Generation is deterministic (fixed PRNG seed): running the
  * seed twice produces the same people and rooms.
@@ -9,7 +9,11 @@
  * Cities and interests are duplicated from `lib/constants.ts` on purpose:
  * this file runs under Node's native TS loader (`npm run seed`), which can't
  * resolve the `@/` alias, and the unit test asserts the two lists agree.
+ * (Relative `../lib/*.ts` imports do work, and the third wave uses them.)
  */
+import { CITIES as ALL_CITIES } from "../lib/cities.ts";
+import { CITY_CENTRES } from "../lib/city-centres.ts";
+import { distanceM } from "../lib/geo.ts";
 
 export type SleepSchedule = "early" | "late" | "flexible";
 export type GuestsFreq = "rare" | "sometimes" | "often";
@@ -700,13 +704,19 @@ const MOVE_IN_DATES = [
 /** One generation run: which PRNG seed, cities, portraits and photo pools it draws from. */
 export interface Wave {
   prngSeed: number;
-  cityPlan: readonly (readonly [City, number])[];
+  cityPlan: readonly (readonly [string, number])[];
   /** `seed.user<N>` of the first generated owner in this wave. */
   firstUser: number;
   portraits: readonly string[];
   photos: (i: number, withExtra: boolean) => { photo_urls: string[]; photo_labels: PhotoRoom[] };
   /** Full names already taken by earlier waves — never reused. */
   takenNames?: readonly string[];
+  /**
+   * Reuse portraits once the pool runs out, instead of leaving the rest of the
+   * wave faceless. Off for waves 1 and 2, whose output is pinned by a
+   * fingerprint test.
+   */
+  cyclePortraits?: boolean;
 }
 
 export const WAVE1: Wave = {
@@ -737,7 +747,7 @@ export function generateSeeds(count = GENERATED_COUNT, wave: Wave = WAVE1): Seed
     return [...chosen];
   };
 
-  const cities = shuffle(wave.cityPlan.flatMap(([city, n]) => Array<City>(n).fill(city))).slice(0, count);
+  const cities = shuffle(wave.cityPlan.flatMap(([city, n]) => Array<string>(n).fill(city))).slice(0, count);
   const firsts = shuffle(FIRST_NAMES);
   const lasts = shuffle(LAST_NAMES);
   const portraits = shuffle(wave.portraits);
@@ -746,7 +756,12 @@ export function generateSeeds(count = GENERATED_COUNT, wave: Wave = WAVE1): Seed
   const seeds: Seed[] = [];
   for (let i = 0; i < count; i++) {
     const city = cities[i];
-    const neighborhood = pick(NEIGHBORHOODS[city]);
+    // Waves 1 and 2 cover twelve cities with hand-written quarters, streets and
+    // rent bands. The third wave reaches every other city in the country, where
+    // inventing a quarter name would be a lie — so the neighbourhood is left
+    // empty (titles fall back to the city) and the street comes from names that
+    // genuinely recur in nearly every Israeli town.
+    const neighborhood = pick(NEIGHBORHOODS[city as City] ?? [""]);
     const property_type: PropertyType = (() => {
       const r = rand();
       if (r < 0.6) return "apartment";
@@ -760,7 +775,7 @@ export function generateSeeds(count = GENERATED_COUNT, wave: Wave = WAVE1): Seed
     const house = property_type === "private_house" || property_type === "duplex";
     const rooms = studio ? pick([1, 1.5, 2]) : house ? pick([4, 4.5, 5, 5.5, 6]) : pick([2.5, 3, 3, 3.5, 4, 4.5]);
     const roommates_count = studio ? 0 : Math.min(Math.max(1, Math.round(rooms) - int(1, 2)), 4);
-    const band = RENT[city];
+    const band = RENT[city as City] ?? wave3Rent(city);
     const rent = Math.round((band.min + Math.pow(rand(), band.skew) * (band.max - band.min)) / 50) * 50;
 
     // 3–4 photos each: living room, bedroom, bathroom, sometimes one more room.
@@ -786,7 +801,11 @@ export function generateSeeds(count = GENERATED_COUNT, wave: Wave = WAVE1): Seed
         occupation: pick(OCCUPATIONS),
         bio: pick(BIOS),
         // Not everyone uploads a photo — the last few fall back to the outline avatar.
-        avatar_url: i < portraits.length ? portrait(portraits[i]) : null,
+        avatar_url: wave.cyclePortraits
+          ? portrait(portraits[i % portraits.length])
+          : i < portraits.length
+            ? portrait(portraits[i])
+            : null,
         smoker,
         has_pet,
         noise_level: pick(["quiet", "moderate", "moderate", "lively"] as const),
@@ -811,11 +830,11 @@ export function generateSeeds(count = GENERATED_COUNT, wave: Wave = WAVE1): Seed
         earliest_move_in: null,
       },
       listing: {
-        title: pick(TITLES[property_type]).replace("{n}", neighborhood),
+        title: pick(TITLES[property_type]).replace("{n}", neighborhood || city),
         description,
         city,
         neighborhood,
-        address: `${pick(STREETS[city])} ${int(2, 140)}`,
+        address: `${pick(STREETS[city as City] ?? COMMON_STREETS)} ${int(2, 140)}`,
         rent,
         available_from: pick(MOVE_IN_DATES),
         lease_term: pick(["year", "year", "year", "half_year", "half_year", "flexible", "flexible", "two_years", "three_months", "long_term"] as const),
@@ -966,9 +985,96 @@ export const WAVE2: Wave = {
   photos: (i, withExtra) => photoStory(WAVE2_POOLS, i, withExtra),
 };
 
-const WAVE1_SEEDS = generateSeeds();
-export const SEEDS: Seed[] = [
-  ...HANDCRAFTED,
-  ...WAVE1_SEEDS,
-  ...generateSeeds(WAVE2_COUNT, { ...WAVE2, takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS].map((s) => s.profile.full_name) }),
+
+// ---------------------------------------------------------------------------
+// Third wave (2026-08-27): three rooms in every remaining city, so the map has
+// something to show outside the twelve launch cities and a seeker who picks
+// Abu Ghosh, Ashdod or Eilat isn't met with an empty deck. Appended after the
+// first 154 (seed.user155…), with its own PRNG seed; waves 1 and 2 are
+// untouched, and the fingerprint test still pins the original 92.
+//
+// These cities have no hand-written quarters, streets or rent bands — there
+// are 112 of them — so the wave leans on three general rules instead:
+//   · no neighbourhood at all (a made-up quarter name would be a lie)
+//   · street names that genuinely recur in nearly every Israeli town
+//   · a rent band from distance to the Gush Dan, with a list of exceptions
+//     where that rule is plainly wrong
+// Photos and portraits are the second wave's pools, already checked by eye on
+// 2026-08-26; they repeat across the wave, which nobody sees at three rooms
+// per city and which beats putting unlooked-at images into the app.
+// ---------------------------------------------------------------------------
+
+/** Street names found in town after town, so no city gets an invented address. */
+const COMMON_STREETS = [
+  "Herzl", "Ben Gurion", "Jabotinsky", "Weizmann", "Bialik", "Rothschild", "HaAtzmaut",
+  "HaNassi", "Sokolov", "Trumpeldor", "Ussishkin", "HaShalom", "Begin", "Eshkol",
+  "HaPalmach", "Golani", "HaZayit", "HaTamar", "Yitzhak Rabin", "HaRav Kook",
 ];
+
+/** Central but not expensive — the distance rule gets these backwards. */
+const WAVE3_MODEST = new Set([
+  "Bnei Brak", "Elad", "Beitar Illit", "Modi'in Illit", "Lod", "Ramla", "Or Yehuda",
+  "Jaljulia", "Kafr Qasim", "Tira", "Tayibe", "Qalansawe", "Baqa al-Gharbiyye",
+  "Rahat", "Kiryat Malakhi", "Netivot", "Ofakim", "Sderot", "Dimona", "Yeruham",
+  "Beit She'an", "Hatzor HaGlilit", "Migdal HaEmek", "Nof HaGalil", "Shefa-'Amr",
+  "Tamra", "Sakhnin", "Umm al-Fahm", "Daliyat al-Karmel", "Isfiya", "Beit Jann",
+  "Majdal Shams", "Jisr az-Zarqa", "Kiryat Arba", "Arad", "Mitzpe Ramon", "Acre",
+]);
+
+/** Sought-after towns, wherever they sit on the map. */
+const WAVE3_PRICEY = new Set([
+  "Kfar Shmaryahu", "Savyon", "Ramat HaSharon", "Kokhav Ya'ir", "Kfar Saba",
+  "Hod HaSharon", "Even Yehuda", "Tel Mond", "Ramat Yishai", "Zichron Yaakov",
+  "Binyamina", "Shoham", "Givat Shmuel", "Ganei Tikva", "Kiryat Ono",
+  "Modi'in-Maccabim-Re'ut", "Mazkeret Batya", "Omer", "Lehavim", "Meitar",
+  "Kfar Vradim", "Oranit", "Elkana", "Alfei Menashe", "Efrat", "Mevaseret Zion",
+  "Giv'at Ada", "Kadima-Zoran", "Kiryat Tivon",
+]);
+
+const GUSH_DAN = { lat: 32.0853, lng: 34.7818 };
+
+/** Rent band for a third-wave city: nearer the centre, dearer, with exceptions. */
+export function wave3Rent(city: string): { min: number; max: number; skew: number } {
+  if (WAVE3_PRICEY.has(city)) return { min: 3100, max: 5400, skew: 1.6 };
+  if (WAVE3_MODEST.has(city)) return { min: 1500, max: 2900, skew: 1.2 };
+  const centre = CITY_CENTRES[city];
+  const km = centre ? distanceM(centre, GUSH_DAN) / 1000 : 60;
+  if (km <= 20) return { min: 2800, max: 4900, skew: 1.7 };
+  if (km <= 45) return { min: 2300, max: 3900, skew: 1.4 };
+  return { min: 1800, max: 3200, skew: 1.3 };
+}
+
+/** Rooms seeded per city in the third wave. */
+export const WAVE3_PER_CITY = 3;
+
+/** Every city in the picker that the first two waves never reached. */
+export const WAVE3_CITIES: string[] = ALL_CITIES.filter(
+  (c) => !(CITIES as readonly string[]).includes(c)
+);
+
+const WAVE3_CITY_PLAN: (readonly [string, number])[] = WAVE3_CITIES.map(
+  (c) => [c, WAVE3_PER_CITY] as const
+);
+
+export const WAVE3_COUNT = WAVE3_CITIES.length * WAVE3_PER_CITY;
+
+export const WAVE3: Wave = {
+  prngSeed: 20260827,
+  cityPlan: WAVE3_CITY_PLAN,
+  firstUser: HANDCRAFTED_BASE.length + GENERATED_COUNT + WAVE2_COUNT + 1,
+  portraits: WAVE2_PORTRAITS,
+  photos: (i, withExtra) => photoStory(WAVE2_POOLS, i, withExtra),
+  cyclePortraits: true,
+};
+
+const WAVE1_SEEDS = generateSeeds();
+const WAVE2_SEEDS = generateSeeds(WAVE2_COUNT, {
+  ...WAVE2,
+  takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS].map((s) => s.profile.full_name),
+});
+const WAVE3_SEEDS = generateSeeds(WAVE3_COUNT, {
+  ...WAVE3,
+  takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS].map((s) => s.profile.full_name),
+});
+
+export const SEEDS: Seed[] = [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS];

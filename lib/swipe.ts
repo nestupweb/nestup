@@ -109,15 +109,24 @@ export function sharedInterests(a: Profile, b: Profile): string[] {
  * extra roommates come along for the third panel.
  */
 export async function getSwipeDeck(supabase: SupabaseClient, seeker: Profile): Promise<DeckEntry[]> {
+  // The seeker's cities and budget are applied in the query, not afterwards.
+  // They used to be filtered in `buildDeck` alone, over the newest 300 rooms —
+  // which was fine at 155 listings and became a bug at 490: the newest 300 were
+  // all small-town rooms, so a Tel Aviv seeker's own city fell out of the
+  // window entirely and the deck came up empty (2026-08-27).
+  let query = supabase
+    .from("listings")
+    .select("*")
+    .eq("is_active", true)
+    .is("removed_at", null)
+    .neq("owner_id", seeker.user_id);
+  if (seeker.preferred_cities.length > 0) query = query.in("city", seeker.preferred_cities);
+  if (seeker.budget_max > 0) query = query.lte("rent", seeker.budget_max);
+  if (seeker.budget_min > 0) query = query.gte("rent", seeker.budget_min);
+
   const [{ data: swiped }, { data: listingRows }] = await Promise.all([
     supabase.from("swipes").select("listing_id").eq("seeker_id", seeker.user_id),
-    supabase
-      .from("listings")
-      .select("*")
-      .eq("is_active", true)
-      .neq("owner_id", seeker.user_id)
-      .order("created_at", { ascending: false })
-      .limit(300),
+    query.order("created_at", { ascending: false }).limit(300),
   ]);
   const seen = new Set((swiped ?? []).map((r) => r.listing_id as string));
   const listings = ((listingRows as Listing[] | null) ?? []).filter((l) => !seen.has(l.id));

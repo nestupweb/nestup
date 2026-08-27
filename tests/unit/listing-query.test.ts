@@ -66,3 +66,21 @@ describe("sort", () => {
     expect(newest.calls.filter(([m]) => m === "order")).toEqual([["order", "created_at", { ascending: false }]]);
   });
 });
+
+describe("view", () => {
+  test("defaults to the list and refuses anything it doesn't know", () => {
+    expect(listingFiltersSchema.parse({}).view).toBe("list");
+    expect(listingFiltersSchema.parse({ view: "map" }).view).toBe("map");
+    expect(listingFiltersSchema.parse({ view: "globe" }).view).toBe("list");
+  });
+
+  test("the map query asks for every match, not one page", () => {
+    const { q, calls } = fakeQuery();
+    applyListingFilters(q, listingFiltersSchema.parse({ page: "3", city: "Haifa" }), { paginate: false });
+    expect(calls.some(([m]) => m === "range")).toBe(false);
+    expect(calls).toContainEqual(["eq", "city", "Haifa"]); // filters still apply
+    const paged = fakeQuery();
+    applyListingFilters(paged.q, listingFiltersSchema.parse({ page: "3" }));
+    expect(paged.calls).toContainEqual(["range", 40, 59]);
+  });
+});

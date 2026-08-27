@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import type { Marker as LeafletMarker } from "leaflet";
-import { ATTRIBUTION, MAX_ZOOM, ROOM_ZOOM, TILES } from "@/components/map/basemap";
+import { ATTRIBUTION, DARK_TILE_CLASS, MAX_ZOOM, ROOM_ZOOM, TILES } from "@/components/map/basemap";
 import { useMapTheme } from "@/components/map/useMapTheme";
 import { pinIcon } from "@/components/map/pin";
 import { CITY_CENTRES, ISRAEL_CENTRE } from "@/lib/city-centres";
@@ -87,5 +87,13 @@ function ThemedTiles() {
     const t = window.setTimeout(() => map.invalidateSize(), 120);
     return () => window.clearTimeout(t);
   }, [map]);
-  return <TileLayer key={theme} url={TILES[theme]} attribution={ATTRIBUTION} maxZoom={MAX_ZOOM} />;
+  return (
+    <TileLayer
+      key={theme}
+      url={TILES[theme]}
+      attribution={ATTRIBUTION}
+      maxZoom={MAX_ZOOM}
+      className={theme === "dark" ? DARK_TILE_CLASS : undefined}
+    />
+  );
 }

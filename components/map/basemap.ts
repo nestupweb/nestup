@@ -1,18 +1,31 @@
 /**
- * Basemap tiles. CARTO's free "no labels + labels" pair renders a quiet map
- * that carries the app's own colours rather than fighting them, and ships a
- * light and a dark variant so the map follows the theme toggle.
+ * Basemap tiles: OpenStreetMap's own raster tiles — free, no API key, no
+ * account, and the best street-level detail in Israel of the keyless options.
  *
- * Free, no key, no account. Attribution is required and is rendered by
- * Leaflet's own control — see `ATTRIBUTION`.
+ * (CARTO's basemaps were the first choice and were dropped on 2026-08-27: they
+ * now stamp "API KEY REQUIRED" across every tile served without a key.)
+ *
+ * There is no keyless dark raster basemap, so the dark theme reuses the same
+ * tiles under a CSS inversion — see `.leaflet-tiles-dark` in globals.css.
+ * Attribution is required and Leaflet's own control renders it.
+ *
+ * If this app ever takes real traffic, OSM's tile policy asks apps to move to a
+ * dedicated provider (MapTiler, Stadia — both have free tiers, both need a key):
+ * https://operations.osmfoundation.org/policies/tiles/
  */
+export const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+/** Kept as a map for callers that switch on theme; both point at OSM. */
 export const TILES = {
-  light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-  dark: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
+  light: TILE_URL,
+  dark: TILE_URL,
 } as const;
 
+/** Applied to the dark tile layer to turn the light basemap into a dark one. */
+export const DARK_TILE_CLASS = "leaflet-tiles-dark";
+
 export const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export const MAX_ZOOM = 18;
 
