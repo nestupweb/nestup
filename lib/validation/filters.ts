@@ -15,8 +15,8 @@ const optionalBool = z.preprocess(
 /** Browse ordering: newest first, or by monthly rent either way. */
 export const LISTING_SORTS = [
   { key: "newest", label: "Newest" },
-  { key: "price_desc", label: "Price: high to low" },
   { key: "price_asc", label: "Price: low to high" },
+  { key: "price_desc", label: "Price: high to low" },
 ] as const;
 export type ListingSort = (typeof LISTING_SORTS)[number]["key"];
 const sortKeys = LISTING_SORTS.map((s) => s.key) as [ListingSort, ...ListingSort[]];

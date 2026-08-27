@@ -21,7 +21,7 @@ test("picking a price order writes ?sort=, keeps the city and resets the page", 
   expect(screen.queryByRole("menu")).toBeNull();
   await userEvent.click(trigger);
   const items = screen.getAllByRole("menuitemradio");
-  expect(items.map((i) => i.textContent)).toEqual(["Newest", "Price: high to low", "Price: low to high"]);
+  expect(items.map((i) => i.textContent)).toEqual(["Newest", "Price: low to high", "Price: high to low"]);
   expect(items[0]).toHaveAttribute("aria-checked", "true");
   await userEvent.click(screen.getByRole("menuitemradio", { name: /high to low/i }));
   expect(push).toHaveBeenCalledWith("/browse?city=Haifa&sort=price_desc");
