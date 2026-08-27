@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState } from "react";
 import { ProfilePhotos } from "@/components/profile/ProfilePhotos";
 import { upsertProfileAction, type ProfileFormState } from "@/app/actions/profile";
 import { InterestsPicker } from "@/components/profile/InterestsPicker";
@@ -13,6 +12,7 @@ import { SocialLinkInput } from "@/components/profile/SocialLinkInput";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import { hourChoices, nearestHour } from "@/lib/clock";
+import { useStickyForm } from "@/lib/hooks";
 import { BED_TIMES, PREF_LEASE_TERMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import type { Profile, ProfileDetails } from "@/lib/types";
@@ -64,10 +64,7 @@ export function ProfileForm({
   /** Present on the pencil page: the About-me details ride along in this form. */
   about?: { details: ProfileDetails | null; email: string };
 }) {
-  const [state, formAction, pending] = useActionState<ProfileFormState, FormData>(
-    upsertProfileAction,
-    {}
-  );
+  const [state, form, pending] = useStickyForm<ProfileFormState>(upsertProfileAction, {});
   const d = about?.details ?? null;
   const wake = nearestHour(d?.wake_time ?? "");
   const bed = nearestHour(d?.bed_time ?? "");
@@ -76,7 +73,7 @@ export function ProfileForm({
   const stepNo = () => ++step;
 
   return (
-    <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
+    <form {...form} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <h1 className="text-3xl font-bold">
         {onboarding ? "Tell us about you" : "Your profile"}

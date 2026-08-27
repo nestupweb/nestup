@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { changeEmailAction, changePasswordAction, type AccountState } from "@/app/actions/auth";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Card } from "@/components/settings/Card";
+import { useStickyForm } from "@/lib/hooks";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
@@ -51,11 +52,11 @@ function Row({
  */
 export function AccountSection({ email }: { email: string }) {
   const [openRow, setOpenRow] = useState<"email" | "password" | null>(null);
-  const [emailState, emailSubmit, emailPending] = useActionState<AccountState, FormData>(changeEmailAction, {});
+  const [emailState, emailForm, emailPending] = useStickyForm<AccountState>(changeEmailAction, {});
   // A finished password change has nothing more to say, so the row folds itself
   // away — done inside the action rather than in an effect, so there is no
   // second render pass to close it.
-  const [pwState, pwSubmit, pwPending] = useActionState<AccountState, FormData>(async (prev, formData) => {
+  const [pwState, pwForm, pwPending] = useStickyForm<AccountState>(async (prev, formData) => {
     const result = await changePasswordAction(prev, formData);
     if (result.done) setOpenRow(null);
     return result;
@@ -69,7 +70,7 @@ export function AccountSection({ email }: { email: string }) {
         open={openRow === "email"}
         onToggle={() => setOpenRow((r) => (r === "email" ? null : "email"))}
       >
-        <form action={emailSubmit}>
+        <form {...emailForm}>
           <label className={label}>
             New e-mail address
             <input name="email" type="email" required maxLength={120} className={input} />
@@ -92,7 +93,7 @@ export function AccountSection({ email }: { email: string }) {
         open={openRow === "password"}
         onToggle={() => setOpenRow((r) => (r === "password" ? null : "password"))}
       >
-        <form action={pwSubmit}>
+        <form {...pwForm}>
           <label className={label}>
             Current password
             <PasswordInput name="current" autoComplete="current-password" required className={input} />

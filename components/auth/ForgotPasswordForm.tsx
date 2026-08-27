@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
 import Link from "next/link";
 import type { AuthState } from "@/app/actions/auth";
+import { useStickyForm } from "@/lib/hooks";
 import { formClass, inputClass, labelClass, submitClass } from "@/components/auth/fields";
 
 export function ForgotPasswordForm({
@@ -10,7 +10,7 @@ export function ForgotPasswordForm({
 }: {
   action: (prev: AuthState, formData: FormData) => Promise<AuthState>;
 }) {
-  const [state, formAction, pending] = useActionState(action, {});
+  const [state, form, pending] = useStickyForm<AuthState>(action, {});
 
   if (state.sent) {
     return (
@@ -27,7 +27,7 @@ export function ForgotPasswordForm({
   }
 
   return (
-    <form action={formAction} className={formClass}>
+    <form {...form} className={formClass}>
       <h1 className="text-3xl font-bold">Forgot your password?</h1>
       <p className="mt-1 text-sm text-muted">
         Enter your email and we&rsquo;ll send you a link to set a new one.

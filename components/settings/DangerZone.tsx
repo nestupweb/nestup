@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { deleteAccountAction, type ToggleState } from "@/app/actions/settings";
 import { Card } from "@/components/settings/Card";
+import { useStickyForm } from "@/lib/hooks";
 
 /**
  * Closing the account. Irreversible, so the button only wakes up once the
@@ -11,7 +12,7 @@ import { Card } from "@/components/settings/Card";
  */
 export function DangerZone({ email }: { email: string }) {
   const [typed, setTyped] = useState("");
-  const [state, submit, pending] = useActionState<ToggleState, FormData>(deleteAccountAction, {});
+  const [state, form, pending] = useStickyForm<ToggleState>(deleteAccountAction, {});
   const armed = typed.trim().toLowerCase() === email.trim().toLowerCase();
 
   return (
@@ -20,7 +21,7 @@ export function DangerZone({ email }: { email: string }) {
         Deleting your account removes your profile, your listing, the rooms you saved, your viewing history, and every
         conversation and message. <strong className="font-semibold">This cannot be undone.</strong>
       </p>
-      <form action={submit} className="mt-4">
+      <form {...form} className="mt-4">
         <label htmlFor="confirm_email" className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
           Type your e-mail address to confirm
         </label>

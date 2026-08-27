@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { saveListingAction, type ListingFormState } from "@/app/actions/listing";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { PhotoPicker } from "@/components/listings/PhotoPicker";
 import { ViewingHoursEditor } from "@/components/listings/ViewingHoursEditor";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { normalizeSlots } from "@/lib/availability";
+import { useStickyForm } from "@/lib/hooks";
 import { FEATURES, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
@@ -18,10 +19,7 @@ const heading = "text-lg font-semibold";
 const check = "flex items-center gap-2 text-sm";
 
 export function ListingForm({ listing, userId }: { listing: Listing | null; userId: string }) {
-  const [state, formAction, pending] = useActionState<ListingFormState, FormData>(
-    saveListingAction,
-    {}
-  );
+  const [state, form, pending] = useStickyForm<ListingFormState>(saveListingAction, {});
   // A validation message lands next to the button, below a long form — bring it into view.
   const alertRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
@@ -29,7 +27,7 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
   }, [state.error]);
 
   return (
-    <form action={formAction} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
+    <form {...form} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
       <h1 className="text-3xl font-bold">{listing ? "Your listing" : "List your room"}</h1>
       <p className="mt-1 text-sm text-muted">
         {listing ? "Edit details or pause the listing." : "Post a room and start reviewing interested seekers."}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
 import type { AuthState } from "@/app/actions/auth";
+import { useStickyForm } from "@/lib/hooks";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { formClass, inputClass, labelClass, submitClass } from "@/components/auth/fields";
 
@@ -12,10 +12,10 @@ export function ResetPasswordForm({
   action: (prev: AuthState, formData: FormData) => Promise<AuthState>;
   email?: string;
 }) {
-  const [state, formAction, pending] = useActionState(action, {});
+  const [state, form, pending] = useStickyForm<AuthState>(action, {});
 
   return (
-    <form action={formAction} className={formClass}>
+    <form {...form} className={formClass}>
       <h1 className="text-3xl font-bold">Set a new password</h1>
       <p className="mt-1 text-sm text-muted">
         {email ? <>For <span className="text-ink">{email}</span>. </> : null}At least 8 characters.

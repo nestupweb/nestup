@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 
-export type AuthState = { error?: string; sent?: boolean };
+export type AuthState = { error?: string; sent?: boolean; email?: string };
 
 const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
@@ -19,8 +19,29 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password });
   if (error) return { error: "Could not create the account. Try a different email." };
-  // Email confirmation is ON: no session yet — the user must click the emailed link.
-  return { sent: true };
+  // Email confirmation is ON (`mailer_autoconfirm: false`), so signUp creates the
+  // row but no session: the account cannot be used until the emailed link is
+  // clicked. The address travels back so the next screen can name it — a typo
+  // is the main reason a confirmation never arrives.
+  return { sent: true, email };
+}
+
+/**
+ * "Didn't get it? Send it again." Supabase throttles one message per address
+ * per minute (`smtp_max_frequency: 60`), so a too-soon retry is reported as
+ * something to wait out rather than a failure.
+ */
+export async function resendConfirmationAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!emailOk(email)) return { error: "Please enter a valid email address." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({ type: "signup", email });
+  if (error) {
+    if (error.status === 429) return { error: "We just sent one — give it a minute before asking again." };
+    return { error: "Could not send it again. Please try in a moment." };
+  }
+  return { sent: true, email };
 }
 
 export async function signInAction(_prev: AuthState, formData: FormData): Promise<AuthState> {

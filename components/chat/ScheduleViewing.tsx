@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { disconnectGoogleAction, proposeViewingAction, type ViewingFormState } from "@/app/actions/viewing";
 import { DatePicker, parseISODate, todayISO, toISODate } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { VIEWING_DURATIONS } from "@/lib/calendar";
 import { allowedWeekdays, describeSlots, normalizeSlots, startTimes } from "@/lib/availability";
+import { useStickyForm } from "@/lib/hooks";
 import type { ConversationSummary } from "@/lib/types";
 
 export interface GoogleState {
@@ -40,10 +41,7 @@ export function ScheduleViewing({
   google: GoogleState;
   onClose: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<ViewingFormState, FormData>(
-    proposeViewingAction,
-    {}
-  );
+  const [state, form, pending] = useStickyForm<ViewingFormState>(proposeViewingAction, {});
   const [, startTransition] = useTransition();
 
   const iAmSeeker = conversation.seeker_id === meId;
@@ -110,7 +108,7 @@ export function ScheduleViewing({
         className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
       />
       <form
-        action={formAction}
+        {...form}
         role="dialog"
         aria-modal="true"
         aria-labelledby="viewing-title"
