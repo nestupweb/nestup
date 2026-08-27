@@ -47,6 +47,7 @@ function listing(overrides: Partial<Listing> = {}): Listing {
     safe_room: "apartment", food_restrictions: "Kosher kitchen", street: "Florentin", house_number: "12", photo_labels: [], viewing_slots: [],
     photo_urls: ["https://example.com/a.jpg", "https://example.com/b.jpg", "https://example.com/c.jpg"],
     is_active: true, created_at: "", updated_at: "", ...overrides,
+    taken_at: null,
   };
 }
 

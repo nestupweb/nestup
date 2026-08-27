@@ -182,3 +182,33 @@ export async function saveListingAction(
   // Freshly published: show it where it now lives (Listings, My Listings, seekers' decks).
   redirect("/profile?tab=listings&published=1");
 }
+
+export type DeleteListingState = { error?: string };
+
+/**
+ * Removes the member's own room. Scoped by `owner_id` as well as `id`, so a
+ * forged `listing_id` can only ever match something the signed-in member
+ * already owns; RLS enforces the same rule underneath.
+ *
+ * Everything hanging off the listing goes with it — migration 0001 puts
+ * `on delete cascade` on saved rooms, viewing history, residents, viewings and
+ * the conversations (and their messages) about this room. The confirmation
+ * step in the UI says so before the member commits.
+ */
+export async function deleteListingAction(
+  _prev: DeleteListingState,
+  formData: FormData
+): Promise<DeleteListingState> {
+  const listingId = String(formData.get("listing_id") ?? "").trim();
+  if (!listingId) return { error: "Could not tell which listing to delete." };
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("listings").delete().eq("id", listingId).eq("owner_id", user.id);
+  if (error) return { error: "Could not delete the listing. Please try again." };
+
+  revalidatePath("/listing");
+  revalidatePath("/browse");
+  revalidatePath("/profile");
+  revalidatePath("/swipe");
+  redirect("/profile?tab=listings");
+}

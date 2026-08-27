@@ -117,6 +117,8 @@ export interface Listing {
   photo_labels: string[]; // PhotoRoom per photo, same order as photo_urls
   viewing_slots: ViewingSlot[]; // weekly viewing hours; empty = any time
   is_active: boolean;
+  /** When the owner marked the room taken (deal done); null = still available. */
+  taken_at: string | null;
   created_at: string;
   updated_at: string;
 }
