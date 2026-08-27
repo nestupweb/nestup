@@ -20,7 +20,7 @@ export const EDIT_PHOTOS_HREF = "/listing#photos";
  * The owner's "My listing" tab. Without a listing: one dashed square that
  * starts the listing form. With one: every photo side by side, each with a
  * pencil (on hover; always visible on touch screens) that opens the form at
- * its Photos section — and an "Edit photos" button under the grid that goes to
+ * its Photos section — and an "Edit Listing" button under the grid that goes to
  * the same place, for anyone who never finds the pencil. Other members never
  * see this — /people/[id] has its own listing section.
  */
@@ -102,7 +102,7 @@ function ListingPhotos({ listing }: { listing: Listing }) {
       {photos.length > 0 ? (
         <Link href={EDIT_PHOTOS_HREF} className={EDIT_BUTTON}>
           <PencilIcon />
-          Edit photos
+          Edit Listing
         </Link>
       ) : null}
     </section>
