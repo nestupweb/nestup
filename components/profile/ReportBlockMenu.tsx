@@ -304,7 +304,7 @@ function BlockModal({ memberId, first, onClose }: { memberId: string; first: str
       </h2>
       <p className="mt-2 text-sm text-muted">
         Neither of you will be able to message the other, and their room stops appearing in your Swipe, matches and
-        Browse — as yours does for them. You can undo this any time under Settings.
+        Listings — as yours does for them. You can undo this any time under Settings.
       </p>
       {state.error ? <p role="alert" className="mt-3 text-sm text-danger">{state.error}</p> : null}
       <form {...form} className="mt-5 flex items-center justify-end gap-2">

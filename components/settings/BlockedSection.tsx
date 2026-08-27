@@ -16,7 +16,7 @@ export function BlockedSection({ blocked }: { blocked: { profile: Profile; block
       title="Blocked members"
       hint={
         blocked.length
-          ? "You can't message each other, and neither of you sees the other's room in Swipe or Browse."
+          ? "You can't message each other, and neither of you sees the other's room in Swipe or Listings."
           : undefined
       }
     >
