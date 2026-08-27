@@ -33,6 +33,7 @@ const conversation: ConversationSummary = {
   listing_viewing_slots: [],
   next_viewing_starts_at: null,
   next_viewing_ends_at: null,
+  cleared_at: null,
 };
 
 function viewing(overrides: Partial<Viewing> = {}): Viewing {

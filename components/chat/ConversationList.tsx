@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { ChatRowMenu } from "@/components/chat/ChatRowMenu";
 import { householdLabel, previewTime } from "@/lib/chat-format";
 import { isUpcoming } from "@/lib/chat-outbox";
 import { useNow } from "@/lib/hooks";
@@ -58,13 +59,16 @@ export function ConversationList({
                 : c.other_name ?? "NestUp member";
             const viewingAhead = now > 0 && isUpcoming(c.next_viewing_ends_at, now);
             return (
-              <li key={c.id}>
+              <li
+                key={c.id}
+                className={`group flex items-stretch transition-colors ${
+                  active ? "bg-accent/10" : "hover:bg-hairline/40"
+                }`}
+              >
                 <Link
                   href={`/chat/${c.id}`}
                   aria-current={active ? "page" : undefined}
-                  className={`flex gap-3 px-4 py-3.5 transition-colors sm:px-2 lg:px-5 ${
-                    active ? "bg-accent/10" : "hover:bg-hairline/40"
-                  }`}
+                  className="flex min-w-0 flex-1 gap-3 py-3.5 pl-4 pr-1 sm:pl-2 lg:pl-5"
                 >
                   <span className="flex shrink-0 flex-col items-center gap-1.5">
                     <span
@@ -109,6 +113,7 @@ export function ConversationList({
                     </span>
                   </span>
                 </Link>
+                <ChatRowMenu conversationId={c.id} title={title} />
               </li>
             );
           })}

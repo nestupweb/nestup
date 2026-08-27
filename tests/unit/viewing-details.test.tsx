@@ -40,6 +40,7 @@ const conversation: ConversationSummary = {
   listing_viewing_slots: [],
   next_viewing_starts_at: "2026-09-06T15:00:00Z",
   next_viewing_ends_at: "2026-09-06T15:45:00Z",
+  cleared_at: null,
 };
 
 const viewing: Viewing = {
