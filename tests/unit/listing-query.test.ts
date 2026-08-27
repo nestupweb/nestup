@@ -39,3 +39,19 @@ describe("applyListingFilters", () => {
     expect(filterCalls).toHaveLength(0);
   });
 });
+
+describe("sort", () => {
+  test("defaults to newest, orders by rent when asked, and rejects junk", () => {
+    expect(listingFiltersSchema.parse({}).sort).toBe("newest");
+    expect(listingFiltersSchema.parse({ sort: "nonsense" }).sort).toBe("newest");
+    const { q, calls } = fakeQuery();
+    applyListingFilters(q, listingFiltersSchema.parse({ sort: "price_desc" }));
+    expect(calls[0]).toEqual(["order", "rent", { ascending: false }]);
+    const cheap = fakeQuery();
+    applyListingFilters(cheap.q, listingFiltersSchema.parse({ sort: "price_asc" }));
+    expect(cheap.calls[0]).toEqual(["order", "rent", { ascending: true }]);
+    const newest = fakeQuery();
+    applyListingFilters(newest.q, listingFiltersSchema.parse({}));
+    expect(newest.calls.filter(([m]) => m === "order")).toEqual([["order", "created_at", { ascending: false }]]);
+  });
+});

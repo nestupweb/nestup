@@ -32,6 +32,8 @@ export function FilterBar() {
 
   function apply(formData: FormData) {
     const next = new URLSearchParams();
+    const sort = params.get("sort");
+    if (sort) next.set("sort", sort); // keep the chosen ordering across filter changes
     for (const [key, value] of formData.entries()) {
       const v = String(value);
       if (v === "" || v === "any") continue;

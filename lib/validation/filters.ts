@@ -12,7 +12,17 @@ const optionalBool = z.preprocess(
   z.boolean().optional()
 );
 
+/** Browse ordering: newest first, or by monthly rent either way. */
+export const LISTING_SORTS = [
+  { key: "newest", label: "Newest" },
+  { key: "price_desc", label: "Price: high to low" },
+  { key: "price_asc", label: "Price: low to high" },
+] as const;
+export type ListingSort = (typeof LISTING_SORTS)[number]["key"];
+const sortKeys = LISTING_SORTS.map((s) => s.key) as [ListingSort, ...ListingSort[]];
+
 export const listingFiltersSchema = z.object({
+  sort: z.enum(sortKeys).default("newest").catch("newest"),
   city: z.enum(CITIES).optional().catch(undefined),
   rent_min: optionalInt.catch(undefined),
   rent_max: optionalInt.catch(undefined),

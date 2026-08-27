@@ -17,7 +17,7 @@ Next.js 16.3.2 App Router (Turbopack; `proxy.ts` replaces `middleware.ts`; `para
 
 ## Commands
 - `npm run dev` → http://localhost:3000
-- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **44 files / 231 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
+- `npm test` — **use this, not `npx vitest`** (it sets `NODE_OPTIONS=--no-experimental-webstorage`; without it `theme-toggle.test.tsx` fails on Node 25). Currently **45 files / 235 tests passing**. `npx tsc --noEmit` and `npx eslint <paths>` are clean.
 - `npm run seed` — idempotent demo data (see below). `npm run check:nav [baseUrl]` — real-browser check that internal navigation stays in one tab.
 - Handy one-off Playwright probes against production live in Temp; pattern: log in as a seed user, assert, screenshot. Screenshots as proof are appreciated.
 
@@ -27,7 +27,7 @@ Next.js 16.3.2 App Router (Turbopack; `proxy.ts` replaces `middleware.ts`; `para
 ## What's built and live (all verified on production)
 - Auth, onboarding, open-redirect-hardened `next` handling (`lib/redirect.ts sanitizeNextPath` — keep using it).
 - **Profile:** header with 7rem picture (click → full-size lightbox; hover pencil → `/profile/edit`), name · profession · Instagram-style bio; tabs About me · My Listings · Liked · History. About-me private fields in `profile_details` (owner-only RLS). Read-only profile with editing on the pencil page (flag `PROFILE_EDIT_ON_PENCIL_PAGE`). Only the owner can edit (route + action + RLS; tested). Member pages `/people/[id]`.
-- **Browse:** filter sidebar, cards, save-hearts, pagination, listing detail with gallery/icons/household. Listing form v2 (derived title, structured address, viewing hours editor, photos compressed in the browser and uploaded straight to storage — the ~4.5 MB Vercel body cap killed server-side uploads).
+- **Browse:** filter sidebar, price sort menu (`components/listings/SortMenu.tsx`, `?sort=newest|price_desc|price_asc`), cards, save-hearts, pagination, listing detail with gallery/icons/household. Listing form v2 (derived title, structured address, viewing hours editor, photos compressed in the browser and uploaded straight to storage — the ~4.5 MB Vercel body cap killed server-side uploads).
 - **Swipe:** real deck, gated to ≥60, sorted by score; like → hello message into the household chat.
 - **Chat (WhatsApp-style):** inbox + threads, realtime, unread badges, photos (private `chat-images` bucket), household group threads. **Sending is optimistic** (bubble in ~35 ms, cursor stays in the field, `client_id` + unique index make retries duplicate-proof, failed sends show "Not sent · Retry · Dismiss"). **Viewings:** proposed inside the chat within the host's viewing hours, approved by the other party (DB trigger enforces), optional Google Calendar mirror (env vars not set on Vercel → falls back to "Add to Google Calendar" links). Header shows **"Viewing scheduled"** (opens date/time/property/participants/notes) and the chat thumbnail gets an **accent ring** (header + inbox) while a confirmed viewing is ahead; both vanish when cancelled or past.
 - Bottom floating nav (Swipe · Listings · Chat · Profile); header logo is my `Logo-NU.jpeg` rendered as a theme-coloured CSS mask (`components/ui/Logo.tsx`, `public/brand/nestup-wordmark.png`). Web-app manifest + Apple meta (`app/manifest.ts`, `display: "browser"` on purpose — no install prompt, user decision 2026-08-26), icons in `public/icons/`.

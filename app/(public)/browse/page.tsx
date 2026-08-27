@@ -4,6 +4,7 @@ import { listingFiltersSchema } from "@/lib/validation/filters";
 import { queryListings } from "@/lib/listings";
 import { FilterBar } from "@/components/listings/FilterBar";
 import { ListingCard } from "@/components/listings/ListingCard";
+import { SortMenu } from "@/components/listings/SortMenu";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 const FILTER_KEYS = [
@@ -54,17 +55,21 @@ export default async function BrowsePage({
         </div>
 
         <div>
-          <div className="mt-4 flex items-baseline justify-between gap-3 text-sm lg:mt-0">
-            <p className="text-muted">
+          <div className="mt-4 flex items-center justify-between gap-3 text-sm lg:mt-0">
+            <p className="min-w-0 text-muted">
               {filtersActive
                 ? `${total} result${total === 1 ? "" : "s"} match your filters`
                 : `${total} room${total === 1 ? "" : "s"} available`}
+              {filtersActive ? (
+                <>
+                  {" · "}
+                  <Link href="/browse" className="text-accent underline underline-offset-4">
+                    Clear filters
+                  </Link>
+                </>
+              ) : null}
             </p>
-            {filtersActive ? (
-              <Link href="/browse" className="shrink-0 text-accent underline underline-offset-4">
-                Clear filters
-              </Link>
-            ) : null}
+            <SortMenu value={filters.sort} />
           </div>
 
           {listings.length === 0 ? (

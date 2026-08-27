@@ -25,7 +25,10 @@ export function applyListingFilters<Q extends FilterableQuery>(q: Q, f: ListingF
   for (const key of BOOL_KEYS) {
     if (f[key] !== undefined) q.eq(key, f[key]);
   }
-  q.order("created_at", { ascending: false });
+  if (f.sort === "price_asc" || f.sort === "price_desc") {
+    q.order("rent", { ascending: f.sort === "price_asc" });
+  }
+  q.order("created_at", { ascending: false }); // tie-break (and the default order)
   const from = (f.page - 1) * f.page_size;
   q.range(from, from + f.page_size - 1);
   return q;
