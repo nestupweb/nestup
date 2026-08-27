@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { changeEmailAction, changePasswordAction, signOutAction, type AccountState } from "@/app/actions/auth";
+import { changeEmailAction, changePasswordAction, type AccountState } from "@/app/actions/auth";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Card } from "@/components/settings/Card";
 
@@ -44,9 +44,10 @@ function Row({
 }
 
 /**
- * The account card: the address you sign in with, your password, and the way
- * out. Both changes stay collapsed until asked for, so the page reads as a
- * summary rather than a form.
+ * The account card: the address you sign in with and your password. Signing
+ * out is not repeated here — the header's Log out button is always on screen.
+ * Both changes stay collapsed until asked for, so the page reads as a summary
+ * rather than a form.
  */
 export function AccountSection({ email }: { email: string }) {
   const [openRow, setOpenRow] = useState<"email" | "password" | null>(null);
@@ -110,20 +111,6 @@ export function AccountSection({ email }: { email: string }) {
           </button>
         </form>
       </Row>
-
-      <div className="border-t border-hairline py-3.5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-ink">Sign out</p>
-            <p className="mt-0.5 text-[13px] text-muted">Ends this session on this device.</p>
-          </div>
-          <form action={signOutAction}>
-            <button type="submit" className={rowButton}>
-              Sign out
-            </button>
-          </form>
-        </div>
-      </div>
     </Card>
   );
 }
