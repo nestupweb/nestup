@@ -1,7 +1,8 @@
 /**
  * Demo data for `scripts/seed.ts`: 12 handcrafted owners, 80 generated ones
- * (first wave), 62 more (second wave) and a third wave covering every
- * remaining city in the country — each with a portrait and one active listing. Pure module — no env,
+ * (first wave), 62 more (second wave), a third wave covering every remaining
+ * city in the country and a fourth adding two rooms to every city there is —
+ * each with a portrait and one active listing. Pure module — no env,
  * no I/O — so `tests/unit/seed-data.test.ts` can check it against the DB
  * constraints. Generation is deterministic (fixed PRNG seed): running the
  * seed twice produces the same people and rooms.
@@ -1067,6 +1068,48 @@ export const WAVE3: Wave = {
   cyclePortraits: true,
 };
 
+
+// ---------------------------------------------------------------------------
+// Fourth wave (2026-08-28): two more rooms in EVERY city of the picker — the
+// twelve launch cities included — so the smallest towns go from three rooms to
+// five and a seeker who filters hard (city + budget + a couple of amenities)
+// still has something to swipe. Appended after the first 490
+// (seed.user491…) with its own PRNG seed; waves 1–3 are untouched and the
+// fingerprint test still pins the original 92.
+//
+// Unlike the third wave this one is not restricted to the small towns, so it
+// takes each city as it finds it: a launch city keeps its real quarters,
+// streets and rent band (NEIGHBORHOODS / STREETS / RENT), every other city
+// falls back to the third wave's rules — no invented quarter, COMMON_STREETS,
+// wave3Rent(). Photos and portraits stay in wave 2's eye-checked pools (same
+// reasoning as the third wave: repeating a looked-at photo beats shipping an
+// unlooked-at one), but the photo index runs on a stride of 7 so a wave-4 room
+// never repeats a wave-3 room's exact set of three.
+// ---------------------------------------------------------------------------
+
+/** Rooms added per city in the fourth wave. */
+export const WAVE4_PER_CITY = 2;
+
+/** The fourth wave reaches every city in the picker, not just the small ones. */
+export const WAVE4_CITIES: string[] = [...ALL_CITIES];
+
+const WAVE4_CITY_PLAN: (readonly [string, number])[] = WAVE4_CITIES.map(
+  (c) => [c, WAVE4_PER_CITY] as const
+);
+
+export const WAVE4_COUNT = WAVE4_CITIES.length * WAVE4_PER_CITY;
+
+export const WAVE4: Wave = {
+  prngSeed: 20260828,
+  cityPlan: WAVE4_CITY_PLAN,
+  firstUser: HANDCRAFTED_BASE.length + GENERATED_COUNT + WAVE2_COUNT + WAVE3_COUNT + 1,
+  portraits: WAVE2_PORTRAITS,
+  // Stride 7 is coprime with all three pool lengths, so the living-room /
+  // bedroom / bathroom triples pair up differently than they do in wave 3.
+  photos: (i, withExtra) => photoStory(WAVE2_POOLS, i * 7 + 3, withExtra),
+  cyclePortraits: true,
+};
+
 const WAVE1_SEEDS = generateSeeds();
 const WAVE2_SEEDS = generateSeeds(WAVE2_COUNT, {
   ...WAVE2,
@@ -1076,5 +1119,9 @@ const WAVE3_SEEDS = generateSeeds(WAVE3_COUNT, {
   ...WAVE3,
   takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS].map((s) => s.profile.full_name),
 });
+const WAVE4_SEEDS = generateSeeds(WAVE4_COUNT, {
+  ...WAVE4,
+  takenNames: [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS].map((s) => s.profile.full_name),
+});
 
-export const SEEDS: Seed[] = [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS];
+export const SEEDS: Seed[] = [...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS, ...WAVE4_SEEDS];
