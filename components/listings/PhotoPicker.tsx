@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-client";
 import { checkListingPhotoAction } from "@/app/actions/photo-check";
+import { inspectPhoto } from "@/lib/photo-detect";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, photoRoomLabel } from "@/lib/constants";
 import { photoProblem, photoSubjectPhrase, suggestedRoom, type PhotoSubject } from "@/lib/photo-rules";
 import { REQUIRED_PHOTO_ROOMS } from "@/lib/validation/listing";
@@ -16,7 +17,7 @@ type Item = {
   path: string | null; // storage path (only for photos uploaded in this session)
   preview: string; // what the tile shows (object URL until uploaded)
   label: PhotoRoom;
-  status: "uploading" | "checking" | "ready" | "failed";
+  status: "looking" | "uploading" | "checking" | "ready" | "failed";
   error?: string;
   /** What the check saw, plus the signed verdict the server will trust at publish. */
   subject?: PhotoSubject;
@@ -48,9 +49,11 @@ function problemOf(it: Item): string | null {
  * moment they're picked (the owner's folder — storage RLS), then looked at by
  * the photo check.
  *
- * A photo that isn't of the apartment never makes it onto the form: it is
- * taken straight back out of the grid and out of storage, and a line above
- * the grid says which photo went and why. A room photo under the wrong strict
+ * A photo that isn't of the apartment never makes it onto the form. It is
+ * looked at twice: once here in the browser (`inspectPhoto`, before the
+ * upload — so a dog or a plate of food is never even stored) and again on the
+ * server when `ANTHROPIC_API_KEY` is set. Either way the tile is taken back
+ * out at once and a line above the grid says which photo went and why. A room photo under the wrong strict
  * tag is re-tagged to the room it actually shows. The form itself only
  * submits URLs: `existing_photos` + `existing_labels` + `photo_tokens` (the
  * signed verdicts).
@@ -92,7 +95,7 @@ export function PhotoPicker({
 
   const count = items.length;
   const covered = new Set(items.filter((i) => i.status === "ready" && !problemOf(i)).map((i) => i.label));
-  const busy = items.some((i) => i.status === "uploading" || i.status === "checking");
+  const busy = items.some((i) => i.status !== "ready" && i.status !== "failed");
   const flagged = items.some((i) => problemOf(i) !== null);
 
   const update = (id: string, patch: Partial<Item> | ((it: Item) => Partial<Item>)) =>
@@ -112,6 +115,16 @@ export function PhotoPicker({
     await createClient().storage.from("listing-photos").remove([path]);
   };
 
+  /** Wrong photo: out of the grid at once, with a red line saying which one and why. */
+  const turnAway = (id: string, reason: string) => {
+    const gone = itemsRef.current.find((it) => it.id === id);
+    setNotices((prev) => [
+      ...prev,
+      { id, text: `Removed ${gone?.name ?? "that photo"} — ${reason} Only photos of the apartment are accepted.` },
+    ]);
+    remove(id);
+  };
+
   /** Ask the server what the photo shows; retags it when the photo clearly shows another room. */
   const check = async (id: string, url: string, path: string | null, label: PhotoRoom) => {
     update(id, { status: "checking", error: undefined });
@@ -125,16 +138,7 @@ export function PhotoPicker({
       return;
     }
     if (result.subject === "not_apartment") {
-      // Not a photo of the home: out of the grid and out of the bucket, right away.
-      const gone = itemsRef.current.find((it) => it.id === id);
-      setNotices((prev) => [
-        ...prev,
-        {
-          id,
-          text: `Removed ${gone?.name ?? "that photo"} — ${result.reason} Only photos of the apartment are accepted.`,
-        },
-      ]);
-      remove(id);
+      turnAway(id, result.reason);
       void discard(path);
       return;
     }
@@ -155,7 +159,20 @@ export function PhotoPicker({
 
   const upload = async (id: string, file: File, label: PhotoRoom) => {
     let path: string | null = null;
+    let room = label;
     try {
+      // Looked at here in the browser first: a photo that isn't of the home is
+      // turned away before it is uploaded at all.
+      const local = await inspectPhoto(file);
+      if (local.kind === "reject") {
+        turnAway(id, local.reason);
+        return;
+      }
+      if (local.kind === "room" && photoProblem(local.room, label) !== null) {
+        room = local.room;
+        update(id, { label: room, note: `Tagged as ${photoRoomLabel(room)} — that is what the photo shows.` });
+      }
+      update(id, { status: "uploading" });
       const blob = await compressImage(file);
       const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
       path = `${userId}/${crypto.randomUUID()}.${ext}`;
@@ -166,7 +183,7 @@ export function PhotoPicker({
       if (error) throw new Error("Upload failed — check your connection and try again.");
       const url = supabase.storage.from("listing-photos").getPublicUrl(path).data.publicUrl;
       update(id, { url, path });
-      await check(id, url, path, label);
+      await check(id, url, path, room);
     } catch (e) {
       update(id, { status: "failed", error: e instanceof Error ? e.message : "Upload failed." });
     }
@@ -184,7 +201,7 @@ export function PhotoPicker({
       path: null,
       preview: URL.createObjectURL(file),
       label: guessRoom(file.name),
-      status: "uploading",
+      status: "looking",
     }));
     setItems((prev) => [...prev, ...next]);
     next.forEach((it, i) => void upload(it.id, fresh[i], it.label));
@@ -253,7 +270,7 @@ export function PhotoPicker({
                   alt={`Photo ${i + 1}: ${photoRoomLabel(it.label)}`}
                   className={`h-full w-full object-cover transition-opacity ${dim ? "opacity-50" : "opacity-100"}`}
                 />
-                {it.status === "uploading" || it.status === "checking" ? (
+                {it.status === "looking" || it.status === "uploading" || it.status === "checking" ? (
                   <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[11px] font-semibold uppercase tracking-widest text-white">
                     {it.status === "uploading" ? "Uploading…" : "Checking…"}
                   </span>

@@ -2,12 +2,15 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { PhotoCheckResult } from "@/app/actions/photo-check";
+import type { LocalPhotoVerdict } from "@/lib/photo-detect";
 
 const check = vi.fn<(url: string, label: string) => Promise<PhotoCheckResult>>();
+const inspect = vi.fn<(file: File) => Promise<LocalPhotoVerdict>>();
 const remove = vi.fn(async () => ({ data: null, error: null }));
 const upload = vi.fn(async () => ({ data: null, error: null }));
 
 vi.mock("@/app/actions/photo-check", () => ({ checkListingPhotoAction: (u: string, l: string) => check(u, l) }));
+vi.mock("@/lib/photo-detect", () => ({ inspectPhoto: (f: File) => inspect(f) }));
 vi.mock("@/lib/image-client", () => ({ compressImage: async (f: File) => f }));
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
@@ -25,6 +28,8 @@ import { PhotoPicker } from "@/components/listings/PhotoPicker";
 
 beforeEach(() => {
   check.mockReset();
+  inspect.mockReset();
+  inspect.mockResolvedValue({ kind: "unsure" });
   remove.mockClear();
   upload.mockClear();
   Object.assign(URL, { createObjectURL: () => "blob:preview", revokeObjectURL: () => {} });
@@ -38,6 +43,39 @@ async function addPhoto(name: string) {
   const file = new File(["x"], name, { type: "image/jpeg" });
   await userEvent.upload(screen.getByLabelText(/add photos/i), file);
 }
+
+test("the browser check turns a dog photo away before it is ever uploaded", async () => {
+  inspect.mockResolvedValue({ kind: "reject", reason: "A dog is the main thing in this photo." });
+  render(<PhotoPicker userId="u1" initialUrls={[]} initialLabels={[]} />);
+  await addPhoto("living-room.jpg");
+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/Removed living-room\.jpg/));
+  expect(screen.getByRole("alert")).toHaveTextContent(/A dog is the main thing in this photo\./);
+  expect(screen.getByRole("alert")).toHaveTextContent(/Only photos of the apartment are accepted/);
+  expect(upload).not.toHaveBeenCalled(); // never reached storage
+  expect(check).not.toHaveBeenCalled();
+  expect(screen.queryByLabelText(/room shown in photo 1/i)).toBeNull();
+  expect(submitted("existing_photos")).toEqual([]);
+});
+
+test("the browser check re-tags a bedroom photo that was named living room", async () => {
+  inspect.mockResolvedValue({ kind: "room", room: "bedroom" });
+  check.mockResolvedValue({ ok: true, checked: false });
+  render(<PhotoPicker userId="u1" initialUrls={[]} initialLabels={[]} />);
+  await addPhoto("living-room.jpg");
+  await waitFor(() => expect(screen.getByLabelText(/room shown in photo 1/i)).toHaveValue("bedroom"));
+  expect(screen.getByText(/Tagged as Bedroom/)).toBeInTheDocument();
+  expect(check).toHaveBeenCalledWith(expect.any(String), "bedroom"); // the server is told the corrected tag
+  expect(submitted("existing_labels")).toEqual(["bedroom"]);
+});
+
+test("a photo the browser check can't read still goes through", async () => {
+  inspect.mockResolvedValue({ kind: "unsure" });
+  check.mockResolvedValue({ ok: true, checked: false });
+  render(<PhotoPicker userId="u1" initialUrls={[]} initialLabels={[]} />);
+  await addPhoto("shower.jpg");
+  await waitFor(() => expect(submitted("existing_labels")).toEqual(["bathroom"]));
+  expect(screen.queryByRole("alert")).toBeNull();
+});
 
 test("a photo that isn't of the apartment is taken straight back out, with a line saying why", async () => {
   check.mockResolvedValue({ ok: true, checked: true, subject: "not_apartment", reason: "A dog on a rug is the subject here.", token: "x" });
