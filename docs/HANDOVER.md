@@ -47,6 +47,8 @@ Next.js 16.3.2 App Router (Turbopack; `proxy.ts` replaces `middleware.ts`; `para
 - **Several Claude sessions may work in this folder at once.** Before editing shared files run `ListAgents`, check `git status`, and message the peer if you'll touch its files. Don't deploy a tree that doesn't `tsc` — use the worktree trick.
 
 ## Known gotchas
+- **Never write `<form action={formAction}>` for a server action.** React 19 resets an uncontrolled form the moment the action returns, so a validation error throws away everything the member typed (measured: the field's value becomes `""`). Use `useStickyForm` from `@/lib/hooks`: `const [state, form, pending] = useStickyForm<State>(action, {})` then `<form {...form}>`. It keeps `action` on the element as the no-JS fallback. Verified live 2026-08-27 on signup › onboarding and the listing form.
+- Test runs must go through `npm test` (it sets `NODE_OPTIONS=--no-experimental-webstorage`). A bare `npx vitest` lets Node 25's own `localStorage` shadow jsdom's and `theme-toggle.test.tsx` fails with `localStorage.clear is not a function`.
 - `grep -r` over the folder crawls `node_modules` on OneDrive and times out — use the Grep tool with `!{node_modules,.next}/**` or targeted paths.
 - Many files have CRLF; when editing with Node scripts normalise `\r\n` first (the Edit tool is fine).
 - Stale `.next/dev/types` can break `tsc` — delete `.next/dev` when no dev server runs.
