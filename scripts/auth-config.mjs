@@ -79,9 +79,13 @@ export function buildAuthConfig({ templates, smtp = null }) {
       smtp_pass: smtp.pass,
       smtp_admin_email: smtp.sender,
       smtp_sender_name: smtp.senderName,
-      // Our own server: one message per address per minute, 30 an hour project-wide.
+      // Our own server: one message per address per minute, 60 an hour
+      // project-wide. The hourly cap is shared by sign-up, resend, password
+      // reset and e-mail change, and 30 was low enough that a demo with a
+      // room full of people testing could wall — the real ceiling is Gmail's
+      // own ~500/day, well above this.
       smtp_max_frequency: 60,
-      rate_limit_email_sent: 30,
+      rate_limit_email_sent: 60,
     });
   }
   return config;

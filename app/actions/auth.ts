@@ -6,9 +6,27 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 
-export type AuthState = { error?: string; sent?: boolean; email?: string };
+export type AuthState = { error?: string; sent?: boolean; email?: string; throttled?: boolean };
 
 const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+/** Shape of the errors Supabase hands back; `code` is absent on older ones. */
+type AuthError = { status?: number; code?: string; message?: string };
+
+/**
+ * Supabase sends at most one auth mail per address per minute
+ * (`smtp_max_frequency`) and 30 an hour project-wide, and answers anything
+ * over that with 429 `over_email_send_rate_limit`. That is a "wait", never a
+ * "this address is unusable".
+ */
+const isSendRateLimit = (error: AuthError) =>
+  error.status === 429 || error.code === "over_email_send_rate_limit";
+
+/** "…you can only request this after 47 seconds." → 47, so the screen can say how long. */
+function retryAfterSeconds(message: string | undefined): number | null {
+  const m = /after (\d+) seconds?/i.exec(message ?? "");
+  return m ? Number(m[1]) : null;
+}
 
 export async function signUpAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -18,7 +36,15 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password });
-  if (error) return { error: "Could not create the account. Try a different email." };
+  if (error) {
+    // Pressing Sign up again while waiting for the first mail lands inside the
+    // one-per-minute window. The account is already there and a link is
+    // already on its way, so this is the "check your inbox" case — telling the
+    // member to try a different address would send them off to build a second
+    // account they don't need.
+    if (isSendRateLimit(error)) return { sent: true, email, throttled: true };
+    return { error: "Could not create the account. Try a different email." };
+  }
   // Email confirmation is ON (`mailer_autoconfirm: false`), so signUp creates the
   // row but no session: the account cannot be used until the emailed link is
   // clicked. The address travels back so the next screen can name it — a typo
@@ -38,9 +64,20 @@ export async function resendConfirmationAction(_prev: AuthState, formData: FormD
   const supabase = await createClient();
   const { error } = await supabase.auth.resend({ type: "signup", email });
   if (error) {
-    if (error.status === 429) return { error: "We just sent one — give it a minute before asking again." };
+    if (isSendRateLimit(error)) {
+      const seconds = retryAfterSeconds(error.message);
+      return {
+        error: seconds
+          ? `We just sent one — try again in ${seconds} seconds.`
+          : "We just sent one — give it a minute before asking again.",
+      };
+    }
     return { error: "Could not send it again. Please try in a moment." };
   }
+  // An address that is already confirmed also comes back clean here (Supabase
+  // answers 200 and sends nothing, so the form can't be used to find out which
+  // addresses exist). "Already confirmed? Log in" on the screen is the way out
+  // of that, and it is shown to everyone rather than only to that case.
   return { sent: true, email };
 }
 
@@ -138,7 +175,19 @@ export async function changeEmailAction(_prev: AccountState, formData: FormData)
   if (email === (user.email ?? "").toLowerCase()) return { error: "That's already your e-mail address." };
 
   const { error } = await supabase.auth.updateUser({ email });
-  if (error) return { error: "Could not change the email. Try a different address." };
+  if (error) {
+    // Same one-per-minute window as sign-up: a second attempt inside it is a
+    // wait, not a bad address, and the confirmation is already on its way.
+    if (isSendRateLimit(error)) {
+      const seconds = retryAfterSeconds(error.message);
+      return {
+        error: seconds
+          ? `We just mailed that address — try again in ${seconds} seconds.`
+          : "We just mailed that address — give it a minute before asking again.",
+      };
+    }
+    return { error: "Could not change the email. Try a different address." };
+  }
   return { sent: true };
 }
 

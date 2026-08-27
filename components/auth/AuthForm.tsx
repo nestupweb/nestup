@@ -23,7 +23,7 @@ export function AuthForm({
     // Signing up does not create a session: the account stays unusable until the
     // emailed link is clicked. The two ways to get stranded here are a mail that
     // never lands and a mistyped address, so name the address and offer both ways out.
-    return <CheckInbox email={state.email ?? ""} mode={mode} />;
+    return <CheckInbox email={state.email ?? ""} mode={mode} throttled={state.throttled} />;
   }
 
   return (
@@ -76,9 +76,23 @@ export function AuthForm({
 /**
  * The wall between signing up and using NestUp: nothing works until the
  * emailed link is clicked. Shows which address it went to, can send it again
- * (Supabase allows one per minute), and offers a way back for a typo.
+ * (Supabase allows one per minute), and offers a way out of each dead end —
+ * a typo, a mail that hasn't landed, and an address that was confirmed long
+ * ago. That last one is why "Already confirmed? Log in" is always on screen:
+ * Supabase answers a resend for a confirmed address with a plain 200 and
+ * sends nothing, so the screen can't tell that case apart, and showing the
+ * way out to everyone keeps the form from becoming an account-existence
+ * oracle.
  */
-function CheckInbox({ email, mode }: { email: string; mode: "login" | "signup" }) {
+function CheckInbox({
+  email,
+  mode,
+  throttled,
+}: {
+  email: string;
+  mode: "login" | "signup";
+  throttled?: boolean;
+}) {
   const [state, resendForm, pending] = useStickyForm<AuthState>(resendConfirmationAction, {});
 
   return (
@@ -89,6 +103,11 @@ function CheckInbox({ email, mode }: { email: string; mode: "login" | "signup" }
         {email ? <strong className="font-semibold text-ink">{email}</strong> : ""}. You need to open it and confirm
         before you can use your account &mdash; until then, logging in won&rsquo;t work.
       </p>
+      {throttled ? (
+        <p role="status" className="mt-2 text-sm text-muted">
+          One went out to this address a moment ago, so we didn&rsquo;t send another. Give it a minute to land.
+        </p>
+      ) : null}
       <p className="mt-2 text-sm text-muted">Not there? Have a look in your spam folder.</p>
 
       {mode === "signup" && email ? (
@@ -107,7 +126,7 @@ function CheckInbox({ email, mode }: { email: string; mode: "login" | "signup" }
       ) : null}
 
       <p className="mt-6 text-sm">
-        <Link href="/login" className="text-accent underline">Back to log in</Link>
+        <Link href="/login" className="text-accent underline">Already confirmed? Log in</Link>
         {mode === "signup" ? (
           <>
             <span className="mx-2 text-muted">&middot;</span>

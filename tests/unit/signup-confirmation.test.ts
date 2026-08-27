@@ -67,6 +67,45 @@ test("resending too soon says to wait rather than failing silently", async () =>
   expect(state.sent).toBeUndefined();
 });
 
+/**
+ * Supabase allows one auth mail per address per minute. A member who doesn't
+ * see the mail and presses Sign up again lands inside that window, and the
+ * 429 that comes back used to be reported as "Could not create the account.
+ * Try a different email." — which is both untrue and the worst possible
+ * advice: the account exists and a link is already on its way.
+ */
+test("a signup inside the 60s window shows the inbox screen, not 'try a different email'", async () => {
+  signUp.mockResolvedValue({
+    data: { user: null, session: null },
+    error: { status: 429, code: "over_email_send_rate_limit", message: "For security purposes, you can only request this after 47 seconds." },
+  });
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword" }));
+  expect(state.sent).toBe(true);
+  expect(state.email).toBe("new@nestup.dev");
+  expect(state.throttled).toBe(true);
+  expect(state.error).toBeUndefined();
+});
+
+test("a signup that fails for any other reason still reports an error", async () => {
+  signUp.mockResolvedValue({ data: { user: null, session: null }, error: { status: 400, message: "nope" } });
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword" }));
+  expect(state.error).toMatch(/could not create/i);
+  expect(state.sent).toBeUndefined();
+});
+
+test("resending too soon says how many seconds are left when Supabase names one", async () => {
+  resend.mockResolvedValue({
+    data: {},
+    error: { status: 429, code: "over_email_send_rate_limit", message: "For security purposes, you can only request this after 47 seconds." },
+  });
+  const { resendConfirmationAction } = await import("@/app/actions/auth");
+  const state = await resendConfirmationAction({}, form({ email: "new@nestup.dev" }));
+  expect(state.error).toMatch(/47 seconds/);
+  expect(state.sent).toBeUndefined();
+});
+
 test("resending to a malformed address is refused before Supabase is called", async () => {
   const { resendConfirmationAction } = await import("@/app/actions/auth");
   const state = await resendConfirmationAction({}, form({ email: "nope" }));

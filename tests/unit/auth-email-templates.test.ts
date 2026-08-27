@@ -52,6 +52,6 @@ describe("buildAuthConfig", () => {
     const smtp = smtpFromEnv({ SMTP_HOST: "smtp.gmail.com", SMTP_USER: "me@gmail.com", SMTP_PASS: "app-pass", SMTP_SENDER_EMAIL: "me@gmail.com" });
     expect(smtp).toMatchObject({ host: "smtp.gmail.com", port: 587, senderName: "NestUp" });
     const c = buildAuthConfig({ templates, smtp });
-    expect(c).toMatchObject({ smtp_host: "smtp.gmail.com", smtp_port: "587", smtp_user: "me@gmail.com", smtp_pass: "app-pass", smtp_admin_email: "me@gmail.com", smtp_sender_name: "NestUp", rate_limit_email_sent: 30 });
+    expect(c).toMatchObject({ smtp_host: "smtp.gmail.com", smtp_port: "587", smtp_user: "me@gmail.com", smtp_pass: "app-pass", smtp_admin_email: "me@gmail.com", smtp_sender_name: "NestUp", smtp_max_frequency: 60, rate_limit_email_sent: 60 });
   });
 });
