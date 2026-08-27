@@ -39,16 +39,31 @@ async function addPhoto(name: string) {
   await userEvent.upload(screen.getByLabelText(/add photos/i), file);
 }
 
-test("a photo that isn't of the apartment is rejected, deleted from storage and never submitted", async () => {
+test("a photo that isn't of the apartment is taken straight back out, with a line saying why", async () => {
   check.mockResolvedValue({ ok: true, checked: true, subject: "not_apartment", reason: "A dog on a rug is the subject here.", token: "x" });
   render(<PhotoPicker userId="u1" initialUrls={[]} initialLabels={[]} />);
   await addPhoto("living-room.jpg");
-  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/dog on a rug/));
+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/Removed living-room\.jpg/));
+  expect(screen.getByRole("alert")).toHaveTextContent(/A dog on a rug is the subject here\./);
   expect(screen.getByRole("alert")).toHaveTextContent(/Only photos of the apartment are accepted/);
   expect(check).toHaveBeenCalledWith(expect.stringContaining("/listing-photos/u1/"), "living_room");
-  expect(remove).toHaveBeenCalledTimes(1);
+  expect(remove).toHaveBeenCalledTimes(1); // gone from the bucket too
+  // The tile itself is gone: no photo, no tag select, nothing to submit.
+  expect(screen.queryByLabelText(/room shown in photo 1/i)).toBeNull();
+  expect(screen.getByText(/^0\/10 photos/)).toBeInTheDocument();
   expect(submitted("existing_photos")).toEqual([]);
-  expect(screen.getByLabelText(/room shown in photo 1/i)).toBeDisabled();
+  expect(document.querySelector('input[name="photos_flagged"]')).toBeNull();
+});
+
+test("the removal line names each bad photo and clears when the member tries again", async () => {
+  check.mockResolvedValue({ ok: true, checked: true, subject: "not_apartment", reason: "A plate of food.", token: "x" });
+  render(<PhotoPicker userId="u1" initialUrls={[]} initialLabels={[]} />);
+  await addPhoto("dinner.jpg");
+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/Removed dinner\.jpg/));
+  check.mockResolvedValue({ ok: true, checked: true, subject: "bathroom", reason: "A shower and a sink.", token: "bathroom.abc" });
+  await addPhoto("shower.jpg");
+  await waitFor(() => expect(submitted("photo_tokens")).toEqual(["bathroom.abc"]));
+  expect(screen.queryByRole("alert")).toBeNull(); // the old line went with the new attempt
 });
 
 test("a bedroom photo named 'living room' is retagged as Bedroom and submitted with its token", async () => {
@@ -92,15 +107,15 @@ test("re-tagging a photo saved before the check existed asks for a verdict, whic
   expect(submitted("photo_tokens")).toEqual(["kitchen.abc"]);
 });
 
-test("an unidentifiable interior can't be forced into a strict tag", async () => {
+test("an unidentifiable interior is kept, but tagged Other rather than Bathroom", async () => {
   check.mockResolvedValue({ ok: true, checked: true, subject: "other_apartment", reason: "A hallway.", token: "other_apartment.abc" });
   render(<PhotoPicker userId="u1" initialUrls={[]} initialLabels={[]} />);
-  await addPhoto("bathroom.jpg");
-  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/couldn't see a bathroom/));
-  expect(submitted("existing_photos")).toEqual([]);
-  await userEvent.selectOptions(screen.getByLabelText(/room shown in photo 1/i), "other");
-  expect(screen.queryByRole("alert")).toBeNull();
+  await addPhoto("shower.jpg"); // guessed as Bathroom from the name
+  await waitFor(() => expect(screen.getByLabelText(/room shown in photo 1/i)).toHaveValue("other"));
+  expect(screen.getByText(/couldn't see a bathroom here/)).toBeInTheDocument();
+  expect(screen.queryByRole("alert")).toBeNull(); // it is an apartment photo, so nothing is wrong
   expect(submitted("existing_labels")).toEqual(["other"]);
+  expect(submitted("photo_tokens")).toEqual(["other_apartment.abc"]);
 });
 
 test("when the check is switched off photos simply go through", async () => {

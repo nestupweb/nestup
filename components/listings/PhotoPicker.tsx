@@ -5,17 +5,18 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-client";
 import { checkListingPhotoAction } from "@/app/actions/photo-check";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, photoRoomLabel } from "@/lib/constants";
-import { photoProblem, suggestedRoom, type PhotoSubject } from "@/lib/photo-rules";
+import { photoProblem, photoSubjectPhrase, suggestedRoom, type PhotoSubject } from "@/lib/photo-rules";
 import { REQUIRED_PHOTO_ROOMS } from "@/lib/validation/listing";
 import type { PhotoRoom } from "@/lib/types";
 
 type Item = {
   id: string;
+  name: string; // file name, for the line shown when a photo is turned away
   url: string | null; // public URL once uploaded
   path: string | null; // storage path (only for photos uploaded in this session)
   preview: string; // what the tile shows (object URL until uploaded)
   label: PhotoRoom;
-  status: "uploading" | "checking" | "ready" | "failed" | "rejected";
+  status: "uploading" | "checking" | "ready" | "failed";
   error?: string;
   /** What the check saw, plus the signed verdict the server will trust at publish. */
   subject?: PhotoSubject;
@@ -45,10 +46,14 @@ function problemOf(it: Item): string | null {
  * 3–10 photos, each tagged with the room it shows. Photos are compressed and
  * uploaded straight from the browser to the `listing-photos` bucket the
  * moment they're picked (the owner's folder — storage RLS), then looked at by
- * the photo check: a photo that isn't of the apartment is rejected on the
- * spot, and a living room / bedroom / bathroom tag must match what the photo
- * shows. The form itself only submits URLs: `existing_photos` +
- * `existing_labels` + `photo_tokens` (the signed verdicts).
+ * the photo check.
+ *
+ * A photo that isn't of the apartment never makes it onto the form: it is
+ * taken straight back out of the grid and out of storage, and a line above
+ * the grid says which photo went and why. A room photo under the wrong strict
+ * tag is re-tagged to the room it actually shows. The form itself only
+ * submits URLs: `existing_photos` + `existing_labels` + `photo_tokens` (the
+ * signed verdicts).
  */
 export function PhotoPicker({
   userId,
@@ -62,6 +67,7 @@ export function PhotoPicker({
   const [items, setItems] = useState<Item[]>(() =>
     initialUrls.map((url, i) => ({
       id: url,
+      name: "this photo",
       url,
       path: null,
       preview: url,
@@ -69,6 +75,8 @@ export function PhotoPicker({
       status: "ready",
     }))
   );
+  /** "Removed <photo> — <why>" lines for photos the check turned away. */
+  const [notices, setNotices] = useState<{ id: string; text: string }[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const itemsRef = useRef(items);
   useEffect(() => {
@@ -92,6 +100,13 @@ export function PhotoPicker({
       prev.map((it) => (it.id === id ? { ...it, ...(typeof patch === "function" ? patch(it) : patch) } : it))
     );
 
+  const remove = (id: string) =>
+    setItems((prev) => {
+      const gone = prev.find((it) => it.id === id);
+      if (gone?.preview.startsWith("blob:")) URL.revokeObjectURL(gone.preview);
+      return prev.filter((it) => it.id !== id);
+    });
+
   const discard = async (path: string | null) => {
     if (!path) return;
     await createClient().storage.from("listing-photos").remove([path]);
@@ -110,21 +125,31 @@ export function PhotoPicker({
       return;
     }
     if (result.subject === "not_apartment") {
-      update(id, { status: "rejected", url: null, error: `${result.reason} Only photos of the apartment are accepted.` });
+      // Not a photo of the home: out of the grid and out of the bucket, right away.
+      const gone = itemsRef.current.find((it) => it.id === id);
+      setNotices((prev) => [
+        ...prev,
+        {
+          id,
+          text: `Removed ${gone?.name ?? "that photo"} — ${result.reason} Only photos of the apartment are accepted.`,
+        },
+      ]);
+      remove(id);
       void discard(path);
       return;
     }
     const room = suggestedRoom(result.subject);
     update(id, (it) => {
-      const fits = photoProblem(result.subject, it.label) === null;
-      const next = fits || !room ? it.label : room;
-      return {
-        status: "ready",
-        subject: result.subject,
-        token: result.token,
-        label: next,
-        note: next !== it.label ? `Tagged as ${photoRoomLabel(next)} — that is what the photo shows.` : undefined,
-      };
+      if (photoProblem(result.subject, it.label) === null) {
+        return { status: "ready", subject: result.subject, token: result.token, note: undefined };
+      }
+      // A room photo under the wrong strict tag moves to the room it shows;
+      // something unidentifiable (a hallway) becomes "Other", which is honest.
+      const next = room ?? "other";
+      const note = room
+        ? `Tagged as ${photoRoomLabel(next)} — that is what the photo shows.`
+        : `Tagged as Other — we couldn't see ${photoSubjectPhrase(it.label as PhotoSubject)} here.`;
+      return { status: "ready", subject: result.subject, token: result.token, label: next, note };
     });
   };
 
@@ -149,10 +174,12 @@ export function PhotoPicker({
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
+    setNotices([]); // a fresh attempt clears what the last one said
     const room = MAX_LISTING_PHOTOS - itemsRef.current.length;
     const fresh = Array.from(files).slice(0, Math.max(0, room));
     const next: Item[] = fresh.map((file) => ({
       id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+      name: file.name,
       url: null,
       path: null,
       preview: URL.createObjectURL(file),
@@ -169,13 +196,6 @@ export function PhotoPicker({
     // A photo saved before the check existed has no verdict yet — get one for its new tag.
     if (it.status === "ready" && !it.subject && it.url) void check(it.id, it.url, it.path, label);
   };
-
-  const remove = (id: string) =>
-    setItems((prev) => {
-      const gone = prev.find((it) => it.id === id);
-      if (gone?.preview.startsWith("blob:")) URL.revokeObjectURL(gone.preview);
-      return prev.filter((it) => it.id !== id);
-    });
 
   return (
     <div>
@@ -201,10 +221,28 @@ export function PhotoPicker({
       {busy ? <input type="hidden" name="photos_uploading" value="1" /> : null}
       {flagged ? <input type="hidden" name="photos_flagged" value="1" /> : null}
 
+      {notices.map((n) => (
+        <p
+          key={n.id}
+          role="alert"
+          className="mt-3 flex items-start gap-2 rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger"
+        >
+          <span className="flex-1">{n.text}</span>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setNotices((prev) => prev.filter((x) => x.id !== n.id))}
+            className="shrink-0 px-1 leading-none text-danger/70 hover:text-danger"
+          >
+            ×
+          </button>
+        </p>
+      ))}
+
       <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
         {items.map((it, i) => {
           const problem = problemOf(it);
-          const overlay = it.status === "failed" || it.status === "rejected" ? (it.error ?? "Upload failed") : problem;
+          const overlay = it.status === "failed" ? (it.error ?? "Upload failed") : problem;
           const dim = it.status !== "ready" || problem !== null;
           return (
             <figure key={it.id} className="min-w-0">
@@ -243,7 +281,6 @@ export function PhotoPicker({
               <select
                 id={`photo-room-${i}`}
                 value={it.label}
-                disabled={it.status === "rejected"}
                 onChange={(e) => retag(it, e.target.value as PhotoRoom)}
                 className={select}
               >
