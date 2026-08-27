@@ -119,6 +119,8 @@ export interface Listing {
   is_active: boolean;
   /** When the owner marked the room taken (deal done); null = still available. */
   taken_at: string | null;
+  /** When the owner deleted the room; non-null = gone from every list, chats kept. */
+  removed_at: string | null;
   created_at: string;
   updated_at: string;
 }

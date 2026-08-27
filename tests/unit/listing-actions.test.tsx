@@ -22,7 +22,9 @@ describe("ListingActions", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Delete Listing/ }));
     expect(screen.getByRole("button", { name: /Yes, Delete It/ })).toBeInTheDocument();
-    expect(screen.getByText(/chats about it/i)).toBeInTheDocument();
+    expect(screen.getByText(/off NestUp for good/i)).toBeInTheDocument();
+    // The chats are explicitly kept now — the old copy promised the opposite.
+    expect(screen.getByText(/conversations stay/i)).toBeInTheDocument();
     expect(screen.getByText(/The room is taken/i)).toBeInTheDocument();
   });
 

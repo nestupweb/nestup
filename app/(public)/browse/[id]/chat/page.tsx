@@ -19,7 +19,7 @@ export default async function ListingChatPage({
   const { profile } = await getOwnProfile();
   if (!profile) redirect(`/profile?onboarding=1&next=/browse/${id}/chat`);
 
-  const { data } = await supabase.from("listings").select("id, owner_id").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("listings").select("id, owner_id").eq("id", id).is("removed_at", null).maybeSingle();
   const listing = data as { id: string; owner_id: string } | null;
   if (!listing) notFound();
   if (listing.owner_id === user.id) redirect("/chat");

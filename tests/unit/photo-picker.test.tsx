@@ -145,15 +145,39 @@ test("re-tagging a photo saved before the check existed asks for a verdict, whic
   expect(submitted("photo_tokens")).toEqual(["kitchen.abc"]);
 });
 
-test("an unidentifiable interior is kept, but tagged Other rather than Bathroom", async () => {
+test("an unidentifiable interior loses its wrong tag and waits for the member to say the room", async () => {
   check.mockResolvedValue({ ok: true, checked: true, subject: "other_apartment", reason: "A hallway.", token: "other_apartment.abc" });
   render(<PhotoPicker userId="u1" initialUrls={[]} initialLabels={[]} />);
   await addPhoto("shower.jpg"); // guessed as Bathroom from the name
-  await waitFor(() => expect(screen.getByLabelText(/room shown in photo 1/i)).toHaveValue("other"));
+  // There is no "Other" to file it under any more: the tag is cleared and the tile asks.
+  await waitFor(() => expect(screen.getByLabelText(/room shown in photo 1/i)).toHaveValue(""));
   expect(screen.getByText(/couldn't see a bathroom here/)).toBeInTheDocument();
-  expect(screen.queryByRole("alert")).toBeNull(); // it is an apartment photo, so nothing is wrong
-  expect(submitted("existing_labels")).toEqual(["other"]);
+  expect(screen.getByText(/Pick the room this photo shows/)).toBeInTheDocument();
+  expect(submitted("existing_labels")).toEqual([]); // held back until it is tagged
+  expect(submitted("photos_flagged")).toEqual(["1"]);
+
+  // Once the member says which room it is, it goes through under that tag.
+  await userEvent.selectOptions(screen.getByLabelText(/room shown in photo 1/i), "kitchen");
+  await waitFor(() => expect(submitted("existing_labels")).toEqual(["kitchen"]));
   expect(submitted("photo_tokens")).toEqual(["other_apartment.abc"]);
+});
+
+test("Other is not offered when adding a photo, but a photo saved under it keeps it", async () => {
+  const legacy = "https://x.supabase.co/storage/v1/object/public/listing-photos/u1/hall.jpg";
+  check.mockResolvedValue({ ok: true, checked: false });
+  render(<PhotoPicker userId="u1" initialUrls={[legacy]} initialLabels={["other"]} />);
+  const select = screen.getByLabelText(/room shown in photo 1/i);
+  expect(select).toHaveValue("other"); // the saved tag is not rewritten behind the member's back
+  const offered = Array.from(select.querySelectorAll("option"))
+    .filter((o) => !(o as HTMLOptionElement).disabled)
+    .map((o) => (o as HTMLOptionElement).value);
+  expect(offered).toEqual(["living_room", "bedroom", "bathroom", "kitchen", "balcony", "exterior", "other"]);
+
+  // A fresh photo gets no "Other" anywhere in its list.
+  await addPhoto("IMG_4821.jpg");
+  const fresh = screen.getByLabelText(/room shown in photo 2/i);
+  expect(fresh).toHaveValue("");
+  expect(Array.from(fresh.querySelectorAll("option")).map((o) => (o as HTMLOptionElement).value)).not.toContain("other");
 });
 
 test("when the check is switched off photos simply go through", async () => {

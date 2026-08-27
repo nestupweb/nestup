@@ -8,6 +8,7 @@ import { uploadImage } from "@/lib/storage";
 import { listingSchema, missingPhotoRooms, photoRoomSchema } from "@/lib/validation/listing";
 import { buildListingTitle } from "@/lib/listing-title";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/constants";
+import { defaultTakenMessage } from "@/lib/listing-taken";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 import { notifyNewListing } from "@/lib/notify";
 import { auditPhotos, isPhotoCheckEnabled } from "@/lib/photo-check";
@@ -186,14 +187,18 @@ export async function saveListingAction(
 export type DeleteListingState = { error?: string };
 
 /**
- * Removes the member's own room. Scoped by `owner_id` as well as `id`, so a
+ * Deleting the member's own room. Scoped by `owner_id` as well as `id`, so a
  * forged `listing_id` can only ever match something the signed-in member
  * already owns; RLS enforces the same rule underneath.
  *
- * Everything hanging off the listing goes with it — migration 0001 puts
- * `on delete cascade` on saved rooms, viewing history, residents, viewings and
- * the conversations (and their messages) about this room. The confirmation
- * step in the UI says so before the member commits.
+ * It does not delete the row. A real delete cascades to the conversations about
+ * the room and every message in them (0001/0004) — so the people who wrote
+ * those messages would lose them, and the notice sent on the way out would be
+ * destroyed with the thread. Instead `remove_listing` (0028) stamps
+ * `removed_at`, which takes the room out of Listings, Swipe, the owner's
+ * profile and its own page for good, and sends everyone in a conversation about
+ * it the same message "The room is taken" sends. Chats keep working; the room
+ * does not come back.
  */
 export async function deleteListingAction(
   _prev: DeleteListingState,
@@ -203,12 +208,27 @@ export async function deleteListingAction(
   if (!listingId) return { error: "Could not tell which listing to delete." };
 
   const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("listings").delete().eq("id", listingId).eq("owner_id", user.id);
+  // The notice names the room, so read the title before it goes.
+  const { data: row } = await supabase
+    .from("listings")
+    .select("title")
+    .eq("id", listingId)
+    .eq("owner_id", user.id)
+    .is("removed_at", null)
+    .maybeSingle();
+  if (!row) return { error: "That listing is already gone." };
+
+  const { data, error } = await supabase.rpc("remove_listing", {
+    p_listing: listingId,
+    p_message: defaultTakenMessage(String((row as { title: string }).title ?? "")),
+  });
   if (error) return { error: "Could not delete the listing. Please try again." };
+  if (data === -1) return { error: "That listing is already gone." };
 
   revalidatePath("/listing");
   revalidatePath("/browse");
   revalidatePath("/profile");
   revalidatePath("/swipe");
+  revalidatePath("/chat");
   redirect("/profile?tab=listings");
 }

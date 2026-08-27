@@ -5,10 +5,18 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-client";
 import { checkListingPhotoAction } from "@/app/actions/photo-check";
 import { inspectPhoto, warmUpPhotoCheck } from "@/lib/photo-detect";
-import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, photoRoomLabel } from "@/lib/constants";
+import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, PHOTO_ROOM_CHOICES, photoRoomLabel } from "@/lib/constants";
 import { photoProblem, photoSubjectPhrase, suggestedRoom, type PhotoSubject } from "@/lib/photo-rules";
 import { REQUIRED_PHOTO_ROOMS } from "@/lib/validation/listing";
 import type { PhotoRoom } from "@/lib/types";
+
+/**
+ * The room a tile is tagged with. "" is "nobody has said yet" — there is no
+ * "Other" to fall into any more, so a photo whose room neither the file name
+ * nor the check could name waits for the member to say, and is held back from
+ * the form until they do.
+ */
+type Tag = PhotoRoom | "";
 
 type Item = {
   id: string;
@@ -16,7 +24,7 @@ type Item = {
   url: string | null; // public URL once uploaded
   path: string | null; // storage path (only for photos uploaded in this session)
   preview: string; // what the tile shows (object URL until uploaded)
-  label: PhotoRoom;
+  label: Tag;
   status: "looking" | "uploading" | "checking" | "ready" | "failed";
   error?: string;
   /** What the check saw, plus the signed verdict the server will trust at publish. */
@@ -28,18 +36,20 @@ type Item = {
 const select =
   "mt-1.5 w-full rounded-lg border border-hairline bg-surface px-2 py-1.5 text-xs text-ink outline-none focus:border-accent";
 
-/** Best guess for a fresh file's room from its name ("bedroom-2.jpg"). */
-function guessRoom(fileName: string): PhotoRoom {
+/** Best guess for a fresh file's room from its name ("bedroom-2.jpg"); "" when the name says nothing. */
+function guessRoom(fileName: string): Tag {
   const n = fileName.toLowerCase();
-  for (const r of PHOTO_ROOMS) {
+  for (const r of PHOTO_ROOM_CHOICES) {
     if (r.hints.some((h) => n.includes(h))) return r.key;
   }
-  return "other";
+  return "";
 }
 
-/** The message shown on a tile whose photo doesn't fit its tag (null when it does). */
+/** The message shown on a tile that isn't ready to be published (null when it is). */
 function problemOf(it: Item): string | null {
-  if (it.status !== "ready" || !it.subject) return null;
+  if (it.status !== "ready") return null;
+  if (!it.label) return "Pick the room this photo shows.";
+  if (!it.subject) return null;
   return photoProblem(it.subject, it.label);
 }
 
@@ -74,7 +84,7 @@ export function PhotoPicker({
       url,
       path: null,
       preview: url,
-      label: (PHOTO_ROOMS.some((r) => r.key === initialLabels[i]) ? initialLabels[i] : "other") as PhotoRoom,
+      label: (PHOTO_ROOMS.some((r) => r.key === initialLabels[i]) ? initialLabels[i] : "") as Tag,
       status: "ready",
     }))
   );
@@ -130,7 +140,7 @@ export function PhotoPicker({
   };
 
   /** Ask the server what the photo shows; retags it when the photo clearly shows another room. */
-  const check = async (id: string, url: string, path: string | null, label: PhotoRoom) => {
+  const check = async (id: string, url: string, path: string | null, label: Tag) => {
     update(id, { status: "checking", error: undefined });
     const result = await checkListingPhotoAction(url, label);
     if (!result.ok) {
@@ -148,22 +158,22 @@ export function PhotoPicker({
     }
     const room = suggestedRoom(result.subject);
     update(id, (it) => {
-      if (photoProblem(result.subject, it.label) === null) {
-        return { status: "ready", subject: result.subject, token: result.token, note: undefined };
-      }
-      // A room photo under the wrong strict tag moves to the room it shows;
-      // something unidentifiable (a hallway) becomes "Other", which is honest.
-      const next = room ?? "other";
-      const note = room
-        ? `Tagged as ${photoRoomLabel(next)} — that is what the photo shows.`
-        : `Tagged as Other — we couldn't see ${photoSubjectPhrase(it.label as PhotoSubject)} here.`;
-      return { status: "ready", subject: result.subject, token: result.token, label: next, note };
+      const seen = { status: "ready" as const, subject: result.subject, token: result.token };
+      // Nothing said yet: take the room the check saw, and otherwise leave the
+      // tile waiting — `problemOf` asks for it rather than filing it as "Other".
+      if (!it.label) return room ? { ...seen, label: room, note: `Tagged as ${photoRoomLabel(room)} — that is what the photo shows.` } : { ...seen, note: undefined };
+      if (photoProblem(result.subject, it.label) === null) return { ...seen, note: undefined };
+      // A room photo under the wrong strict tag moves to the room it shows; a
+      // part of the home the check can't name goes back to the member to tag.
+      return room
+        ? { ...seen, label: room, note: `Tagged as ${photoRoomLabel(room)} — that is what the photo shows.` }
+        : { ...seen, label: "" as Tag, note: `We couldn't see ${photoSubjectPhrase(it.label as PhotoSubject)} here.` };
     });
   };
 
-  const upload = async (id: string, file: File, label: PhotoRoom) => {
+  const upload = async (id: string, file: File, label: Tag) => {
     let path: string | null = null;
-    let room = label;
+    let room: Tag = label;
     try {
       // Looked at here in the browser first: a photo that isn't of the home is
       // turned away before it is uploaded at all.
@@ -172,7 +182,9 @@ export function PhotoPicker({
         turnAway(id, local.reason);
         return;
       }
-      if (local.kind === "room" && photoProblem(local.room, label) !== null) {
+      // An untagged photo takes the room the browser check named; a tagged one
+      // is only moved when the tag and the photo disagree.
+      if (local.kind === "room" && (!label || photoProblem(local.room, label) !== null)) {
         room = local.room;
         update(id, { label: room, note: `Tagged as ${photoRoomLabel(room)} — that is what the photo shows.` });
       }
@@ -212,7 +224,7 @@ export function PhotoPicker({
     if (fileInput.current) fileInput.current.value = "";
   };
 
-  const retag = (it: Item, label: PhotoRoom) => {
+  const retag = (it: Item, label: Tag) => {
     update(it.id, { label, note: undefined });
     // A photo saved before the check existed has no verdict yet — get one for its new tag.
     if (it.status === "ready" && !it.subject && it.url) void check(it.id, it.url, it.path, label);
@@ -302,14 +314,23 @@ export function PhotoPicker({
               <select
                 id={`photo-room-${i}`}
                 value={it.label}
-                onChange={(e) => retag(it, e.target.value as PhotoRoom)}
-                className={select}
+                onChange={(e) => retag(it, e.target.value as Tag)}
+                className={`${select} ${it.label ? "" : "text-muted"}`}
               >
-                {PHOTO_ROOMS.map((r) => (
+                {/* Shown until the room is known, and never selectable again. */}
+                {it.label ? null : (
+                  <option value="" disabled>
+                    Which room?
+                  </option>
+                )}
+                {PHOTO_ROOM_CHOICES.map((r) => (
                   <option key={r.key} value={r.key}>
                     {r.label}
                   </option>
                 ))}
+                {/* "Other" is gone from the choices; a photo saved under it before
+                    that keeps its own tag until the member picks a real room. */}
+                {it.label === "other" ? <option value="other">{photoRoomLabel("other")}</option> : null}
               </select>
               {it.note ? <figcaption className="mt-1 text-[11px] leading-tight text-accent">{it.note}</figcaption> : null}
             </figure>
@@ -341,7 +362,7 @@ export function PhotoPicker({
             {items.some((i) => i.status === "uploading") ? "Uploading photos…" : "Checking photos…"}
           </span>
         ) : null}
-        {flagged ? <span className="text-danger">Fix or remove the flagged photo to publish.</span> : null}
+        {flagged ? <span className="text-danger">Tag or remove the marked photo to publish.</span> : null}
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ export default async function ListingDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("listings").select("*").eq("id", id).is("removed_at", null).maybeSingle();
   const listing = data as Listing | null;
   if (!listing) notFound();
 

@@ -34,7 +34,12 @@ export default async function ProfilePage({
 
   const { supabase, user } = await getAuthContext();
   const [mineRes, likedRes, historyRes, detailsRes] = await Promise.all([
-    supabase.from("listings").select("*").eq("owner_id", userId).order("created_at", { ascending: false }),
+    supabase
+      .from("listings")
+      .select("*")
+      .eq("owner_id", userId)
+      .is("removed_at", null)
+      .order("created_at", { ascending: false }),
     supabase
       .from("saved_listings")
       .select("created_at, listings(*)")
@@ -51,12 +56,14 @@ export default async function ProfilePage({
   const details = (detailsRes.data as ProfileDetails | null) ?? null;
 
   const mine: ProfileTabItem[] = ((mineRes.data as Listing[] | null) ?? []).map((listing) => ({ listing }));
+  // A room its owner deleted leaves Liked and History too — the chats about it
+  // survive, the room itself does not.
   const liked: ProfileTabItem[] = ((likedRes.data as unknown as JoinedRow<"created_at">[] | null) ?? [])
-    .filter((r) => r.listings)
+    .filter((r) => r.listings && !(r.listings as Listing).removed_at)
     .map((r) => ({ listing: r.listings as Listing, caption: `Liked ${shortDate(r.created_at)}` }));
   const likedIds = new Set(liked.map((i) => i.listing.id));
   const history: ProfileTabItem[] = ((historyRes.data as unknown as JoinedRow<"viewed_at">[] | null) ?? [])
-    .filter((r) => r.listings)
+    .filter((r) => r.listings && !(r.listings as Listing).removed_at)
     .map((r) => ({
       listing: r.listings as Listing,
       caption: `Viewed ${shortDate(r.viewed_at)}`,

@@ -10,6 +10,7 @@ export default async function MyListingPage() {
     .from("listings")
     .select("*")
     .eq("owner_id", userId)
+    .is("removed_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

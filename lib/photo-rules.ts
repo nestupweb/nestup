@@ -52,7 +52,8 @@ export function photoProblem(subject: PhotoSubject, label: PhotoRoom): string | 
     return `This isn't a photo of the apartment — add a photo of the ${tag} instead.`;
   }
   if (subject === "other_apartment") {
-    return `We couldn't see a ${tag} here — pick a photo that clearly shows the ${tag}, or tag this one as Other.`;
+    // No "Other" tag to fall back on any more — the photo has to show the room.
+    return `We couldn't see a ${tag} here — pick a photo that clearly shows the ${tag}.`;
   }
   return `This looks like ${photoSubjectPhrase(subject)}, not a ${tag} — tag it as ${photoRoomLabel(subject)} or pick another photo.`;
 }

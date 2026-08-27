@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { PHOTO_SUBJECTS, photoFits, photoProblem, suggestedRoom } from "@/lib/photo-rules";
-import { PHOTO_ROOMS } from "@/lib/constants";
+import { PHOTO_ROOMS, PHOTO_ROOM_CHOICES } from "@/lib/constants";
 
 describe("photoFits — what a listing photo may be tagged as", () => {
   test("living room, bedroom and bathroom must match the photo exactly", () => {
@@ -51,9 +51,9 @@ test("suggestedRoom maps the six rooms to their tag and nothing else", () => {
 
 test("file-name hints don't collide: bathroom.jpg is not a bedroom", () => {
   const guess = (name: string) =>
-    PHOTO_ROOMS.find((r) => r.hints.some((h) => name.toLowerCase().includes(h)))?.key ?? "other";
+    PHOTO_ROOM_CHOICES.find((r) => r.hints.some((h) => name.toLowerCase().includes(h)))?.key ?? "";
   expect(guess("bathroom.jpg")).toBe("bathroom");
   expect(guess("bedroom-2.jpg")).toBe("bedroom");
   expect(guess("living-room.jpg")).toBe("living_room");
-  expect(guess("IMG_4821.jpg")).toBe("other");
+  expect(guess("IMG_4821.jpg")).toBe(""); // no hint, and no "Other" to fall into
 });

@@ -17,7 +17,7 @@ const listing: Listing = {
   balcony: false, air_conditioning: false, parking: false, elevator: false, furnished: false,
   safe_room: "none", food_restrictions: "", photo_urls: [], photo_labels: [], viewing_slots: [],
   is_active: true, created_at: "", updated_at: "",
-  taken_at: null,
+  taken_at: null, removed_at: null,
 };
 
 test("a plain tile is just a link — no heart", () => {

@@ -14,10 +14,11 @@ const CONFIRM =
   "inline-flex items-center gap-2 rounded-full bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-60";
 
 /**
- * The two things an owner does with their room, side by side under the photo
- * grid. Deleting takes the conversations about the room with it (migration
- * 0001 cascades), so it asks once before it happens rather than going straight
- * through on a stray tap.
+ * The things an owner does with their room, side by side under the photo grid.
+ * Deleting is one way only — the room leaves the site and the owner's profile
+ * for good — so it asks once rather than going through on a stray tap. It no
+ * longer destroys the chats about the room: everyone in one is told the room is
+ * gone, and the conversation stays (migration 0028).
  */
 export function ListingActions({
   listingId,
@@ -65,9 +66,9 @@ export function ListingActions({
 
       {confirming ? (
         <p className="mt-2.5 max-w-prose text-[13px] leading-5 text-muted">
-          This removes the room for good, along with the chats about it and anyone&rsquo;s saved copy of it. If the
-          room is simply gone, use &ldquo;The room is taken&rdquo; instead &mdash; it tells the people you&rsquo;re
-          chatting with and keeps the conversations.
+          This takes the room off NestUp for good &mdash; out of Listings, Swipe and your profile &mdash; and tells
+          everyone you&rsquo;re chatting with that it is gone. Your conversations stay, so they can see why. There is no
+          way back: to close the room but keep it, use &ldquo;The room is taken&rdquo;.
         </p>
       ) : null}
 

@@ -133,8 +133,14 @@ export const PHOTO_ROOMS = [
   { key: "kitchen", label: "Kitchen", hints: ["kitchen"] },
   { key: "balcony", label: "Balcony", hints: ["balcony", "terrace", "garden", "yard"] },
   { key: "exterior", label: "Building / street", hints: ["building", "exterior", "street", "entrance"] },
+  // Legacy: no longer offered when adding photos (a photo has to say which room
+  // it shows), but still a valid stored label — listings published before the
+  // change, and the seed set, carry it, and `photoRoomLabel` must keep reading it.
   { key: "other", label: "Other", hints: [] },
 ] as const satisfies readonly { key: PhotoRoom; label: string; hints: readonly string[] }[];
+
+/** The rooms a member can actually tag a photo with — every real room, no "Other". */
+export const PHOTO_ROOM_CHOICES = PHOTO_ROOMS.filter((r) => r.key !== "other");
 
 export function photoRoomLabel(key: string): string {
   return PHOTO_ROOMS.find((r) => r.key === key)?.label ?? "Photo";
