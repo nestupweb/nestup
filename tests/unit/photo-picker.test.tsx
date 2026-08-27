@@ -10,7 +10,7 @@ const remove = vi.fn(async () => ({ data: null, error: null }));
 const upload = vi.fn(async () => ({ data: null, error: null }));
 
 vi.mock("@/app/actions/photo-check", () => ({ checkListingPhotoAction: (u: string, l: string) => check(u, l) }));
-vi.mock("@/lib/photo-detect", () => ({ inspectPhoto: (f: File) => inspect(f) }));
+vi.mock("@/lib/photo-detect", () => ({ inspectPhoto: (f: File) => inspect(f), warmUpPhotoCheck: () => {} }));
 vi.mock("@/lib/image-client", () => ({ compressImage: async (f: File) => f }));
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({

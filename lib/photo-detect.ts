@@ -193,6 +193,20 @@ async function loadModels(): Promise<Models> {
   return modelsPromise;
 }
 
+/**
+ * Start fetching the models before the member picks a photo, so the wait
+ * happens while they are filling in the form rather than after. Safe to call
+ * repeatedly; failures are ignored (the real call retries).
+ */
+export function warmUpPhotoCheck(): void {
+  if (typeof window === "undefined") return;
+  const start = () => void loadModels().catch(() => {});
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+    .requestIdleCallback;
+  if (idle) idle(start, { timeout: 3000 });
+  else setTimeout(start, 1200);
+}
+
 function decode(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);

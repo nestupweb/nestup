@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-client";
 import { checkListingPhotoAction } from "@/app/actions/photo-check";
-import { inspectPhoto } from "@/lib/photo-detect";
+import { inspectPhoto, warmUpPhotoCheck } from "@/lib/photo-detect";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, photoRoomLabel } from "@/lib/constants";
 import { photoProblem, photoSubjectPhrase, suggestedRoom, type PhotoSubject } from "@/lib/photo-rules";
 import { REQUIRED_PHOTO_ROOMS } from "@/lib/validation/listing";
@@ -92,6 +92,10 @@ export function PhotoPicker({
     },
     []
   );
+
+  // Fetch the photo-check models while the member is still reading the form,
+  // so the first photo isn't the one that waits for them.
+  useEffect(warmUpPhotoCheck, []);
 
   const count = items.length;
   const covered = new Set(items.filter((i) => i.status === "ready" && !problemOf(i)).map((i) => i.label));
