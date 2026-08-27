@@ -8,6 +8,8 @@ const GRID = "grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5";
 const DASHED =
   "flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-hairline text-muted transition-colors hover:border-accent hover:text-accent";
 const DASHED_LABEL = "text-[11px] font-semibold uppercase tracking-widest";
+const EDIT_BUTTON =
+  "mt-4 inline-flex items-center gap-2 rounded-full border border-hairline px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent";
 const PENCIL =
   "absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-surface/95 text-ink opacity-0 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.45)] backdrop-blur transition-opacity hover:text-accent focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100";
 
@@ -18,8 +20,9 @@ export const EDIT_PHOTOS_HREF = "/listing#photos";
  * The owner's "My listing" tab. Without a listing: one dashed square that
  * starts the listing form. With one: every photo side by side, each with a
  * pencil (on hover; always visible on touch screens) that opens the form at
- * its Photos section. Other members never see this — /people/[id] has its own
- * listing section.
+ * its Photos section — and an "Edit photos" button under the grid that goes to
+ * the same place, for anyone who never finds the pencil. Other members never
+ * see this — /people/[id] has its own listing section.
  */
 export function MyListing({ listings }: { listings: Listing[] }) {
   if (listings.length === 0) {
@@ -95,6 +98,13 @@ function ListingPhotos({ listing }: { listing: Listing }) {
           </Link>
         ) : null}
       </div>
+
+      {photos.length > 0 ? (
+        <Link href={EDIT_PHOTOS_HREF} className={EDIT_BUTTON}>
+          <PencilIcon />
+          Edit photos
+        </Link>
+      ) : null}
     </section>
   );
 }
