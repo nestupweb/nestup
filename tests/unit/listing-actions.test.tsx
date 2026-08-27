@@ -23,7 +23,7 @@ describe("ListingActions", () => {
     await userEvent.click(screen.getByRole("button", { name: /Delete Listing/ }));
     expect(screen.getByRole("button", { name: /Yes, Delete It/ })).toBeInTheDocument();
     expect(screen.getByText(/chats about it/i)).toBeInTheDocument();
-    expect(screen.getByText(/pause it in Settings instead/i)).toBeInTheDocument();
+    expect(screen.getByText(/The room is taken/i)).toBeInTheDocument();
   });
 
   test("cancelling backs out and leaves the listing alone", async () => {
@@ -39,5 +39,19 @@ describe("ListingActions", () => {
     await userEvent.click(screen.getByRole("button", { name: /Delete Listing/ }));
     const hidden = container.querySelector('input[name="listing_id"]') as HTMLInputElement;
     expect(hidden.value).toBe("listing-42");
+  });
+
+  test("a further owner action sits in the same row, and steps aside while confirming", async () => {
+    render(
+      <ListingActions listingId="l1" editHref="/listing#photos">
+        <button type="button">The room is taken</button>
+      </ListingActions>
+    );
+    const slotted = screen.getByRole("button", { name: "The room is taken" });
+    // same flex row as Edit / Delete, not stranded on a line of its own
+    expect(slotted.parentElement).toBe(screen.getByRole("link", { name: "Edit Listing" }).parentElement);
+
+    await userEvent.click(screen.getByRole("button", { name: /Delete Listing/ }));
+    expect(screen.queryByRole("button", { name: "The room is taken" })).toBeNull();
   });
 });

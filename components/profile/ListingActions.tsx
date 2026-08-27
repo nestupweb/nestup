@@ -19,7 +19,20 @@ const CONFIRM =
  * 0001 cascades), so it asks once before it happens rather than going straight
  * through on a stray tap.
  */
-export function ListingActions({ listingId, editHref }: { listingId: string; editHref: string }) {
+export function ListingActions({
+  listingId,
+  editHref,
+  children,
+}: {
+  listingId: string;
+  editHref: string;
+  /**
+   * Somewhere for a further owner action to sit inside the same row (today:
+   * "The room is taken"). A slot rather than props, so this file never has to
+   * know what that action needs.
+   */
+  children?: React.ReactNode;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [state, form, pending] = useStickyForm<DeleteListingState>(deleteListingAction, {});
 
@@ -47,12 +60,14 @@ export function ListingActions({ listingId, editHref }: { listingId: string; edi
             Delete Listing
           </button>
         )}
+        {confirming ? null : children}
       </div>
 
       {confirming ? (
         <p className="mt-2.5 max-w-prose text-[13px] leading-5 text-muted">
-          This removes the room for good, along with the chats about it and anyone&rsquo;s saved copy of it. To take it
-          off Listings and Swipe without losing any of that, pause it in Settings instead.
+          This removes the room for good, along with the chats about it and anyone&rsquo;s saved copy of it. If the
+          room is simply gone, use &ldquo;The room is taken&rdquo; instead &mdash; it tells the people you&rsquo;re
+          chatting with and keeps the conversations.
         </p>
       ) : null}
 

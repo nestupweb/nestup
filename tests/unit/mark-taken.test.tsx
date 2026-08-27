@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { TakenState } from "@/app/actions/listing-status";
 
-const count = vi.fn(async () => ({ count: 3 }));
+const count = vi.fn(async (_listingId: string) => ({ count: 3 }));
 const markTaken = vi.fn<(prev: TakenState, data: FormData) => Promise<TakenState>>();
-const reopen = vi.fn(async () => ({}) as TakenState);
+const reopen = vi.fn(async (_listingId: string) => ({}) as TakenState);
 
 vi.mock("@/app/actions/listing-status", () => ({
   listingChatCountAction: (id: string) => count(id),
