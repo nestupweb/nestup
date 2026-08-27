@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import type { ChangeEvent } from "react";
 import { resendConfirmationAction, verifyCodeAction, type AuthState } from "@/app/actions/auth";
 import { CodeInput } from "@/components/auth/CodeInput";
 import { useStickyForm } from "@/lib/hooks";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { formClass, inputClass, labelClass, submitClass } from "@/components/auth/fields";
 
@@ -20,6 +21,11 @@ export function AuthForm({
   notice?: string;
 }) {
   const [state, form, pending] = useStickyForm<AuthState>(action, {});
+  // Sign-up only: the two password boxes, so the mismatch can be shown while
+  // typing instead of only after a round-trip. The server checks it too.
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const mismatch = mode === "signup" && confirm.length > 0 && password !== confirm;
 
   if (state.sent) {
     // Signing up does not create a session: the account stays unusable until the
@@ -50,8 +56,28 @@ export function AuthForm({
           name="password" required minLength={8}
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           className={inputClass}
+          {...(mode === "signup"
+            ? { value: password, onChange: (e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value) }
+            : {})}
         />
       </label>
+      {mode === "signup" ? (
+        <label className={labelClass}>
+          Confirm password
+          <PasswordInput
+            name="confirm" required minLength={8} autoComplete="new-password"
+            className={inputClass}
+            value={confirm}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setConfirm(e.target.value)}
+            aria-invalid={mismatch || undefined}
+          />
+          {mismatch ? (
+            <span role="alert" className="mt-1.5 block text-xs normal-case tracking-normal text-danger">
+              The two passwords don&rsquo;t match.
+            </span>
+          ) : null}
+        </label>
+      ) : null}
       {mode === "login" ? (
         <p className="mt-2 text-right text-xs">
           <Link href="/forgot-password" className="text-accent underline">Forgot your password?</Link>
@@ -73,7 +99,7 @@ export function AuthForm({
         </div>
       ) : null}
 
-      <button type="submit" disabled={pending} className={submitClass}>
+      <button type="submit" disabled={pending || mismatch} className={submitClass}>
         {pending ? "One moment…" : mode === "login" ? "Log in" : "Sign up"}
       </button>
 

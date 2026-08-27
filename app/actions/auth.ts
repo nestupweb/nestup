@@ -39,8 +39,13 @@ function retryAfterSeconds(message: string | undefined): number | null {
 export async function signUpAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
   if (!emailOk(email)) return { error: "Please enter a valid email address." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  // The form disables its own submit on a mismatch, but the form is not the
+  // only way to reach this action, and a typo'd password on an account that
+  // needs an e-mail round-trip to reset is an expensive thing to let through.
+  if (password !== confirm) return { error: "The two passwords don't match." };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });

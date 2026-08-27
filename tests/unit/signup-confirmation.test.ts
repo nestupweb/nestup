@@ -38,7 +38,7 @@ function form(fields: Record<string, string>): FormData {
 
 test("signing up never returns a session — only a 'we mailed you' state", async () => {
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "New@Nestup.dev", password: "goodpassword" }));
+  const state = await signUpAction({}, form({ email: "New@Nestup.dev", password: "goodpassword", confirm: "goodpassword" }));
   expect(signUp).toHaveBeenCalledWith({ email: "new@nestup.dev", password: "goodpassword" });
   expect(state.sent).toBe(true);
   expect(state.error).toBeUndefined();
@@ -46,13 +46,13 @@ test("signing up never returns a session — only a 'we mailed you' state", asyn
 
 test("the address is handed back so the screen can show where the mail went", async () => {
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "New@Nestup.dev", password: "goodpassword" }));
+  const state = await signUpAction({}, form({ email: "New@Nestup.dev", password: "goodpassword", confirm: "goodpassword" }));
   expect(state.email).toBe("new@nestup.dev");
 });
 
 test("a too-short password never reaches Supabase", async () => {
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "short" }));
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "short", confirm: "short" }));
   expect(state.error).toMatch(/at least 8/i);
   expect(signUp).not.toHaveBeenCalled();
 });
@@ -86,7 +86,7 @@ test("a signup inside the 60s window shows the inbox screen, not 'try a differen
     error: { status: 429, code: "over_email_send_rate_limit", message: "For security purposes, you can only request this after 47 seconds." },
   });
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword" }));
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword", confirm: "goodpassword" }));
   expect(state.sent).toBe(true);
   expect(state.email).toBe("new@nestup.dev");
   expect(state.throttled).toBe(true);
@@ -105,7 +105,7 @@ test("an address that already has an account is called out, not sent to the inbo
     error: null,
   });
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "Taken@Nestup.dev", password: "goodpassword" }));
+  const state = await signUpAction({}, form({ email: "Taken@Nestup.dev", password: "goodpassword", confirm: "goodpassword" }));
   expect(state.error).toMatch(/already in use/i);
   expect(state.taken).toBe(true);
   expect(state.sent).toBeUndefined();
@@ -124,7 +124,7 @@ test("an existing but unconfirmed address still gets the inbox screen", async ()
     error: null,
   });
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "unconfirmed@nestup.dev", password: "goodpassword" }));
+  const state = await signUpAction({}, form({ email: "unconfirmed@nestup.dev", password: "goodpassword", confirm: "goodpassword" }));
   expect(state.sent).toBe(true);
   expect(state.taken).toBeUndefined();
   expect(state.error).toBeUndefined();
@@ -134,7 +134,7 @@ test("an existing but unconfirmed address still gets the inbox screen", async ()
 test("a response with no identities field at all is not read as 'taken'", async () => {
   signUp.mockResolvedValue({ data: { user: { id: "u1" }, session: null }, error: null });
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword" }));
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword", confirm: "goodpassword" }));
   expect(state.sent).toBe(true);
   expect(state.taken).toBeUndefined();
 });
@@ -142,7 +142,7 @@ test("a response with no identities field at all is not read as 'taken'", async 
 test("a signup that fails for any other reason still reports an error", async () => {
   signUp.mockResolvedValue({ data: { user: null, session: null }, error: { status: 400, message: "nope" } });
   const { signUpAction } = await import("@/app/actions/auth");
-  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword" }));
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword", confirm: "goodpassword" }));
   expect(state.error).toMatch(/could not create/i);
   expect(state.sent).toBeUndefined();
 });
@@ -209,4 +209,28 @@ test("too many attempts are reported as a wait, not a bad code", async () => {
   const { verifyCodeAction } = await import("@/app/actions/auth");
   const state = await verifyCodeAction({}, form({ email: "new@nestup.dev", code: "123456" }));
   expect(state.error).toMatch(/31 seconds/);
+});
+
+/**
+ * Two password boxes on sign-up. The form disables submit on a mismatch, but
+ * the action is the guarantee — a typo here costs an e-mail round-trip to undo.
+ */
+test("a mismatched confirmation never reaches Supabase", async () => {
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword", confirm: "goodpasswerd" }));
+  expect(state.error).toMatch(/don't match/i);
+  expect(signUp).not.toHaveBeenCalled();
+});
+
+test("a missing confirmation is a mismatch, not a pass", async () => {
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "goodpassword" }));
+  expect(state.error).toMatch(/don't match/i);
+  expect(signUp).not.toHaveBeenCalled();
+});
+
+test("the length rule is checked before the match, so the clearer error wins", async () => {
+  const { signUpAction } = await import("@/app/actions/auth");
+  const state = await signUpAction({}, form({ email: "new@nestup.dev", password: "short", confirm: "different" }));
+  expect(state.error).toMatch(/at least 8/i);
 });
