@@ -36,7 +36,7 @@ row (privacy flags — read through the owner-only table, not through
 toggle).
 
 Four cards, in this order: **Account**, **Privacy**, **Notifications**,
-**Danger zone**.
+**Delete account**.
 
 ## 3. Account
 
@@ -135,9 +135,9 @@ read from disk would not survive the build. Contents: room title, city, rent, on
 photo, a button to `/browse/<id>`, and an unsubscribe line linking to
 `/settings`. Subject: `A new room in <city> matches what you're looking for`.
 
-## 6. Danger zone
+## 6. Delete account
 
-A red-bordered card. `Delete my account` states plainly what is removed —
+A red-bordered card titled "Delete account". Its button states plainly what is removed —
 profile, listing, saved rooms, viewing history, conversations, messages — and is
 irreversible. The button stays disabled until the member types their own e-mail
 address into a confirmation field.
@@ -228,7 +228,7 @@ member's view of the profile, and publishing a matching room delivers one mail.
 
 ## 11. Build order
 
-**Phase 1** — gear, route, Account, Privacy, Danger zone, migration 0023. No new
+**Phase 1** — gear, route, Account, Privacy, Delete account, migration 0023. No new
 dependencies, no new secrets.
 
 **Phase 2** — Notifications: `nodemailer`, `lib/mail.ts`, `lib/notify.ts`,

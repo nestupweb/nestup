@@ -15,7 +15,7 @@ export function DangerZone({ email }: { email: string }) {
   const armed = typed.trim().toLowerCase() === email.trim().toLowerCase();
 
   return (
-    <Card title="Danger zone" tone="danger">
+    <Card title="Delete account" tone="danger">
       <p className="text-sm leading-6 text-ink">
         Deleting your account removes your profile, your listing, the rooms you saved, your viewing history, and every
         conversation and message. <strong className="font-semibold">This cannot be undone.</strong>
