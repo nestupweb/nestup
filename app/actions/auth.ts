@@ -102,6 +102,32 @@ export async function resendConfirmationAction(_prev: AuthState, formData: FormD
   return { sent: true, email };
 }
 
+/**
+ * Second half of sign-up: the six-digit code from the confirmation e-mail.
+ * `verifyOtp` with type "email" both confirms the address and returns a
+ * session, so a correct code lands the member straight in onboarding — no
+ * second login, and no emailed link to lose.
+ */
+export async function verifyCodeAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const code = String(formData.get("code") ?? "").replace(/\D/g, "");
+  if (!emailOk(email)) return { error: "Please enter a valid email address.", email };
+  if (code.length !== 6) return { error: "Enter the 6-digit code from the email.", email };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+  if (error) {
+    // GoTrue answers a wrong code and an expired one the same way, so the
+    // message has to cover both without guessing which it was.
+    if (isSendRateLimit(error)) {
+      const seconds = retryAfterSeconds(error.message);
+      return { error: seconds ? `Too many tries — wait ${seconds} seconds.` : "Too many tries — wait a minute.", email };
+    }
+    return { error: "That code is wrong or has expired. Check the email, or send a new one.", email };
+  }
+  redirect("/profile?onboarding=1");
+}
+
 export async function signInAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");

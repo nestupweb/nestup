@@ -18,10 +18,28 @@ describe("auth e-mail templates", () => {
     expect(templates.recovery).toContain("{{ .Email }}");
   });
 
-  test("signup confirmation links to /auth/confirm?token_hash&type=email", () => {
-    expect(templates.confirmation).toContain("{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email");
+  /**
+   * Sign-up confirms with a 6-digit code typed into six boxes, not a link:
+   * a code survives mail clients that rewrite or pre-fetch URLs, and it works
+   * when the mail is read on a different device from the browser.
+   */
+  test("signup confirmation carries the code, not a magic link", () => {
+    expect(templates.confirmation).toContain("{{ .Token }}");
+    expect(templates.confirmation).toContain("{{ .Email }}");
+    // No token in a URL anywhere — a link-shaped confirmation is what this replaced.
+    expect(templates.confirmation).not.toContain("TokenHash");
     expect(templates.confirmation).not.toContain("ConfirmationURL");
     expect(templates.confirmation).not.toContain("localhost");
+  });
+
+  test("signup confirmation sends someone who closed the tab to /verify", () => {
+    expect(templates.confirmation).toContain("{{ .SiteURL }}/verify?email={{ .Email }}");
+  });
+
+  test("the code length the template promises is the length Supabase mints", () => {
+    // The boxes are fixed at six; Supabase defaults to eight, which would overflow them.
+    expect(buildAuthConfig({ templates }).mailer_otp_length).toBe(6);
+    expect(templates.confirmation).toMatch(/six boxes/i);
   });
 
   test("both are self-contained HTML in the brand colours", () => {

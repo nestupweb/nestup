@@ -7,7 +7,7 @@
     <title>Confirm your NestUp email</title>
   </head>
   <body style="margin:0;padding:0;background:#faf7f2;font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#201d1a;">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">One tap to confirm your email and start using NestUp.</div>
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your NestUp confirmation code is {{ .Token }}.</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf7f2;">
       <tr>
         <td align="center" style="padding:40px 16px;">
@@ -20,23 +20,32 @@
             <tr>
               <td style="background:#ffffff;border:1px solid rgba(32,29,26,0.1);border-radius:20px;padding:36px 32px;">
                 <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(32,29,26,0.68);">Welcome</p>
-                <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.01em;color:#201d1a;">Confirm your email</h1>
-                <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:rgba(32,29,26,0.8);">
-                  Thanks for joining NestUp. Confirm <strong style="color:#201d1a;">{{ .Email }}</strong> to finish creating your account and set up your profile.
+                <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.01em;color:#201d1a;">Your confirmation code</h1>
+                <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:rgba(32,29,26,0.8);">
+                  Thanks for joining NestUp. Type this code into the six boxes on the confirmation screen to finish creating
+                  <strong style="color:#201d1a;">{{ .Email }}</strong>.
                 </p>
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+
+                <!-- The code. Kept as plain letter-spaced text so it stays selectable and
+                     copyable in every client; no image, no web font. -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td style="border-radius:999px;background:#2e7d5e;">
-                      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" style="display:inline-block;padding:13px 26px;border-radius:999px;background:#2e7d5e;color:#faf7f2;font-size:14px;font-weight:700;letter-spacing:0.02em;text-decoration:none;">Confirm my email</a>
+                    <td align="center" style="border:1px solid rgba(46,125,94,0.35);border-radius:16px;background:#f4f8f6;padding:20px 12px;">
+                      <span style="display:inline-block;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:34px;line-height:1.1;font-weight:700;letter-spacing:0.28em;text-indent:0.28em;color:#2e7d5e;">{{ .Token }}</span>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:24px 0 0;font-size:13px;line-height:1.55;color:rgba(32,29,26,0.68);">
-                  If you didn&rsquo;t sign up for NestUp, you can ignore this email.
+
+                <p style="margin:18px 0 0;font-size:13px;line-height:1.55;color:rgba(32,29,26,0.68);">
+                  The code is good for one hour. Don&rsquo;t share it with anyone &mdash; NestUp will never ask you for it.
                 </p>
-                <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:rgba(32,29,26,0.55);word-break:break-all;">
-                  If the button doesn&rsquo;t open, copy this link into your browser:<br />
-                  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" style="color:#2e7d5e;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email</a>
+
+                <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:rgba(32,29,26,0.68);">
+                  Closed the tab? <a href="{{ .SiteURL }}/verify?email={{ .Email }}" style="color:#2e7d5e;font-weight:600;">Open the confirmation screen</a> and enter the code there.
+                </p>
+
+                <p style="margin:18px 0 0;font-size:13px;line-height:1.55;color:rgba(32,29,26,0.68);">
+                  If you didn&rsquo;t sign up for NestUp, you can ignore this email &mdash; nothing was created without this code.
                 </p>
               </td>
             </tr>

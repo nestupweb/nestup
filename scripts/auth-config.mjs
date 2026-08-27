@@ -70,6 +70,10 @@ export function buildAuthConfig({ templates, smtp = null }) {
     mailer_templates_recovery_content: templates.recovery,
     mailer_subjects_confirmation: SUBJECTS.confirmation,
     mailer_templates_confirmation_content: templates.confirmation,
+    // Sign-up confirms with a 6-digit code typed into six boxes on the site
+    // (`{{ .Token }}` in the template). Supabase defaults to 8, which would
+    // silently overflow the boxes.
+    mailer_otp_length: 6,
   };
   if (smtp) {
     Object.assign(config, {
@@ -104,6 +108,7 @@ const SHOWN = [
   "smtp_max_frequency",
   "rate_limit_email_sent",
   "mailer_otp_exp",
+  "mailer_otp_length",
   "mailer_autoconfirm",
   "external_email_enabled",
 ];

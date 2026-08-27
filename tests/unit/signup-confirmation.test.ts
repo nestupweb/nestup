@@ -10,7 +10,8 @@ import { beforeEach, expect, test, vi } from "vitest";
 const signUp = vi.fn();
 const resend = vi.fn();
 const getUser = vi.fn();
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { signUp, resend, getUser } }) }));
+const verifyOtp = vi.fn();
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { signUp, resend, getUser, verifyOtp } }) }));
 vi.mock("next/headers", () => ({ headers: async () => ({ get: () => null }) }));
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
@@ -26,6 +27,7 @@ beforeEach(() => {
     .mockResolvedValue({ data: { user: { id: "u1", identities: [{ provider: "email" }] }, session: null }, error: null });
   resend.mockReset().mockResolvedValue({ data: {}, error: null });
   getUser.mockReset().mockResolvedValue({ data: { user: null } });
+  verifyOtp.mockReset().mockResolvedValue({ data: {}, error: null });
 });
 
 function form(fields: Record<string, string>): FormData {
@@ -161,4 +163,50 @@ test("resending to a malformed address is refused before Supabase is called", as
   const state = await resendConfirmationAction({}, form({ email: "nope" }));
   expect(state.error).toMatch(/valid email/i);
   expect(resend).not.toHaveBeenCalled();
+});
+
+/**
+ * Confirming with the six-digit code from the e-mail. `verifyOtp` both marks
+ * the address confirmed and hands back a session, so a correct code goes
+ * straight to onboarding rather than back to the login form.
+ */
+test("a correct code confirms the address and lands in onboarding", async () => {
+  const { verifyCodeAction } = await import("@/app/actions/auth");
+  await expect(
+    verifyCodeAction({}, form({ email: "New@Nestup.dev", code: "123456" }))
+  ).rejects.toThrow("REDIRECT:/profile?onboarding=1");
+  expect(verifyOtp).toHaveBeenCalledWith({ email: "new@nestup.dev", token: "123456", type: "email" });
+});
+
+test("spaces and dashes in a pasted code are ignored", async () => {
+  const { verifyCodeAction } = await import("@/app/actions/auth");
+  await expect(
+    verifyCodeAction({}, form({ email: "new@nestup.dev", code: "12 34-56" }))
+  ).rejects.toThrow(/REDIRECT:/);
+  expect(verifyOtp).toHaveBeenCalledWith({ email: "new@nestup.dev", token: "123456", type: "email" });
+});
+
+test("a short code never reaches Supabase", async () => {
+  const { verifyCodeAction } = await import("@/app/actions/auth");
+  const state = await verifyCodeAction({}, form({ email: "new@nestup.dev", code: "123" }));
+  expect(state.error).toMatch(/6-digit/i);
+  expect(verifyOtp).not.toHaveBeenCalled();
+});
+
+test("a wrong or expired code says both, since Supabase does not distinguish them", async () => {
+  verifyOtp.mockResolvedValue({ data: {}, error: { status: 403, message: "Token has expired or is invalid" } });
+  const { verifyCodeAction } = await import("@/app/actions/auth");
+  const state = await verifyCodeAction({}, form({ email: "new@nestup.dev", code: "999999" }));
+  expect(state.error).toMatch(/wrong or has expired/i);
+  expect(state.email).toBe("new@nestup.dev");
+});
+
+test("too many attempts are reported as a wait, not a bad code", async () => {
+  verifyOtp.mockResolvedValue({
+    data: {},
+    error: { status: 429, code: "over_email_send_rate_limit", message: "For security purposes, you can only request this after 31 seconds." },
+  });
+  const { verifyCodeAction } = await import("@/app/actions/auth");
+  const state = await verifyCodeAction({}, form({ email: "new@nestup.dev", code: "123456" }));
+  expect(state.error).toMatch(/31 seconds/);
 });
