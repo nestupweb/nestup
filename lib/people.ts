@@ -1,3 +1,4 @@
+import { prefLeaseTermLabel } from "@/lib/constants";
 import { SHABBAT_OPTIONS } from "@/lib/validation/about";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
@@ -91,6 +92,8 @@ export function profileGroups(profile: Profile, details: PublicDetails | null): 
       rows: [
         { label: "Budget", value: budgetLabel(profile) },
         { label: "Move-in", value: moveInLabel(profile.earliest_move_in) },
+        // "any" reads as no wish at all, so leave the row out entirely.
+        { label: "For how long", value: profile.pref_lease_term && profile.pref_lease_term !== "any" ? prefLeaseTermLabel(profile.pref_lease_term) : "" },
         { label: "Preferred cities", value: profile.preferred_cities.join(", ") },
       ],
     },

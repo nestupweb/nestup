@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { BUDGET_CAP, CHORES, CITIES, INTERESTS, MAX_INTERESTS, MIN_INTERESTS } from "@/lib/constants";
+import { BUDGET_CAP, CHORES, CITIES, INTERESTS, MAX_INTERESTS, MIN_INTERESTS, PREF_LEASE_TERMS } from "@/lib/constants";
+import type { PrefLeaseTerm } from "@/lib/types";
+
+const prefLeaseTermKeys = PREF_LEASE_TERMS.map((o) => o.key) as [PrefLeaseTerm, ...PrefLeaseTerm[]];
 
 export const profileSchema = z
   .object({
@@ -41,6 +44,8 @@ export const profileSchema = z
     budget_max: z.coerce.number().int().min(0).max(BUDGET_CAP).default(0), // 0 = no max
     preferred_cities: z.array(z.enum(CITIES)).default([]),
     earliest_move_in: z.iso.date().nullable().default(null),
+    // "For how long" — optional so onboarding and older forms still validate.
+    pref_lease_term: z.enum(prefLeaseTermKeys).default("any"),
   })
   .refine((p) => p.budget_max === 0 || p.budget_max >= p.budget_min, {
     message: "Max budget must be at least the min budget",

@@ -16,6 +16,8 @@ export type ListerResponse = "pending" | "liked" | "skipped";
 export type SafeRoom = "none" | "apartment" | "building";
 /** How long the room is offered for — a rough duration, never an end date. */
 export type LeaseTerm = "flexible" | "month" | "two_months" | "three_months" | "half_year" | "year" | "two_years" | "long_term";
+/** The same durations on the seeker side, plus "no preference". */
+export type PrefLeaseTerm = "any" | LeaseTerm;
 export type PhotoRoom = "living_room" | "bedroom" | "bathroom" | "kitchen" | "balcony" | "exterior" | "other";
 export type PropertyType =
   | "apartment"
@@ -55,6 +57,7 @@ export interface Profile {
   budget_max: number; // 0 = not set
   preferred_cities: string[];
   earliest_move_in: string | null; // ISO date
+  pref_lease_term: PrefLeaseTerm; // for how long I want to rent; "any" = no preference
   created_at: string;
   updated_at: string;
 }

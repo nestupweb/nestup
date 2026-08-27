@@ -11,9 +11,9 @@ import { DailyLifeFields } from "@/components/profile/DailyLifeFields";
 import { PhoneField } from "@/components/profile/PhoneField";
 import { SocialLinkInput } from "@/components/profile/SocialLinkInput";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { TimeSelect } from "@/components/ui/Select";
+import { Select, TimeSelect } from "@/components/ui/Select";
 import { hourChoices, nearestHour } from "@/lib/clock";
-import { BED_TIMES, WAKE_TIMES } from "@/lib/constants";
+import { BED_TIMES, PREF_LEASE_TERMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
@@ -152,7 +152,15 @@ export function ProfileForm({
           <label className={label}>Earliest move-in
             <DatePicker name="earliest_move_in" defaultValue={profile?.earliest_move_in ?? ""} clearable placeholder="Any time" />
           </label>
-          <fieldset className="min-w-0">
+          <label className={label}>For how long
+            {/* The seeker's side of the listing's lease term — a rough duration, never an end date. */}
+            <Select name="pref_lease_term" defaultValue={profile?.pref_lease_term ?? "any"}>
+              {PREF_LEASE_TERMS.map((t) => (
+                <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </Select>
+          </label>
+          <fieldset className="min-w-0 sm:col-span-2">
             <legend className={label}>Preferred cities</legend>
             <div className="mt-1">
               <CityMultiPicker name="preferred_cities" initial={profile?.preferred_cities ?? []} />

@@ -24,7 +24,7 @@ const profile: Profile = {
   guests_freq: "sometimes", interests: ["Music", "Cooking", "Yoga"], ok_with_smoker: false,
   ok_with_pets: true,
     noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [], budget_min: 3000, budget_max: 5000, preferred_cities: ["Tel Aviv"],
-  earliest_move_in: "2026-10-01", created_at: "", updated_at: "",
+  earliest_move_in: "2026-10-01", pref_lease_term: "any", created_at: "", updated_at: "",
 };
 
 test("aboutSchema splits languages, validates clock + email, mirrors profile basics", () => {

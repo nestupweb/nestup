@@ -6,6 +6,7 @@ import type {
   PhotoRoom,
   PrefDiet,
   PrefGuests,
+  PrefLeaseTerm,
   PrefNoise,
   PrefShabbat,
   PrefSleep,
@@ -163,6 +164,16 @@ export const LEASE_TERMS = [
 
 export function leaseTermLabel(key: LeaseTerm): string {
   return LEASE_TERMS.find((o) => o.key === key)?.label ?? "Flexible";
+}
+
+/** The seeker's side of LEASE_TERMS: the same durations, with "no preference" first. */
+export const PREF_LEASE_TERMS = [
+  { key: "any", label: "No preference" },
+  ...LEASE_TERMS,
+] as const satisfies readonly { key: PrefLeaseTerm; label: string }[];
+
+export function prefLeaseTermLabel(key: PrefLeaseTerm): string {
+  return PREF_LEASE_TERMS.find((o) => o.key === key)?.label ?? "No preference";
 }
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 

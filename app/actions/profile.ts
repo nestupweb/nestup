@@ -51,6 +51,7 @@ export async function upsertProfileAction(
     budget_max: formData.get("budget_max") || 0,
     preferred_cities: formData.getAll("preferred_cities"),
     earliest_move_in: (formData.get("earliest_move_in") as string) || null,
+    pref_lease_term: formData.get("pref_lease_term") ?? undefined,
   });
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
