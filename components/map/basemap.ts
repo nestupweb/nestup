@@ -16,31 +16,21 @@ export const MAP_STYLES = {
 } as const;
 
 /**
- * The font the cluster counts are drawn in. MapLibre can only use a font the
- * *style's* glyph server actually has — CARTO's serves Open Sans, which is
- * what mapcn ships with.
- */
-export const CLUSTER_FONT = ["Open Sans Semibold"];
-
-/**
  * MapLibre paints its own layers, so the pins can't be styled in CSS: these
  * are the palette values from globals.css, written out for the GL renderer.
  * `tests/unit/map-basemap.test.ts` fails if they drift from the stylesheet.
  *
- * `shades` runs small → large clusters; `on` is the count printed inside one,
- * and `ring` the outline drawn around it — the page's own ground colour, so a
- * pin reads as sitting on the app rather than on the tiles.
+ * `accent` fills a room's pin and `on` draws its outline and centre dot — the
+ * accent's contrast colour, so the pin reads against the tiles underneath it.
  */
 export const MAP_COLORS = {
   light: {
     accent: "#2e7d5e",
-    shades: ["#2e7d5e", "#256349", "#1a4635"] as [string, string, string],
     on: "#faf7f2",
     ring: "#faf7f2",
   },
   dark: {
     accent: "#c9a468",
-    shades: ["#c9a468", "#b08c4f", "#96733a"] as [string, string, string],
     on: "#191613",
     ring: "#191613",
   },

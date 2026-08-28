@@ -39,3 +39,7 @@ yarn-error.log*
 
 # never commit pasted secrets
 my listing-guy/Token*
+
+# Screenshots left behind by `npm run check:map` — proof, not source.
+/map-*.png
+/listings-map-*.png

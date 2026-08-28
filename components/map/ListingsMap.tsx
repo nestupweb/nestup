@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { Map, MapClusterLayer, MapControls, MapPopup } from "@/components/ui/map";
-import { CLUSTER_FONT, COUNTRY_ZOOM, MAP_COLORS, MAP_STYLES, MAX_ZOOM } from "@/components/map/basemap";
+import { Map, MapControls, MapPopup } from "@/components/ui/map";
+import { COUNTRY_ZOOM, MAP_STYLES, MAX_ZOOM } from "@/components/map/basemap";
+import { RoomPinsLayer } from "@/components/map/RoomPinsLayer";
 import { useMapTheme } from "@/components/map/useMapTheme";
 import { ISRAEL_CENTRE } from "@/lib/city-centres";
 import { boundsOf } from "@/lib/geo";
@@ -12,28 +13,15 @@ import type { ListingPin } from "@/lib/listings";
 /**
  * Every room on NestUp, on one map.
  *
- * Clustering is MapLibre's own (`MapClusterLayer`), which is why this can draw
- * eight hundred rooms without breaking a sweat: the points live in the GL
- * layer rather than as eight hundred DOM markers. Clicking a cluster zooms in
- * until it comes apart; clicking a single room opens a card with a way
- * through to it.
+ * The pins are the same accent teardrop a room's own map draws, in one GL
+ * symbol layer — see `components/map/RoomPinsLayer.tsx` for why they thin out
+ * when you zoom away and fill in as you zoom back. Clicking one opens a card
+ * with a way through to the room.
  */
 export default function ListingsMap({ pins }: { pins: ListingPin[] }) {
   const theme = useMapTheme();
-  const colors = MAP_COLORS[theme];
   const [chosen, setChosen] = useState<ListingPin | null>(null);
-
-  const data = useMemo(
-    () => ({
-      type: "FeatureCollection" as const,
-      features: pins.map((pin) => ({
-        type: "Feature" as const,
-        geometry: { type: "Point" as const, coordinates: [pin.lng, pin.lat] as [number, number] },
-        properties: pin,
-      })),
-    }),
-    [pins]
-  );
+  const choose = useCallback((pin: ListingPin) => setChosen(pin), []);
 
   // Opening on the rooms themselves rather than a fixed view of the country:
   // the panel is a different shape on a phone and on a laptop, and fitting the
@@ -61,19 +49,7 @@ export default function ListingsMap({ pins }: { pins: ListingPin[] }) {
     >
       <MapControls position="bottom-right" showZoom showLocate />
 
-      <MapClusterLayer
-        data={data}
-        clusterRadius={60}
-        clusterMaxZoom={12}
-        clusterColors={colors.shades}
-        clusterThresholds={[25, 120]}
-        clusterTextFont={CLUSTER_FONT}
-        clusterTextColor={colors.on}
-        strokeColor={colors.ring}
-        pointColor={colors.accent}
-        pointRadius={7}
-        onPointClick={(feature) => setChosen(feature.properties as ListingPin)}
-      />
+      <RoomPinsLayer pins={pins} theme={theme} onSelect={choose} />
 
       {chosen ? (
         <MapPopup

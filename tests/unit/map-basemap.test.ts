@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { CLUSTER_FONT, MAP_COLORS, MAP_STYLES, PLACES } from "@/components/map/basemap";
+import { MAP_COLORS, MAP_STYLES, PLACES } from "@/components/map/basemap";
 
 const css = readFileSync(join(import.meta.dirname, "../../app/globals.css"), "utf8");
 
@@ -31,15 +31,6 @@ describe("map colours", () => {
     expect(MAP_COLORS.dark.accent).toBe(token('[data-theme="dark"] {', "accent"));
     expect(MAP_COLORS.dark.on).toBe(token('[data-theme="dark"] {', "accent-contrast"));
     expect(MAP_COLORS.dark.ring).toBe(token('[data-theme="dark"] {', "paper"));
-  });
-
-  test("cluster shades start at the accent and only get deeper", () => {
-    for (const theme of ["light", "dark"] as const) {
-      const shades = MAP_COLORS[theme].shades;
-      expect(shades[0]).toBe(MAP_COLORS[theme].accent);
-      expect(new Set(shades).size).toBe(3);
-      for (const shade of shades) expect(shade).toMatch(/^#[0-9a-f]{6}$/);
-    }
   });
 
   test("no kind of place wears the accent — that colour means 'this room'", () => {
@@ -84,10 +75,7 @@ describe("basemaps", () => {
     }
   });
 
-  test("cluster counts use a font CARTO's glyph server really has", () => {
-    // MapLibre draws nothing at all if the fontstack is missing, so this
-    // constant has to move whenever MAP_STYLES does.
-    expect(CLUSTER_FONT).toEqual(["Open Sans Semibold"]);
+  test("are served by CARTO's own glyphs and sprites", () => {
     for (const file of ["positron-en.json", "dark-matter-en.json"]) {
       expect(style(file).glyphs).toContain("cartocdn.com");
     }

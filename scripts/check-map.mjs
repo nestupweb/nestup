@@ -41,7 +41,17 @@ async function run(theme) {
   await page.waitForSelector("canvas.maplibregl-canvas", { timeout: 30000 });
   const subtitle = await page.locator('[role="dialog"] p').first().innerText();
   note(/\d+ rooms on the map/.test(subtitle), "all-rooms map opens with a count", subtitle.trim());
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: `listings-map-${theme}.png` });
+
+  // The pins thin out when they'd overlap, so zooming in has to reveal more.
+  for (let i = 0; i < 4; i++) {
+    await page.getByRole("button", { name: /zoom in/i }).click();
+    await page.waitForTimeout(500);
+  }
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: `listings-map-${theme}-zoomed.png` });
+
   await page.getByRole("button", { name: /close map/i }).click();
 
   // ---- A room page ----
