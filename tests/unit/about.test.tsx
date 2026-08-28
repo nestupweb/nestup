@@ -54,7 +54,9 @@ test("About me is the first tab, shows the editable section, and hides it on oth
   );
   const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
   expect(tabs[0]).toBe("About me");
-  expect(tabs[1]).toBe("My listing");
+  // Renamed with shared listings (0032): the tab can now hold rooms the member
+  // co-posts as well as the one they host.
+  expect(tabs[1]).toBe("My Listings");
   expect(screen.getByRole("tab", { name: "About me" })).toHaveAttribute("aria-selected", "true");
 
   const intro = screen.getByRole("textbox", { name: /about me/i });

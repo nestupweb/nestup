@@ -1,80 +1,84 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Map, MapControls, MapMarker, MarkerContent, useMap } from "@/components/ui/map";
-import { MAP_STYLES, MAX_ZOOM, ROOM_ZOOM } from "@/components/map/basemap";
-import { useIsTouch, useMapTheme } from "@/components/map/useMapTheme";
+import { Map, MapControls, MapMarker, MarkerContent, MarkerTooltip } from "@/components/ui/map";
+import { MAP_STYLES, MAX_ZOOM, PLACES, ROOM_ZOOM } from "@/components/map/basemap";
+import { useMapTheme } from "@/components/map/useMapTheme";
 import type { LatLng } from "@/lib/geo";
+import type { Place } from "@/lib/places";
 
 /**
- * Where the room is — a pin on the address.
+ * One room's map: the room itself, and what's around it.
  *
- * It used to be a 150 m circle for anyone who wasn't already talking to the
- * household, on the grounds that a public listing shouldn't publish a
- * stranger's front door. The user dropped that on 2026-08-28: this is a school
- * demo with invented rooms, and a map that won't say where the room is isn't
- * much of a map.
+ * The room's pin is the app's accent, teardrop-shaped and twice the size of
+ * anything else, and it is drawn last so it sits over the rest — the user
+ * asked for the room to be one colour and everything else another, and this is
+ * the half of that they see first. The places around it are the four colours
+ * in `PLACES`, small and round, named on hover.
  *
- * On touch devices the map ignores the first touch (`activate` overlay) so a
- * scroll down the page doesn't turn into a pan halfway through.
+ * The pin is at the room's own stored coordinates, exactly. There is no
+ * blurring, no circle and no offset (user decision, 2026-08-28): a room we
+ * can't place gets no map at all rather than a pin that's nearly right.
  */
 export default function RoomMap({
   point,
   label,
-  className = "",
+  places,
 }: {
   point: LatLng;
   /** Read out to screen readers — the street and city the pin sits on. */
   label: string;
-  className?: string;
+  places: Place[];
 }) {
   const theme = useMapTheme();
-  const [active, setActive] = useState(false);
-  const touch = useIsTouch();
-  const interactive = !touch || active;
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-hairline ${className}`}>
-      <Map
-        theme={theme}
-        styles={MAP_STYLES}
-        center={[point.lng, point.lat]}
-        zoom={ROOM_ZOOM}
-        maxZoom={MAX_ZOOM}
-        scrollZoom={false}
-        className="h-full w-full"
-        aria-label={`Map showing ${label}`}
-      >
-        <Interactivity enabled={interactive} />
-        <MapControls position="bottom-right" showZoom />
-        <MapMarker longitude={point.lng} latitude={point.lat}>
-          <MarkerContent>
-            <RoomPin label={label} />
-          </MarkerContent>
-        </MapMarker>
-      </Map>
+    <Map
+      theme={theme}
+      styles={MAP_STYLES}
+      center={[point.lng, point.lat]}
+      zoom={ROOM_ZOOM}
+      maxZoom={MAX_ZOOM}
+      className="h-full w-full"
+      aria-label={`Map showing ${label}`}
+    >
+      <MapControls position="bottom-right" showZoom />
 
-      {touch && !active ? (
-        <button
-          type="button"
-          onClick={() => setActive(true)}
-          className="absolute inset-0 z-[400] flex items-end justify-center bg-transparent pb-4"
-          aria-label="Activate map"
-        >
-          <span className="rounded-full bg-surface/90 px-3 py-1.5 text-xs font-medium text-ink shadow-sm">
-            Tap to move the map
-          </span>
-        </button>
-      ) : null}
-    </div>
+      {places.map((place) => (
+        <MapMarker key={place.id} longitude={place.lng} latitude={place.lat}>
+          <MarkerContent>
+            <PlaceDot color={PLACES[place.kind].color} />
+          </MarkerContent>
+          <MarkerTooltip>{place.name}</MarkerTooltip>
+        </MapMarker>
+      ))}
+
+      {/* Last, and with a class the stylesheet lifts above the place pins:
+          MapLibre stacks markers by latitude, so the room would otherwise
+          disappear behind anything mapped north of it. */}
+      <MapMarker longitude={point.lng} latitude={point.lat} className="room-pin">
+        <MarkerContent>
+          <RoomPin label={label} />
+        </MarkerContent>
+      </MapMarker>
+    </Map>
   );
 }
 
-/** A teardrop in the app's accent, so the room stands out from the map's own pins. */
+/** A café, a bar, a shop — small enough that a street of them still reads. */
+function PlaceDot({ color }: { color: string }) {
+  return (
+    <span
+      className="block h-[11px] w-[11px] rounded-full border-2 border-surface shadow-[0_1px_3px_rgba(0,0,0,0.4)]"
+      style={{ backgroundColor: color }}
+    />
+  );
+}
+
+/** The room: a teardrop in the app's accent, larger than everything else. */
 function RoomPin({ label }: { label: string }) {
   return (
-    <span title={label} className="block h-8 w-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
-      <svg viewBox="0 0 24 24" className="h-8 w-8" aria-hidden="true">
+    <span title={label} className="block h-9 w-9 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+      <svg viewBox="0 0 24 24" className="h-9 w-9" aria-hidden="true">
         <path
           d="M12 2c-3.9 0-7 3.1-7 7 0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7Z"
           fill="var(--accent)"
@@ -85,23 +89,4 @@ function RoomPin({ label }: { label: string }) {
       </svg>
     </span>
   );
-}
-
-/**
- * Panning and pinch-zoom, switched at runtime.
- *
- * MapLibre reads its handler options once, when the map is built, so the
- * "tap to activate" overlay can't work by re-rendering with different props —
- * the handlers have to be turned on the instance itself.
- */
-function Interactivity({ enabled }: { enabled: boolean }) {
-  const { map } = useMap();
-  useEffect(() => {
-    if (!map) return;
-    for (const handler of [map.dragPan, map.touchZoomRotate, map.doubleClickZoom]) {
-      if (enabled) handler.enable();
-      else handler.disable();
-    }
-  }, [map, enabled]);
-  return null;
 }

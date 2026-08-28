@@ -237,6 +237,11 @@ body {
   border-right-color: var(--surface) !important;
 }
 
+/* The room's own pin, over the cafés and shops around it. MapLibre stacks
+   markers in DOM order, which already puts it last, but a room hidden behind a
+   falafel place would be a bad enough bug to be worth saying twice. */
+.room-pin { z-index: 2; }
+
 /* The map panel's entrance — it arrives over the page rather than replacing it. */
 @keyframes map-open {
   from { opacity: 0; transform: translateY(10px) scale(0.985); }

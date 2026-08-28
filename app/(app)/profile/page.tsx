@@ -5,6 +5,7 @@ import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
 import { PROFILE_EDIT_ON_PENCIL_PAGE } from "@/lib/feature-flags";
+import { getCoPostedListings, getPendingInvites } from "@/lib/invites";
 import type { Listing, ProfileDetails } from "@/lib/types";
 
 type JoinedRow<K extends string> = { [P in K]: string } & { listings: Listing | null };
@@ -33,7 +34,7 @@ export default async function ProfilePage({
   }
 
   const { supabase, user } = await getAuthContext();
-  const [mineRes, likedRes, historyRes, detailsRes] = await Promise.all([
+  const [mineRes, likedRes, historyRes, detailsRes, invites, shared] = await Promise.all([
     supabase
       .from("listings")
       .select("*")
@@ -52,6 +53,10 @@ export default async function ProfilePage({
       .order("viewed_at", { ascending: false })
       .limit(30),
     supabase.from("profile_details").select("*").eq("user_id", userId).maybeSingle(),
+    // Shared listings: what is waiting on an answer, and what they already
+    // said yes to (migration 0032).
+    getPendingInvites(supabase, userId),
+    getCoPostedListings(supabase, userId),
   ]);
   const details = (detailsRes.data as ProfileDetails | null) ?? null;
 
@@ -118,6 +123,8 @@ export default async function ProfilePage({
           history={history}
           initial={initial}
           about={{ profile, details, email: user?.email ?? "", readOnly: PROFILE_EDIT_ON_PENCIL_PAGE }}
+          invites={invites}
+          shared={shared}
         />
       </div>
     </main>

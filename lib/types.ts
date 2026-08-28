@@ -134,6 +134,24 @@ export interface Listing {
 
 export type ListingWithOwner = Listing & { owner: Profile };
 
+/** Where a co-poster invitation stands. See migration 0032. */
+export type ListingInviteStatus = "pending" | "accepted" | "declined";
+
+/**
+ * One "come and co-post this room with me" — the asking, not the membership.
+ * Accepting writes a `listing_residents` row; declining never does, and the
+ * row stays behind only so the creator's next save doesn't ask again.
+ */
+export interface ListingInvite {
+  id: string;
+  listing_id: string;
+  invitee_id: string;
+  inviter_id: string;
+  status: ListingInviteStatus;
+  created_at: string;
+  responded_at: string | null;
+}
+
 export interface Swipe {
   id: string;
   seeker_id: string;

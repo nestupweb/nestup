@@ -14,10 +14,9 @@
     "test:watch": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest",
     "seed": "node --env-file=.env.local scripts/seed.ts",
     "maplibre:worker": "node scripts/copy-maplibre-worker.mjs",
-    "basemap:dark": "node scripts/build-dark-basemap.mjs",
+    "basemap:english": "node scripts/build-english-basemaps.mjs",
     "check:nav": "node scripts/check-same-tab-nav.mjs",
-    "backfill:coords": "node --env-file=.env.local scripts/backfill-coords.mjs",
-    "geocode:listings": "node --env-file=.env.local scripts/geocode-listings.mjs",
+    "addresses:real": "node --env-file=.env.local scripts/real-addresses.mjs",
     "geocode:cities": "node scripts/geocode-cities.mjs",
     "check:photos": "node --env-file=.env.local scripts/photo-check-probe.mjs",
     "auth:config": "node --env-file=.env.local scripts/auth-config.mjs"

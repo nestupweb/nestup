@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { saveListingAction, type ListingFormState } from "@/app/actions/listing";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { PhotoPicker } from "@/components/listings/PhotoPicker";
+import { RoommateTagPicker } from "@/components/listings/RoommateTagPicker";
+import type { TaggedMember } from "@/lib/co-posters";
 import { ViewingHoursEditor } from "@/components/listings/ViewingHoursEditor";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { PinField } from "@/components/map/PinField";
@@ -20,8 +22,20 @@ const section = "mt-9 border-t border-hairline pt-6";
 const heading = "text-lg font-semibold";
 const check = "flex items-center gap-2 text-sm";
 
-export function ListingForm({ listing, userId }: { listing: Listing | null; userId: string }) {
+export function ListingForm({
+  listing,
+  userId,
+  taggedRoommates = [],
+}: {
+  listing: Listing | null;
+  userId: string;
+  /** Roommates already tagged on this listing, with each one's answer. */
+  taggedRoommates?: TaggedMember[];
+}) {
   const [state, form, pending] = useStickyForm<ListingFormState>(saveListingAction, {});
+  // Controlled, because the co-poster cap is `roommates_count - 1` and has to
+  // move the moment this number does.
+  const [roommatesCount, setRoommatesCount] = useState(listing?.roommates_count ?? 1);
   // A validation message lands next to the button, below a long form — bring it into view.
   const alertRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
@@ -74,6 +88,7 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
             initial={pointOf({ lat: listing?.lat ?? null, lng: listing?.lng ?? null })}
             city={listing?.city ?? ""}
             hasPoint={Boolean(listing?.lat && listing?.lng)}
+            askForPin={Boolean(state.placePin)}
           />
         </div>
       </section>
@@ -127,8 +142,31 @@ export function ListingForm({ listing, userId }: { listing: Listing | null; user
           </label>
           <label className={`${label} col-span-2 sm:col-span-1`}>
             Current roommates
-            <input name="roommates_count" type="number" required min={0} max={10} defaultValue={listing?.roommates_count ?? 1} className={input} />
+            <input
+              name="roommates_count"
+              type="number"
+              required
+              min={0}
+              max={10}
+              value={roommatesCount}
+              onChange={(e) => setRoommatesCount(e.target.value === "" ? 0 : Number(e.target.value))}
+              className={input}
+            />
           </label>
+        </div>
+      </section>
+
+      {/* ===== Who else lives here ===== */}
+      <section className={section}>
+        <h2 className={heading}>Who else lives here</h2>
+        <p className="mt-1 text-sm text-muted">
+          Post the room together with the roommates you already live with. Each of them is asked to confirm before
+          the room appears on their profile — you can tag {Math.max(roommatesCount - 1, 0)} of your{" "}
+          {roommatesCount} current roommate{roommatesCount === 1 ? "" : "s"}, because the last room is the one you
+          are advertising.
+        </p>
+        <div className="mt-3">
+          <RoommateTagPicker initial={taggedRoommates} roommatesCount={roommatesCount} />
         </div>
       </section>
 

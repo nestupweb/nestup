@@ -11,13 +11,26 @@ import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/co
 import { defaultRemovedMessage } from "@/lib/listing-taken";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 import { notifyNewListing } from "@/lib/notify";
+import { cleanIds, tagCapError } from "@/lib/co-posters";
+import { inviteRoommates } from "@/lib/invites";
 import { auditPhotos, isPhotoCheckEnabled, photoCheckSecret } from "@/lib/photo-check";
 import { geocodeAddress } from "@/lib/geocode";
 import { shouldGeocode } from "@/lib/geo";
 import type { CoordsSource, PhotoRoom } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type ListingFormState = { error?: string };
+export type ListingFormState = {
+  error?: string;
+  /** Ask the form to open its map: the address couldn't be found. */
+  placePin?: boolean;
+};
+
+/** What the room's coordinates should become, or a request for the owner's help. */
+type Coords =
+  | { columns: { lat: number; lng: number; coords_source: CoordsSource } }
+  | { columns: { lat: null; lng: null; coords_source: CoordsSource } }
+  | { columns: Record<string, never> }
+  | { needsPin: true };
 
 /**
  * Where the room's pin goes.
@@ -25,9 +38,15 @@ export type ListingFormState = { error?: string };
  * Order of authority: a pin the owner dragged wins outright; otherwise the
  * address is looked up, but only when it actually changed (or there is no
  * point yet) — so re-saving a listing to fix a typo in the description doesn't
- * make a network call. A failed lookup falls back to the city centre inside
- * `geocodeAddress`, and a total failure leaves the columns untouched, because a
- * listing that cannot be placed on a map must still save.
+ * make a network call.
+ *
+ * What happens when the lookup doesn't find the address changed on 2026-08-28.
+ * It used to store the city centre and label the pin "approximate", which put
+ * the room on a street it isn't on. Now the owner is asked to place it: the
+ * save stops, the form opens its map, and nothing is written until there is a
+ * real point. The one exception is the geocoder being unreachable — that is
+ * not the owner's fault, so the listing saves with no coordinates at all and
+ * simply has no map until it is edited again.
  */
 async function resolveCoords(
   supabase: SupabaseClient,
@@ -35,11 +54,11 @@ async function resolveCoords(
   userId: string,
   data: { street: string; house_number: string; city: string },
   formData: FormData
-): Promise<{ lat: number; lng: number; coords_source: CoordsSource } | Record<string, never>> {
+): Promise<Coords> {
   const pinLat = Number(formData.get("pin_lat"));
   const pinLng = Number(formData.get("pin_lng"));
   const pinned = formData.get("pin_moved") === "1" && Number.isFinite(pinLat) && Number.isFinite(pinLng);
-  if (pinned) return { lat: pinLat, lng: pinLng, coords_source: "owner" };
+  if (pinned) return { columns: { lat: pinLat, lng: pinLng, coords_source: "owner" } };
 
   let current: CoordsSource = "none";
   let addressChanged = true;
@@ -59,10 +78,17 @@ async function resolveCoords(
         prev.street !== data.street || prev.house_number !== data.house_number || prev.city !== data.city;
     }
   }
-  if (!shouldGeocode(current, addressChanged)) return {};
+  if (!shouldGeocode(current, addressChanged)) return { columns: {} };
 
   const hit = await geocodeAddress(data);
-  return hit ? { lat: hit.lat, lng: hit.lng, coords_source: hit.source } : {};
+  if (hit.status === "found") {
+    return { columns: { lat: hit.lat, lng: hit.lng, coords_source: "geocoded" } };
+  }
+  if (hit.status === "missing") return { needsPin: true };
+  // Unreachable: keep the room placeable later rather than pinning it wrongly
+  // now. An address that changed leaves no point behind, because the old one
+  // belonged to the old address.
+  return { columns: { lat: null, lng: null, coords_source: "none" } };
 }
 
 const FIELD_NAMES: Record<string, string> = {
@@ -111,6 +137,13 @@ export async function saveListingAction(
     const field = issue.path.length ? String(issue.path[0]) : "";
     return { error: field ? `${FIELD_NAMES[field] ?? field}: ${issue.message}` : issue.message };
   }
+
+  // Co-posters: the roommates tagged in the form. Checked here so a listing is
+  // never published only to have the tags bounce — `invite_listing_roommates`
+  // enforces the same cap underneath and is what actually decides.
+  const taggedIds = cleanIds(formData.getAll("tagged_roommates"));
+  const capError = tagCapError(taggedIds.length, parsed.data.roommates_count);
+  if (capError) return { error: capError };
 
   // Weekly viewing hours (JSON from the editor); every row must be well-formed.
   let viewing_slots: ViewingSlot[] = [];
@@ -196,11 +229,17 @@ export async function saveListingAction(
   const address = `${parsed.data.street} ${parsed.data.house_number}`.trim();
   const title = buildListingTitle(parsed.data);
   const coords = await resolveCoords(supabase, listingId, user.id, parsed.data, formData);
+  if ("needsPin" in coords) {
+    return {
+      error: `We couldn't find ${address}, ${parsed.data.city}. Drag the pin on the map to where the room is, then save again.`,
+      placePin: true,
+    };
+  }
   const row = {
     ...parsed.data,
     title,
     address,
-    ...coords,
+    ...coords.columns,
     photo_urls,
     photo_labels,
     viewing_slots,
@@ -217,6 +256,16 @@ export async function saveListingAction(
     const { data, error } = await supabase.from("listings").insert(row).select("id").single();
     if (error) return { error: "Could not save the listing. Please try again." };
     publishedId = (data as { id: string }).id;
+  }
+
+  // The room is live for its creator either way — that is what "publish"
+  // means, and it has already happened by this line. The tagged roommates are
+  // only *asked*; each of them decides for themselves whether the room joins
+  // their own My Listings. A failure here is reported without pretending the
+  // listing didn't save, because it did.
+  const invited = await inviteRoommates(supabase, listingId || publishedId, taggedIds);
+  if (invited.error) {
+    return { error: `Your listing is saved, but your roommates weren’t added — ${invited.error}` };
   }
 
   // A brand-new room tells the seekers who asked to hear about matches. It runs

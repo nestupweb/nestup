@@ -23,9 +23,11 @@ function mPerDegLng(lat: number): number {
 }
 
 /**
- * Deterministic 0…1 from a string — same key always gives the same number, so
- * a room's blurred position and a demo room's scatter never move between
- * renders, servers or test runs. (FNV-1a, 32-bit.)
+ * Deterministic 0…1 from a string — same key always gives the same number.
+ *
+ * Used by `scripts/real-addresses.mjs` to hand out real addresses in an order
+ * that doesn't change between runs, so a demo room never appears to move.
+ * (FNV-1a, 32-bit.)
  */
 export function hashUnit(key: string): number {
   let h = 0x811c9dc5;
@@ -34,27 +36,6 @@ export function hashUnit(key: string): number {
     h = Math.imul(h, 0x01000193) >>> 0;
   }
   return h / 0xffffffff;
-}
-
-/**
- * Move a point to a fixed offset inside `radius` metres, chosen by `key`.
- *
- * Used by the seeding scripts to spread rooms that share a street, and to
- * place a room whose address can't be found near its city centre. Repeatable,
- * so a room never appears to jump between runs, and evenly spread rather than
- * bunched in the middle (hence the square root on the radius).
- */
-export function scatter(centre: LatLng, key: string, radius: number): LatLng {
-  const angle = hashUnit(`${key}:angle`) * 2 * Math.PI;
-  const distance = Math.sqrt(hashUnit(`${key}:dist`)) * radius;
-  const lat = centre.lat + (distance * Math.sin(angle)) / M_PER_DEG_LAT;
-  const lng = centre.lng + (distance * Math.cos(angle)) / mPerDegLng(centre.lat || 1);
-  return { lat: round(lat), lng: round(lng) };
-}
-
-/** Six decimals ≈ 10 cm — far more than we need, and keeps JSON small. */
-function round(n: number): number {
-  return Math.round(n * 1e6) / 1e6;
 }
 
 /** A listing's point, or null when it has none yet. */

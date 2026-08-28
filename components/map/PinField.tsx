@@ -10,25 +10,41 @@ const PinPicker = dynamic(() => import("@/components/map/PinPicker"), {
 });
 
 /**
- * The listing form's map row: an optional "place it yourself" pin that submits
- * with the rest of the form. Collapsed by default — most owners never need it,
- * because the address lookup is right — and it only sends `pin_moved=1` once
- * the marker has actually been moved, so simply opening the map changes
- * nothing.
+ * The listing form's map row: a "place it yourself" pin that submits with the
+ * rest of the form. Collapsed by default — most owners never need it, because
+ * the address lookup is right — and it only sends `pin_moved=1` once the marker
+ * has actually been moved, so simply opening the map changes nothing.
+ *
+ * When `askForPin` is set the save was refused because the address couldn't be
+ * found (see `resolveCoords` in app/actions/listing.ts): the map opens itself
+ * and says so, because "place this yourself" is useless advice next to a
+ * collapsed map.
  */
 export function PinField({
   initial,
   city,
   hasPoint,
+  askForPin = false,
 }: {
   initial: LatLng | null;
   city: string;
   /** Whether the listing already has coordinates (affects the wording). */
   hasPoint: boolean;
+  /** The address didn't resolve — open the map and ask for a pin. */
+  askForPin?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(askForPin);
   const [point, setPoint] = useState<LatLng | null>(initial);
   const [moved, setMoved] = useState(false);
+
+  // A refused save arrives as a prop change, not an event, so the map is
+  // opened while rendering rather than in an effect — React's own pattern for
+  // "adjust state when a prop changes", and one render instead of two.
+  const [asked, setAsked] = useState(askForPin);
+  if (askForPin !== asked) {
+    setAsked(askForPin);
+    if (askForPin) setOpen(true);
+  }
 
   return (
     <div>
@@ -41,12 +57,14 @@ export function PinField({
         >
           {open ? "Hide map" : hasPoint ? "Check the pin on the map" : "Place the room on the map"}
         </button>
-        <span className="text-xs text-muted">
+        <span className={`text-xs ${askForPin && !moved ? "text-danger" : "text-muted"}`}>
           {moved
             ? "Pin set — this is where the room will show."
-            : hasPoint
-              ? "We placed it from the address. Move it if it's off."
-              : "Optional — we'll place it from the address when you save."}
+            : askForPin
+              ? "We couldn't find that address. Drag the pin to where the room is."
+              : hasPoint
+                ? "We placed it from the address. Move it if it's off."
+                : "Optional — we'll place it from the address when you save."}
         </span>
       </div>
 

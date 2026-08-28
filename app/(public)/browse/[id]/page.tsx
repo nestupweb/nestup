@@ -6,7 +6,7 @@ import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { SaveButton } from "@/components/listings/SaveButton";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
-import { RoomMapCard } from "@/components/map/RoomMapCard";
+import { RoomMapButton } from "@/components/map/RoomMapButton";
 import { pointOf } from "@/lib/geo";
 import { locationNote } from "@/lib/location";
 import type { Listing, Profile } from "@/lib/types";
@@ -142,9 +142,10 @@ export default async function ListingDetailPage({
           <section className="border-t border-hairline pt-7">
             <h2 className={sectionHeading}>Where it is</h2>
             <div className="mt-4">
-              <RoomMapCard
+              <RoomMapButton
                 point={place}
-                label={`${listing.address || listing.street}, ${listing.city}`}
+                address={listing.address || [listing.street, listing.house_number].filter(Boolean).join(" ")}
+                city={listing.city}
                 note={locationNote(listing)}
               />
             </div>

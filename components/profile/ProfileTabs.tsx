@@ -6,6 +6,7 @@ import { PropertyTile } from "@/components/listings/PropertyTile";
 import { AboutMe } from "@/components/profile/AboutMe";
 import { AboutView } from "@/components/profile/AboutView";
 import { MyListing } from "@/components/profile/MyListing";
+import type { PendingInvite } from "@/lib/co-posters";
 import type { Listing, Profile, ProfileDetails } from "@/lib/types";
 
 export type TabKey = "about" | "listings" | "liked" | "history";
@@ -23,6 +24,8 @@ export function ProfileTabs({
   history,
   initial = "about",
   about,
+  invites = [],
+  shared = [],
 }: {
   mine: ProfileTabItem[];
   liked: ProfileTabItem[];
@@ -30,14 +33,20 @@ export function ProfileTabs({
   initial?: TabKey;
   /** Data for the About me tab (own profile only). */
   about: { profile: Profile; details: ProfileDetails | null; email: string; readOnly?: boolean };
+  /** Unanswered co-poster invitations, shown at the top of My Listings. */
+  invites?: PendingInvite[];
+  /** Rooms this member co-posts. */
+  shared?: Listing[];
 }) {
   const [tab, setTab] = useState<TabKey>(initial);
 
-  // "My listing" carries no count: a member has one listing, and the tab itself says what is there.
-  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null; count?: boolean }[] =
+  // "My Listings" carries no count — the tab itself says what is there — but an
+  // invitation is waiting on an answer, so that one number is worth showing
+  // without making the member open the tab to find it.
+  const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null; count?: boolean; badge?: number }[] =
     [
       { key: "about", label: "About me", items: null },
-      { key: "listings", label: "My listing", items: mine, count: false },
+      { key: "listings", label: "My Listings", items: mine, count: false, badge: invites.length },
       { key: "liked", label: "Liked", items: liked },
       { key: "history", label: "History", items: history },
     ];
@@ -77,6 +86,14 @@ export function ProfileTabs({
                     {t.items.length}
                   </span>
                 ) : null}
+                {t.badge ? (
+                  <span
+                    aria-label={`${t.badge} invitation${t.badge === 1 ? "" : "s"} waiting`}
+                    className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold tracking-normal text-accent-contrast"
+                  >
+                    {t.badge}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -96,7 +113,7 @@ export function ProfileTabs({
             <AboutMe profile={about.profile} details={about.details} email={about.email} />
           )
         ) : current.key === "listings" ? (
-          <MyListing listings={mine.map((m) => m.listing)} />
+          <MyListing listings={mine.map((m) => m.listing)} invites={invites} shared={shared} />
         ) : current.items.length === 0 ? (
           <Empty tab={current.key as Exclude<TabKey, "listings" | "about">} />
         ) : (

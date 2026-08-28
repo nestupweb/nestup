@@ -22,12 +22,18 @@ import type { PhotoRoom } from "@/lib/types";
 /**
  * Tried in order, all free-tier in Google AI Studio. A member is waiting on
  * this call, so a model that answers "high demand, try again later" must not
- * be the end of it: on 2026-08-28 `gemini-3.7-flash` was returning 503 for
- * minutes at a time while 3.6 answered in 3.4 s. 3.6 leads because it was the
- * fastest of the three that day and reads a room just as well; naming a room
- * is not the kind of task where the newest model pulls ahead.
+ * be the end of it: on 2026-08-28 the Flash models were returning 503 in
+ * bursts, sometimes all three at once. 3.6 leads because it was the fastest
+ * that day and reads a room just as well — naming a room is not a task where
+ * the newest model pulls ahead. The lite model is last and is there for
+ * availability rather than judgement: measured 5/6 against the same photos
+ * (it is the one that misreads the ambiguous covered porch) but it answered
+ * every time while the Flash models were busy, and a member is better served
+ * by a slightly blunter answer than by "try again in a moment".
  */
-export const PHOTO_CHECK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.7-flash"] as const;
+export const PHOTO_CHECK_MODELS = [
+  "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite",
+] as const;
 export const PHOTO_CHECK_MODEL = PHOTO_CHECK_MODELS[0];
 
 /** One photo, ready to be sent inline. */
