@@ -49,7 +49,7 @@ export type PlaceKind = "cafe" | "restaurant" | "bar" | "shop";
  */
 export const PLACES: Record<PlaceKind, { color: string; label: string }> = {
   cafe: { color: "#d98324", label: "Cafés" },
-  restaurant: { color: "#c2453d", label: "Restaurants" },
+  restaurant: { color: "#e05fa0", label: "Restaurants" },
   bar: { color: "#7c5cbf", label: "Bars" },
   shop: { color: "#2f6fb5", label: "Shops" },
 };
