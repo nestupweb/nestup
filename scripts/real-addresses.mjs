@@ -236,7 +236,16 @@ function samplePoints(centre, count) {
   return points;
 }
 
-/** Ask Nominatim what is at a point: the building if there is one, else the road. */
+/**
+ * Ask Nominatim what is at a point: the building if there is one, else the road.
+ *
+ * Backs off and retries on 429 rather than shrugging. The first version read a
+ * refusal as "there is nothing here", so a town sampled while we were being
+ * throttled produced an empty pool — and that emptiness was then cached, which
+ * is how 110 rooms ended up with no address on the first pass. A run long
+ * enough to do 800 rooms *will* be throttled at some point; it has to survive
+ * that rather than quietly record it as data.
+ */
 async function reverse(point) {
   const u = new URL("https://nominatim.openstreetmap.org/reverse");
   u.searchParams.set("lat", String(point.lat));
@@ -244,16 +253,25 @@ async function reverse(point) {
   u.searchParams.set("format", "jsonv2");
   u.searchParams.set("zoom", "18");
   u.searchParams.set("addressdetails", "1");
-  try {
-    const res = await fetch(u, {
-      headers: { "User-Agent": UA, "Accept-Language": "en" },
-      signal: AbortSignal.timeout(12_000),
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+
+  let wait = BACKOFF_MS;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const res = await fetch(u, {
+        headers: { "User-Agent": UA, "Accept-Language": "en" },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (res.ok) return await res.json();
+      // 429 is "slow down", 5xx is "not now" — neither is an answer.
+      if (res.status !== 429 && res.status < 500) return null;
+    } catch {
+      /* timeout or socket — worth one more try */
+    }
+    if (attempt === 1) console.log("  nominatim is throttling — backing off");
+    await sleep(wait);
+    wait *= 2;
   }
+  return null;
 }
 
 /**
@@ -347,7 +365,9 @@ function candidates(places, centre) {
  * ------------------------------------------------------------------ */
 
 /** Nominatim's published limit, with a margin. */
-const NOMINATIM_GAP_MS = 1200;
+const NOMINATIM_GAP_MS = 1500;
+/** How long to stand back after a 429, doubling each time. */
+const BACKOFF_MS = 4000;
 /** Photon publishes no limit; four a second is polite. */
 const PHOTON_GAP_MS = 250;
 /** Consecutive Photon failures before the run gives up on it. */
