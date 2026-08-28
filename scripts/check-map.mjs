@@ -90,15 +90,9 @@ async function run(theme) {
   note(!styleRequests.some((u) => /openfreemap/.test(u)), "no OpenFreeMap request");
   note(styleRequests.some((u) => /cartocdn/.test(u)), "CARTO tiles/glyphs requested");
 
-  // Labels: read what MapLibre actually rendered
-  const labels = await page.evaluate(() => {
-    const canvas = document.querySelector("canvas.maplibregl-canvas");
-    const map = canvas && window.__nestupMap;
-    return map ? null : null;
-  });
-  void labels;
-
   // Hebrew would show up in the tooltip text of places; check the ones we drew.
+  // (The basemap's own labels are painted into the canvas and can't be read
+  //  from the DOM — the screenshot this leaves behind is how those get checked.)
   const tooltips = await page.locator(".maplibregl-marker").evaluateAll((els) =>
     els.map((e) => e.getAttribute("title") ?? e.textContent ?? "")
   );
