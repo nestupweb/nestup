@@ -37,6 +37,7 @@ test("the button opens the map, and the map shows every room on the site", async
   expect(dialog).toHaveAttribute("aria-modal", "true");
   expect(await screen.findByTestId("map")).toHaveTextContent("2 pins");
   expect(screen.getByText(/2 rooms on the map/i)).toBeInTheDocument();
+  expect(screen.getByText(/pinned at its address/i)).toBeInTheDocument();
   // Unfiltered: the dialog asks for every pin, with no query string.
   expect(fetchMock).toHaveBeenCalledWith("/api/listings/pins");
 });

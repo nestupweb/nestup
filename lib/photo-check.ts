@@ -8,14 +8,22 @@ import type { PhotoRoom } from "@/lib/types";
  * HMAC-signed verdicts the browser carries between the check and the publish,
  * and the publish-time audit. The look itself lives in `photo-vision.ts`.
  *
- * Without `ANTHROPIC_API_KEY` the check is off and listings save as before —
- * `isPhotoCheckEnabled()` gates both the browser call and the publish audit.
+ * Without `GEMINI_API_KEY` the check is off and listings save as before —
+ * `isPhotoCheckEnabled()` gates both the upload-time check and the publish
+ * audit, so a clone of the repo with no key still runs.
  */
 export function isPhotoCheckEnabled(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.GEMINI_API_KEY);
 }
 
-export { classifyListingPhoto, PHOTO_CHECK_MODEL, type PhotoVerdict } from "@/lib/photo-vision";
+/** The key doubles as the HMAC secret, so verdicts die with the key they were minted under. */
+export function photoCheckSecret(): string {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY is not set.");
+  return key;
+}
+
+export { classifyListingPhoto, fetchPhotoBytes, PHOTO_CHECK_MODEL, type PhotoBytes, type PhotoVerdict } from "@/lib/photo-vision";
 
 // ---------------------------------------------------------------------------
 // Signed verdicts — the browser holds them between the check and the publish.

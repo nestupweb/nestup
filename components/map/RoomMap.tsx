@@ -1,41 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Map, MapControls, MapGeoJSON, MapMarker, MarkerContent, useMap } from "@/components/ui/map";
-import { MAP_COLORS, MAP_STYLES, MAX_ZOOM, ROOM_ZOOM } from "@/components/map/basemap";
+import { useEffect, useState } from "react";
+import { Map, MapControls, MapMarker, MarkerContent, useMap } from "@/components/ui/map";
+import { MAP_STYLES, MAX_ZOOM, ROOM_ZOOM } from "@/components/map/basemap";
 import { useIsTouch, useMapTheme } from "@/components/map/useMapTheme";
-import { APPROX_RADIUS_M, circlePolygon, type LatLng } from "@/lib/geo";
+import type { LatLng } from "@/lib/geo";
 
 /**
- * Where one room is. Two modes:
- *  - approximate (the public default) — a soft circle over the neighbourhood,
- *    no marker on a building, because publishing a stranger's front door to
- *    anyone browsing is not ours to do;
- *  - exact — a pin, once the viewer is the owner, lives there, or is already
- *    in a conversation about the room.
+ * Where the room is — a pin on the address.
+ *
+ * It used to be a 150 m circle for anyone who wasn't already talking to the
+ * household, on the grounds that a public listing shouldn't publish a
+ * stranger's front door. The user dropped that on 2026-08-28: this is a school
+ * demo with invented rooms, and a map that won't say where the room is isn't
+ * much of a map.
  *
  * On touch devices the map ignores the first touch (`activate` overlay) so a
  * scroll down the page doesn't turn into a pan halfway through.
  */
 export default function RoomMap({
   point,
-  exact,
   label,
   className = "",
 }: {
   point: LatLng;
-  exact: boolean;
-  /** Read out to screen readers — street or city, whatever the viewer may see. */
+  /** Read out to screen readers — the street and city the pin sits on. */
   label: string;
   className?: string;
 }) {
   const theme = useMapTheme();
-  const colors = MAP_COLORS[theme];
   const [active, setActive] = useState(false);
   const touch = useIsTouch();
   const interactive = !touch || active;
-
-  const area = useMemo(() => circlePolygon(point, APPROX_RADIUS_M), [point]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl border border-hairline ${className}`}>
@@ -51,22 +47,11 @@ export default function RoomMap({
       >
         <Interactivity enabled={interactive} />
         <MapControls position="bottom-right" showZoom />
-        {exact ? (
-          <MapMarker longitude={point.lng} latitude={point.lat}>
-            <MarkerContent>
-              <span
-                title={label}
-                className="block h-3.5 w-3.5 rounded-full border-2 border-accent-contrast bg-accent shadow-[0_1px_4px_rgba(0,0,0,0.4)]"
-              />
-            </MarkerContent>
-          </MapMarker>
-        ) : (
-          <MapGeoJSON
-            data={area}
-            fillPaint={{ "fill-color": colors.accent, "fill-opacity": 0.18 }}
-            linePaint={{ "line-color": colors.accent, "line-width": 2, "line-opacity": 0.7 }}
-          />
-        )}
+        <MapMarker longitude={point.lng} latitude={point.lat}>
+          <MarkerContent>
+            <RoomPin label={label} />
+          </MarkerContent>
+        </MapMarker>
       </Map>
 
       {touch && !active ? (
@@ -82,6 +67,23 @@ export default function RoomMap({
         </button>
       ) : null}
     </div>
+  );
+}
+
+/** A teardrop in the app's accent, so the room stands out from the map's own pins. */
+function RoomPin({ label }: { label: string }) {
+  return (
+    <span title={label} className="block h-8 w-8 drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+      <svg viewBox="0 0 24 24" className="h-8 w-8" aria-hidden="true">
+        <path
+          d="M12 2c-3.9 0-7 3.1-7 7 0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7Z"
+          fill="var(--accent)"
+          stroke="var(--accent-contrast)"
+          strokeWidth="1.6"
+        />
+        <circle cx="12" cy="9" r="2.6" fill="var(--accent-contrast)" />
+      </svg>
+    </span>
   );
 }
 

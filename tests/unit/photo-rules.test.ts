@@ -3,19 +3,26 @@ import { PHOTO_SUBJECTS, photoFits, photoProblem, suggestedRoom } from "@/lib/ph
 import { PHOTO_ROOMS, PHOTO_ROOM_CHOICES } from "@/lib/constants";
 
 describe("photoFits — what a listing photo may be tagged as", () => {
-  test("living room, bedroom and bathroom must match the photo exactly", () => {
-    expect(photoFits("living_room", "living_room")).toBe(true);
-    expect(photoFits("bedroom", "living_room")).toBe(false); // a bedroom named "living room"
-    expect(photoFits("kitchen", "bathroom")).toBe(false);
-    expect(photoFits("other_apartment", "bedroom")).toBe(false);
-    expect(photoFits("not_apartment", "living_room")).toBe(false); // the dog
+  test("every tag a member can pick must match the photo exactly", () => {
+    for (const r of PHOTO_ROOM_CHOICES) {
+      for (const subject of PHOTO_SUBJECTS) {
+        expect(photoFits(subject, r.key)).toBe(subject === r.key);
+      }
+    }
   });
 
-  test("the other tags accept any photo of the apartment, never a non-apartment photo", () => {
-    for (const label of ["kitchen", "balcony", "exterior", "other"] as const) {
-      for (const subject of PHOTO_SUBJECTS) {
-        expect(photoFits(subject, label)).toBe(subject !== "not_apartment");
-      }
+  test("the rooms that used to be lenient are strict now", () => {
+    expect(photoFits("kitchen", "balcony")).toBe(false); // a kitchen named "balcony"
+    expect(photoFits("living_room", "kitchen")).toBe(false);
+    expect(photoFits("bedroom", "exterior")).toBe(false);
+    expect(photoFits("other_apartment", "kitchen")).toBe(false); // a hallway named "kitchen"
+    expect(photoFits("balcony", "balcony")).toBe(true);
+    expect(photoFits("exterior", "exterior")).toBe(true);
+  });
+
+  test("the retired 'Other' tag still accepts any photo of the apartment", () => {
+    for (const subject of PHOTO_SUBJECTS) {
+      expect(photoFits(subject, "other")).toBe(subject !== "not_apartment");
     }
   });
 
@@ -27,18 +34,40 @@ describe("photoFits — what a listing photo may be tagged as", () => {
 describe("photoProblem — the message on the tile", () => {
   test("is null when the photo fits", () => {
     expect(photoProblem("bathroom", "bathroom")).toBeNull();
+    expect(photoProblem("balcony", "balcony")).toBeNull();
     expect(photoProblem("kitchen", "other")).toBeNull();
   });
-  test("explains a wrong room and suggests the right tag", () => {
+
+  test("names what the photo shows and asks for the right one", () => {
     expect(photoProblem("bedroom", "living_room")).toBe(
-      "This looks like a bedroom, not a living room — tag it as Bedroom or pick another photo."
+      "This looks like a bedroom, not a living room — tag it as Bedroom or upload a photo of a living room."
+    );
+    expect(photoProblem("kitchen", "balcony")).toBe(
+      "This looks like a kitchen, not a balcony — tag it as Kitchen or upload a photo of a balcony."
     );
   });
-  test("explains a non-apartment photo", () => {
-    expect(photoProblem("not_apartment", "bedroom")).toMatch(/isn't a photo of the apartment/);
+
+  test("explains a non-apartment photo and asks for the room instead", () => {
+    expect(photoProblem("not_apartment", "bedroom")).toBe(
+      "This isn't a photo of the apartment — please upload a photo of a bedroom instead."
+    );
   });
-  test("explains an unidentifiable interior under a strict tag", () => {
-    expect(photoProblem("other_apartment", "bathroom")).toMatch(/couldn't see a bathroom/);
+
+  test("explains an unidentifiable interior under any tag", () => {
+    expect(photoProblem("other_apartment", "bathroom")).toBe(
+      "We couldn't see a bathroom in this photo — please upload one that clearly shows a bathroom."
+    );
+    expect(photoProblem("other_apartment", "kitchen")).toMatch(/couldn't see a kitchen/);
+  });
+
+  test("every mismatch produces a sentence, never an empty string", () => {
+    for (const r of PHOTO_ROOM_CHOICES) {
+      for (const subject of PHOTO_SUBJECTS) {
+        const message = photoProblem(subject, r.key);
+        if (subject === r.key) expect(message).toBeNull();
+        else expect(message).toMatch(/\S/);
+      }
+    }
   });
 });
 

@@ -12,8 +12,15 @@ export const PHOTO_SUBJECTS = [
 ] as const;
 export type PhotoSubject = (typeof PHOTO_SUBJECTS)[number];
 
-/** Tags that must match the photo exactly — the deck's photo story depends on them. */
-export const STRICT_PHOTO_ROOMS: readonly PhotoRoom[] = ["living_room", "bedroom", "bathroom"];
+/**
+ * Every tag a member can pick must match the photo exactly: a photo tagged
+ * "Kitchen" has to show a kitchen, a photo tagged "Balcony" a balcony. Only
+ * the legacy "Other" tag — no longer offered, but still stored on listings
+ * published before it was retired — accepts any photo of the home.
+ */
+export const STRICT_PHOTO_ROOMS: readonly PhotoRoom[] = [
+  "living_room", "bedroom", "bathroom", "kitchen", "balcony", "exterior",
+];
 
 export function isPhotoSubject(v: unknown): v is PhotoSubject {
   return typeof v === "string" && (PHOTO_SUBJECTS as readonly string[]).includes(v);
@@ -34,9 +41,17 @@ export function photoSubjectPhrase(subject: PhotoSubject): string {
 }
 
 /**
- * Does a photo showing `subject` belong under `label`? Living room, bedroom
- * and bathroom must match exactly; every other tag only needs the photo to be
- * of the apartment at all (a kitchen tagged "Other" is fine, a dog is not).
+ * Wording for a *tag* inside a sentence. The six real tags read the same as
+ * their subject; "Other" is the one tag with no single thing to show.
+ */
+export function photoRoomPhrase(label: PhotoRoom): string {
+  return label === "other" ? "another part of the home" : photoSubjectPhrase(label);
+}
+
+/**
+ * Does a photo showing `subject` belong under `label`? Every tag a member can
+ * pick has to match exactly; the retired "Other" tag only needs the photo to
+ * be of the apartment at all.
  */
 export function photoFits(subject: PhotoSubject, label: PhotoRoom): boolean {
   if (subject === "not_apartment") return false;
@@ -44,18 +59,21 @@ export function photoFits(subject: PhotoSubject, label: PhotoRoom): boolean {
   return true;
 }
 
-/** Null when the photo fits its tag; otherwise a sentence for the uploader. */
+/**
+ * Null when the photo fits its tag; otherwise the sentence the uploader reads.
+ * Each one says what the photo shows and asks for the photo we actually want,
+ * because the upload is refused outright — there is no half-accepted state.
+ */
 export function photoProblem(subject: PhotoSubject, label: PhotoRoom): string | null {
   if (photoFits(subject, label)) return null;
-  const tag = photoRoomLabel(label).toLowerCase();
+  const want = photoRoomPhrase(label);
   if (subject === "not_apartment") {
-    return `This isn't a photo of the apartment — add a photo of the ${tag} instead.`;
+    return `This isn't a photo of the apartment — please upload a photo of ${want} instead.`;
   }
   if (subject === "other_apartment") {
-    // No "Other" tag to fall back on any more — the photo has to show the room.
-    return `We couldn't see a ${tag} here — pick a photo that clearly shows the ${tag}.`;
+    return `We couldn't see ${want} in this photo — please upload one that clearly shows ${want}.`;
   }
-  return `This looks like ${photoSubjectPhrase(subject)}, not a ${tag} — tag it as ${photoRoomLabel(subject)} or pick another photo.`;
+  return `This looks like ${photoSubjectPhrase(subject)}, not ${want} — tag it as ${photoRoomLabel(subject)} or upload a photo of ${want}.`;
 }
 
 /** The tag a checked photo should carry when its subject is one of the six rooms. */

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Map, MapClusterLayer, MapControls, MapPopup } from "@/components/ui/map";
-import { COUNTRY_ZOOM, MAP_COLORS, MAP_STYLES, MAX_ZOOM } from "@/components/map/basemap";
+import { CLUSTER_FONT, COUNTRY_ZOOM, MAP_COLORS, MAP_STYLES, MAX_ZOOM } from "@/components/map/basemap";
 import { useMapTheme } from "@/components/map/useMapTheme";
 import { ISRAEL_CENTRE } from "@/lib/city-centres";
 import { boundsOf } from "@/lib/geo";
@@ -67,6 +67,7 @@ export default function ListingsMap({ pins }: { pins: ListingPin[] }) {
         clusterMaxZoom={12}
         clusterColors={colors.shades}
         clusterThresholds={[25, 120]}
+        clusterTextFont={CLUSTER_FONT}
         clusterTextColor={colors.on}
         strokeColor={colors.ring}
         pointColor={colors.accent}

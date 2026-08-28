@@ -1,49 +1,30 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Listing, Profile } from "@/lib/types";
+import type { Listing } from "@/lib/types";
 
 /**
- * Who may see a room's exact position rather than the neighbourhood circle.
+ * The line under a room's map.
  *
- * The household — the owner and whoever lives there — and any seeker already in
- * a conversation about that room. Everyone else, signed in or not, sees the
- * approximate circle: a public listing page should not hand a stranger's front
- * door to the whole internet (user decision, 2026-08-27).
- *
- * A missed lookup means "not allowed", so the failure mode is the private one.
- */
-export async function canSeeExactLocation(
-  supabase: SupabaseClient,
-  listing: Pick<Listing, "id" | "owner_id">,
-  userId: string | undefined,
-  residents: Pick<Profile, "user_id">[] = []
-): Promise<boolean> {
-  if (!userId) return false;
-  if (userId === listing.owner_id) return true;
-  if (residents.some((r) => r.user_id === userId)) return true;
-
-  const { data } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("listing_id", listing.id)
-    .eq("seeker_id", userId)
-    .maybeSingle();
-  return Boolean(data);
-}
-
-/**
- * The line under the map. It says plainly how precise the dot is, so nobody
- * plans a trip around a city-centre fallback.
+ * Every room is pinned at its own address (user decision, 2026-08-28: this is
+ * a demo, so the map shows the real spot rather than the neighbourhood circle
+ * it used to draw). The note's job is now to say *how* the pin got there, so a
+ * room whose address couldn't be found isn't mistaken for a precise one.
  */
 export function locationNote(
-  listing: Pick<Listing, "city" | "street" | "neighborhood" | "coords_source">,
-  exact: boolean
+  listing: Pick<Listing, "city" | "street" | "house_number" | "address" | "neighborhood" | "coords_source">
 ): string {
   if (listing.coords_source === "city") {
-    return `Somewhere in ${listing.city} — this room hasn't been placed at a street address, so the map shows the area only.`;
+    return `Approximate — this room's address couldn't be placed, so the pin sits near the middle of ${listing.city}.`;
   }
-  if (exact) {
-    const where = [listing.street, listing.neighborhood].filter(Boolean).join(", ");
-    return where ? `Exact location — ${where}, ${listing.city}.` : `Exact location in ${listing.city}.`;
-  }
-  return "Approximate area. The exact address appears once you're chatting about this room.";
+  // `address` is the whole thing ("Florentin 54"); the listing form splits the
+  // same into street + number. Either way the house number belongs in the line.
+  const street = [listing.street, listing.house_number].filter(Boolean).join(" ").trim() || listing.address || "";
+  const parts = [street, listing.neighborhood, listing.city].filter(Boolean);
+  // A room on Florentin street in Florentin shouldn't read "Florentin, Florentin".
+  const seen = new Set<string>();
+  const line = parts.filter((part) => {
+    const key = part.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return `${line.join(", ")}.`;
 }

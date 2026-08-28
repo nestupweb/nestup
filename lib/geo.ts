@@ -14,13 +14,6 @@ export interface Bounds {
   east: number;
 }
 
-/**
- * How far the public map blurs a room's position, in metres. The circle is
- * drawn at this radius and the point itself is nudged inside it, so "the pin"
- * is never the front door — see `approximate()`.
- */
-export const APPROX_RADIUS_M = 150;
-
 /** Metres per degree of latitude (near enough anywhere on Earth). */
 const M_PER_DEG_LAT = 111_320;
 
@@ -46,10 +39,10 @@ export function hashUnit(key: string): number {
 /**
  * Move a point to a fixed offset inside `radius` metres, chosen by `key`.
  *
- * Used two ways: to blur a real address on the public map, and to scatter demo
- * rooms around a city centre. Both need the same property — repeatable, so the
- * room doesn't appear to jump around, and evenly spread rather than clustered
- * in the middle (hence the square root on the radius).
+ * Used by the seeding scripts to spread rooms that share a street, and to
+ * place a room whose address can't be found near its city centre. Repeatable,
+ * so a room never appears to jump between runs, and evenly spread rather than
+ * bunched in the middle (hence the square root on the radius).
  */
 export function scatter(centre: LatLng, key: string, radius: number): LatLng {
   const angle = hashUnit(`${key}:angle`) * 2 * Math.PI;
@@ -64,34 +57,10 @@ function round(n: number): number {
   return Math.round(n * 1e6) / 1e6;
 }
 
-/**
- * The position to show publicly: inside the circle, never the exact address.
- * The offset is derived from the listing id, so it is stable for that room.
- */
-export function approximate(point: LatLng, key: string): LatLng {
-  return scatter(point, `approx:${key}`, APPROX_RADIUS_M * 0.55);
-}
-
 /** A listing's point, or null when it has none yet. */
 export function pointOf(listing: Pick<Listing, "lat" | "lng">): LatLng | null {
   const { lat, lng } = listing;
   return typeof lat === "number" && typeof lng === "number" ? { lat, lng } : null;
-}
-
-/**
- * What the viewer may see. Only people already talking to the household — and
- * the household itself — get the real address; everyone else gets the circle.
- * (User decision, 2026-08-27: don't publish a stranger's front door.)
- */
-export function visiblePoint(
-  listing: Pick<Listing, "id" | "lat" | "lng" | "coords_source">,
-  exact: boolean
-): { point: LatLng; exact: boolean } | null {
-  const point = pointOf(listing);
-  if (!point) return null;
-  // A city-centre fallback is already vague; blurring it further is noise.
-  const canBeExact = exact && listing.coords_source !== "city";
-  return canBeExact ? { point, exact: true } : { point: approximate(point, listing.id), exact: false };
 }
 
 /** Precedence: a pin the owner placed is never overwritten by a later geocode. */
@@ -126,27 +95,4 @@ export function distanceM(a: LatLng, b: LatLng): number {
   const dLat = (b.lat - a.lat) * M_PER_DEG_LAT;
   const dLng = (b.lng - a.lng) * mPerDegLng((a.lat + b.lat) / 2);
   return Math.round(Math.hypot(dLat, dLng));
-}
-
-/**
- * The "somewhere around here" circle as a GeoJSON polygon.
- *
- * MapLibre's circle layers are sized in screen pixels, which would make a
- * 150 m area grow as the viewer zooms out — the one thing this circle must
- * not do, since its whole job is to say how big the uncertainty is. A polygon
- * is drawn in real coordinates, so it stays 150 m across at every zoom.
- */
-export function circlePolygon(
-  centre: LatLng,
-  radiusM: number,
-  steps = 64
-): { type: "Feature"; geometry: { type: "Polygon"; coordinates: [number, number][][] }; properties: Record<string, never> } {
-  const dLat = radiusM / M_PER_DEG_LAT;
-  const dLng = radiusM / mPerDegLng(centre.lat);
-  const ring: [number, number][] = [];
-  for (let i = 0; i <= steps; i++) {
-    const angle = (i / steps) * 2 * Math.PI;
-    ring.push([centre.lng + dLng * Math.cos(angle), centre.lat + dLat * Math.sin(angle)]);
-  }
-  return { type: "Feature", geometry: { type: "Polygon", coordinates: [ring] }, properties: {} };
 }

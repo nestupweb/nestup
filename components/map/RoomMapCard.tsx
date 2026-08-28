@@ -17,20 +17,18 @@ const RoomMap = dynamic(() => import("@/components/map/RoomMap"), {
 
 export function RoomMapCard({
   point,
-  exact,
   label,
   note,
 }: {
   point: LatLng;
-  exact: boolean;
   label: string;
-  /** One line under the map — why the position is approximate, or the address. */
+  /** One line under the map — the address, or why the pin is only approximate. */
   note?: string;
 }) {
   return (
     <div>
       <div className="h-64 sm:h-80">
-        <RoomMap point={point} exact={exact} label={label} className="h-full w-full" />
+        <RoomMap point={point} label={label} className="h-full w-full" />
       </div>
       {note ? <p className="mt-2 text-xs text-muted">{note}</p> : null}
     </div>

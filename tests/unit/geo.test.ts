@@ -1,15 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  APPROX_RADIUS_M,
-  boundsOf,
-  circlePolygon,
-  distanceM,
-  hashUnit,
-  pointOf,
-  scatter,
-  shouldGeocode,
-  visiblePoint,
-} from "@/lib/geo";
+import { boundsOf, distanceM, hashUnit, pointOf, scatter, shouldGeocode } from "@/lib/geo";
 import { locationNote } from "@/lib/location";
 import { nearCity, parseNominatim } from "@/lib/geocode";
 
@@ -53,37 +43,12 @@ describe("scatter", () => {
   });
 });
 
-describe("visiblePoint", () => {
-  const listing = { id: "abc-123", lat: TLV.lat, lng: TLV.lng, coords_source: "geocoded" as const };
-
-  test("blurs the address for everyone who isn't in the conversation", () => {
-    const shown = visiblePoint(listing, false);
-    expect(shown?.exact).toBe(false);
-    expect(shown?.point).not.toEqual(TLV);
-    expect(distanceM(TLV, shown!.point)).toBeLessThanOrEqual(APPROX_RADIUS_M);
-    // stable between renders — the room must not appear to wander
-    expect(visiblePoint(listing, false)).toEqual(shown);
-  });
-
-  test("gives the real point to someone allowed to see it", () => {
-    const shown = visiblePoint(listing, true);
-    expect(shown).toEqual({ point: TLV, exact: true });
-  });
-
-  test("never claims a city-centre fallback is exact", () => {
-    const vague = { ...listing, coords_source: "city" as const };
-    expect(visiblePoint(vague, true)?.exact).toBe(false);
-  });
-
-  test("no coordinates means no map", () => {
-    expect(visiblePoint({ ...listing, lat: null, lng: null }, true)).toBeNull();
+describe("pointOf", () => {
+  test("gives the room its own point, and nothing when it has none", () => {
+    // No blurring any more (user decision, 2026-08-28): the pin is the address.
+    expect(pointOf({ lat: TLV.lat, lng: TLV.lng })).toEqual(TLV);
     expect(pointOf({ lat: null, lng: 3 })).toBeNull();
-    expect(pointOf({ lat: 1, lng: 2 })).toEqual({ lat: 1, lng: 2 });
-  });
-
-  test("two rooms at the same address get different blurred points", () => {
-    const other = { ...listing, id: "def-456" };
-    expect(visiblePoint(listing, false)?.point).not.toEqual(visiblePoint(other, false)?.point);
+    expect(pointOf({ lat: 1, lng: null })).toBeNull();
   });
 });
 
@@ -142,36 +107,31 @@ describe("geocode helpers", () => {
 });
 
 describe("locationNote", () => {
-  const base = { city: "Tel Aviv", street: "Florentin", neighborhood: "Florentin", coords_source: "geocoded" as const };
+  const base = {
+    city: "Tel Aviv",
+    street: "Florentin",
+    house_number: "54",
+    address: "Florentin 54",
+    neighborhood: "Florentin",
+    coords_source: "geocoded" as const,
+  };
 
-  test("says plainly how precise the dot is", () => {
-    expect(locationNote(base, false)).toMatch(/approximate area/i);
-    expect(locationNote(base, true)).toMatch(/Florentin/);
-    expect(locationNote({ ...base, coords_source: "city" }, true)).toMatch(/Somewhere in Tel Aviv/i);
-    // a city-level room never claims a street address, even to the owner
-    expect(locationNote({ ...base, coords_source: "city" }, true)).not.toMatch(/Exact location/i);
-  });
-});
-
-describe("circlePolygon", () => {
-  const centre = { lat: 32.0853, lng: 34.7818 };
-
-  test("closes, and every vertex sits the asked-for distance away", () => {
-    const ring = circlePolygon(centre, APPROX_RADIUS_M).geometry.coordinates[0];
-    expect(ring).toHaveLength(65); // 64 steps + the repeat that closes it
-    expect(ring[0]).toEqual(ring[ring.length - 1]);
-    for (const [lng, lat] of ring) {
-      expect(distanceM(centre, { lat, lng })).toBeGreaterThanOrEqual(APPROX_RADIUS_M - 2);
-      expect(distanceM(centre, { lat, lng })).toBeLessThanOrEqual(APPROX_RADIUS_M + 2);
-    }
-  });
-
-  test("is drawn in real coordinates, so it doesn't change size with the zoom", () => {
-    const small = circlePolygon(centre, 150).geometry.coordinates[0];
-    const big = circlePolygon(centre, 300).geometry.coordinates[0];
-    expect(distanceM(centre, { lat: big[0][1], lng: big[0][0] })).toBeCloseTo(
-      2 * distanceM(centre, { lat: small[0][1], lng: small[0][0] }),
-      -1
+  test("names the address the pin sits on, without saying Florentin twice", () => {
+    expect(locationNote(base)).toBe("Florentin 54, Tel Aviv.");
+    expect(locationNote({ ...base, neighborhood: "Kerem HaTeimanim" })).toBe(
+      "Florentin 54, Kerem HaTeimanim, Tel Aviv."
     );
+    // Seed rooms keep the whole address in one column and leave the split ones empty.
+    expect(locationNote({ ...base, street: "", house_number: "", neighborhood: "" })).toBe(
+      "Florentin 54, Tel Aviv."
+    );
+    expect(locationNote({ ...base, street: "", house_number: "", address: "", neighborhood: "" })).toBe("Tel Aviv.");
+  });
+
+  test("owns up when the address couldn't be placed", () => {
+    const vague = locationNote({ ...base, coords_source: "city" });
+    expect(vague).toMatch(/approximate/i);
+    expect(vague).toMatch(/Tel Aviv/);
+    expect(vague).not.toMatch(/Florentin 54/);
   });
 });

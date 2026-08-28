@@ -7,8 +7,8 @@ import { ListingGallery } from "@/components/listings/ListingGallery";
 import { SaveButton } from "@/components/listings/SaveButton";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
 import { RoomMapCard } from "@/components/map/RoomMapCard";
-import { visiblePoint } from "@/lib/geo";
-import { canSeeExactLocation, locationNote } from "@/lib/location";
+import { pointOf } from "@/lib/geo";
+import { locationNote } from "@/lib/location";
 import type { Listing, Profile } from "@/lib/types";
 
 export default async function ListingDetailPage({
@@ -60,8 +60,7 @@ export default async function ListingDetailPage({
 
   // The household and anyone already chatting about the room see the real
   // point; everyone else gets the neighbourhood circle (see lib/location.ts).
-  const exactLocation = await canSeeExactLocation(supabase, listing, user?.id, residents);
-  const place = visiblePoint(listing, exactLocation);
+  const place = pointOf(listing);
 
   const features = FEATURES.filter((f) => listing[f.key]);
   const viewingHours = describeSlots(normalizeSlots(listing.viewing_slots));
@@ -144,10 +143,9 @@ export default async function ListingDetailPage({
             <h2 className={sectionHeading}>Where it is</h2>
             <div className="mt-4">
               <RoomMapCard
-                point={place.point}
-                exact={place.exact}
-                label={place.exact ? `${listing.address}, ${listing.city}` : `${listing.neighborhood || listing.city}`}
-                note={locationNote(listing, place.exact)}
+                point={place}
+                label={`${listing.address || listing.street}, ${listing.city}`}
+                note={locationNote(listing)}
               />
             </div>
           </section>

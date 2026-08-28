@@ -2,7 +2,7 @@
 import { describe, expect, test } from "vitest";
 import { auditPhotos, readPhotoVerdict, signPhotoVerdict } from "@/lib/photo-check";
 
-const SECRET = "sk-ant-test-secret";
+const SECRET = "test-gemini-key";
 const A = "https://x.supabase.co/storage/v1/object/public/listing-photos/u1/a.jpg";
 const B = "https://x.supabase.co/storage/v1/object/public/listing-photos/u1/b.jpg";
 
@@ -58,6 +58,17 @@ describe("auditPhotos — the publish gate", () => {
     expect(auditPhotos({ urls: [A], labels: ["bedroom"], tokens: [""], trusted, secret: SECRET })).toBeNull();
     // Re-tagging a saved photo needs a fresh verdict.
     expect(auditPhotos({ urls: [A], labels: ["living_room"], tokens: [""], trusted, secret: SECRET })?.index).toBe(0);
+  });
+
+  test("the publish gate is strict for every tag a member can pick", () => {
+    // A kitchen photo can no longer be published under "Balcony", the way it
+    // could while only living room / bedroom / bathroom were strict.
+    const token = signPhotoVerdict(SECRET, A, "kitchen");
+    for (const label of ["balcony", "exterior", "kitchen"] as const) {
+      const bad = auditPhotos({ urls: [A], labels: [label], tokens: [token], trusted: new Map(), secret: SECRET });
+      if (label === "kitchen") expect(bad).toBeNull();
+      else expect(bad?.index).toBe(0);
+    }
   });
 
   test("a non-apartment verdict can't be published under any tag", () => {

@@ -11,7 +11,7 @@ import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, photoRoomLabel } from "@/lib/co
 import { defaultRemovedMessage } from "@/lib/listing-taken";
 import { normalizeSlots, type ViewingSlot } from "@/lib/availability";
 import { notifyNewListing } from "@/lib/notify";
-import { auditPhotos, isPhotoCheckEnabled } from "@/lib/photo-check";
+import { auditPhotos, isPhotoCheckEnabled, photoCheckSecret } from "@/lib/photo-check";
 import { geocodeAddress } from "@/lib/geocode";
 import { shouldGeocode } from "@/lib/geo";
 import type { CoordsSource, PhotoRoom } from "@/lib/types";
@@ -178,7 +178,7 @@ export async function saveListingAction(
       labels: keptUrls.map((_, i) => keptLabels[i] ?? "other"),
       tokens: keptTokens,
       trusted,
-      secret: process.env.ANTHROPIC_API_KEY!,
+      secret: photoCheckSecret(),
     });
     if (bad) return { error: `Photo ${bad.index + 1}: ${bad.message}` };
   }

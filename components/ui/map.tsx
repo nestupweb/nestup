@@ -1903,6 +1903,10 @@ type MapClusterLayerProps<
    * pixels (default: 5). A single room is a tap target, so it needs to be
    * bigger than a dot on a thumb-sized screen. */
   pointRadius?: number;
+  /** Local addition (not upstream mapcn): the font for the cluster count.
+   * Upstream hard-codes "Open Sans Semibold", which only exists on some
+   * basemaps' glyph servers — on the others the counts silently vanish. */
+  clusterTextFont?: string[];
   /**
    * Local addition (not upstream mapcn): the cluster count's text colour and
    * the ring drawn around every circle. Upstream hard-codes both to white,
@@ -1940,6 +1944,7 @@ function MapClusterLayer<
   clusterThresholds = DEFAULT_CLUSTER_THRESHOLDS,
   pointColor = "#3b82f6",
   pointRadius = 5,
+  clusterTextFont = ["Open Sans Semibold"],
   clusterTextColor = "#fff",
   strokeColor = "#fff",
   onPointClick,
@@ -2013,7 +2018,7 @@ function MapClusterLayer<
       filter: ["has", "point_count"],
       layout: {
         "text-field": "{point_count_abbreviated}",
-        "text-font": ["Open Sans Semibold"],
+        "text-font": clusterTextFont,
         "text-size": 12,
       },
       paint: {

@@ -14,9 +14,9 @@ const ListingsMap = dynamic(() => import("@/components/map/ListingsMap"), {
  *
  * The map used to replace the results list, which meant it took the page over
  * whenever it was on. Now it is a panel over the page (user decision,
- * 2026-08-28): a pin button on the results line opens it, it never fills the
- * whole screen, and the way out is a labelled Close button — plus Escape and a
- * click on the backdrop, for people who expect those.
+ * 2026-08-28): a small square icon on the results line opens it, it never
+ * fills the whole screen, and the way out is a labelled Close button — plus
+ * Escape and a click on the backdrop, for people who expect those.
  *
  * What it shows is deliberately *everything*: every placed room on NestUp, not
  * the current filter. Pins are fetched the first time the map is opened and
@@ -59,12 +59,10 @@ export function MapExplorer() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Open the map of every room"
-        className="group inline-flex shrink-0 items-center gap-2 rounded-full border border-hairline bg-surface py-1 pl-1 pr-3.5 text-[13px] leading-none text-ink transition-[border-color,box-shadow] hover:border-accent/60 hover:shadow-[0_8px_20px_-14px_var(--accent)] focus:outline-none focus-visible:border-accent"
+        title="Map"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-hairline bg-surface text-accent transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-accent/60 hover:shadow-[0_8px_18px_-12px_var(--accent)] focus:outline-none focus-visible:border-accent"
       >
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-accent text-accent-contrast transition-transform duration-200 group-hover:scale-105">
-          <MapGlyph />
-        </span>
-        <span className="font-medium">Map</span>
+        <MapGlyph />
       </button>
 
       {open ? <MapDialog pins={pins} failed={failed} onRetry={load} onClose={hide} /> : null}
@@ -151,10 +149,10 @@ function MapDialog({
               ) : (
                 <>
                   {pins.length} room{pins.length === 1 ? "" : "s"} on the map
-                  {/* The caveat is worth a line of its own, but not four of
-                      them on a phone — there it would push the map down. */}
+                  {/* Worth a line of its own, but not four of them on a
+                      phone — there it would push the map down. */}
                   <span className="hidden sm:inline">
-                    {" · "}pins show the neighbourhood, not the exact address
+                    {" · "}each one is pinned at its address
                   </span>
                 </>
               )}
@@ -211,10 +209,10 @@ function MapSkeleton() {
   );
 }
 
-/** A folded paper map with a pin on it. */
+/** A folded paper map. */
 function MapGlyph() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden="true">
       <path d="M9 4 3.5 6.2v13.3L9 17.3l6 2.2 5.5-2.2V4L15 6.2 9 4Z" />
       <path d="M9 4v13.3M15 6.2v13.3" />
     </svg>

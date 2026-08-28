@@ -1,36 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-client";
-import { checkListingPhotoAction } from "@/app/actions/photo-check";
-import { inspectPhoto, warmUpPhotoCheck } from "@/lib/photo-detect";
+import { checkAndUploadPhotoAction, checkStoredPhotoAction, type PhotoCheckResult } from "@/app/actions/photo-check";
 import { MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PHOTO_ROOMS, PHOTO_ROOM_CHOICES, photoRoomLabel } from "@/lib/constants";
-import { photoProblem, photoSubjectPhrase, suggestedRoom, type PhotoSubject } from "@/lib/photo-rules";
+import { photoProblem, type PhotoSubject } from "@/lib/photo-rules";
 import { REQUIRED_PHOTO_ROOMS } from "@/lib/validation/listing";
 import type { PhotoRoom } from "@/lib/types";
 
 /**
  * The room a tile is tagged with. "" is "nobody has said yet" — there is no
- * "Other" to fall into any more, so a photo whose room neither the file name
- * nor the check could name waits for the member to say, and is held back from
- * the form until they do.
+ * "Other" to fall into any more, so a photo whose room the file name could not
+ * name waits for the member to say before it is checked at all.
  */
 type Tag = PhotoRoom | "";
 
 type Item = {
   id: string;
   name: string; // file name, for the line shown when a photo is turned away
-  url: string | null; // public URL once uploaded
-  path: string | null; // storage path (only for photos uploaded in this session)
-  preview: string; // what the tile shows (object URL until uploaded)
+  url: string | null; // public URL, set once the photo has passed and been stored
+  preview: string; // what the tile shows (object URL until stored)
   label: Tag;
-  status: "looking" | "uploading" | "checking" | "ready" | "failed";
+  /** Held until the photo passes; that is the only copy of it that exists. */
+  file: File | null;
+  status: "waiting" | "checking" | "ready" | "failed";
+  /** Why this photo has not been accepted — the sentence from the check. */
   error?: string;
   /** What the check saw, plus the signed verdict the server will trust at publish. */
   subject?: PhotoSubject;
   token?: string;
-  note?: string;
 };
 
 const select =
@@ -47,33 +45,36 @@ function guessRoom(fileName: string): Tag {
 
 /** The message shown on a tile that isn't ready to be published (null when it is). */
 function problemOf(it: Item): string | null {
-  if (it.status !== "ready") return null;
+  if (it.status === "checking") return null;
+  if (it.error) return it.error;
   if (!it.label) return "Pick the room this photo shows.";
+  if (it.status !== "ready") return null;
   if (!it.subject) return null;
   return photoProblem(it.subject, it.label);
 }
 
 /**
- * 3–10 photos, each tagged with the room it shows. Photos are compressed and
- * uploaded straight from the browser to the `listing-photos` bucket the
- * moment they're picked (the owner's folder — storage RLS), then looked at by
- * the photo check.
+ * 3–10 photos, each tagged with the room it shows.
  *
- * A photo that isn't of the apartment never makes it onto the form. It is
- * looked at twice: once here in the browser (`inspectPhoto`, before the
- * upload — so a dog or a plate of food is never even stored) and again on the
- * server when `ANTHROPIC_API_KEY` is set. Either way the tile is taken back
- * out at once and a line above the grid says which photo went and why. A room photo under the wrong strict
- * tag is re-tagged to the room it actually shows. The form itself only
+ * Every photo is checked by Gemini on the server **before it is uploaded**:
+ * the browser compresses the file and sends the bytes to
+ * `checkAndUploadPhotoAction`, which shows them to the model and only stores
+ * the photo if it really is the room the member tagged. A living-room tag on a
+ * bedroom photo, a balcony tag on a kitchen, a dog under any tag — all are
+ * refused, and the file never reaches the `listing-photos` bucket.
+ *
+ * A refused photo keeps its tile (the file is still here, unsent) so the
+ * member can put it under the right room and have it re-checked; only a photo
+ * that is not of a home at all is taken out of the grid entirely. The form
  * submits URLs: `existing_photos` + `existing_labels` + `photo_tokens` (the
- * signed verdicts).
+ * signed verdicts `saveListingAction` re-checks at publish).
  */
 export function PhotoPicker({
-  userId,
   initialUrls,
   initialLabels,
 }: {
-  userId: string;
+  /** Kept for the form's call site; the server now derives the folder from the session. */
+  userId?: string;
   initialUrls: string[];
   initialLabels: string[];
 }) {
@@ -82,13 +83,13 @@ export function PhotoPicker({
       id: url,
       name: "this photo",
       url,
-      path: null,
       preview: url,
       label: (PHOTO_ROOMS.some((r) => r.key === initialLabels[i]) ? initialLabels[i] : "") as Tag,
+      file: null,
       status: "ready",
     }))
   );
-  /** "Removed <photo> — <why>" lines for photos the check turned away. */
+  /** "Removed <photo> — <why>" lines for photos that are not of a home at all. */
   const [notices, setNotices] = useState<{ id: string; text: string }[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const itemsRef = useRef(items);
@@ -103,13 +104,9 @@ export function PhotoPicker({
     []
   );
 
-  // Fetch the photo-check models while the member is still reading the form,
-  // so the first photo isn't the one that waits for them.
-  useEffect(warmUpPhotoCheck, []);
-
   const count = items.length;
   const covered = new Set(items.filter((i) => i.status === "ready" && !problemOf(i)).map((i) => i.label));
-  const busy = items.some((i) => i.status !== "ready" && i.status !== "failed");
+  const busy = items.some((i) => i.status === "checking");
   const flagged = items.some((i) => problemOf(i) !== null);
 
   const update = (id: string, patch: Partial<Item> | ((it: Item) => Partial<Item>)) =>
@@ -124,12 +121,7 @@ export function PhotoPicker({
       return prev.filter((it) => it.id !== id);
     });
 
-  const discard = async (path: string | null) => {
-    if (!path) return;
-    await createClient().storage.from("listing-photos").remove([path]);
-  };
-
-  /** Wrong photo: out of the grid at once, with a red line saying which one and why. */
+  /** Not a home at all: out of the grid, with a red line saying which photo and why. */
   const turnAway = (id: string, reason: string) => {
     const gone = itemsRef.current.find((it) => it.id === id);
     setNotices((prev) => [
@@ -139,70 +131,54 @@ export function PhotoPicker({
     remove(id);
   };
 
-  /** Ask the server what the photo shows; retags it when the photo clearly shows another room. */
-  const check = async (id: string, url: string, path: string | null, label: Tag) => {
-    update(id, { status: "checking", error: undefined });
-    const result = await checkListingPhotoAction(url, label);
-    if (!result.ok) {
+  /** Fold one server answer into the tile it belongs to. */
+  const settle = (id: string, result: PhotoCheckResult) => {
+    if (result.ok) {
+      update(id, (it) => {
+        if (it.preview.startsWith("blob:")) URL.revokeObjectURL(it.preview);
+        return {
+          status: "ready",
+          url: result.url,
+          preview: result.url,
+          file: null,
+          error: undefined,
+          subject: result.checked ? result.subject : undefined,
+          token: result.checked ? result.token : undefined,
+        };
+      });
+      return;
+    }
+    if (!result.rejected) {
       update(id, { status: "failed", error: result.error });
       return;
     }
-    if (!result.checked) {
-      update(id, { status: "ready" });
-      return;
-    }
+    // Refused. Nothing was stored — the tile keeps the file so the member can
+    // re-tag it and have it looked at again.
     if (result.subject === "not_apartment") {
       turnAway(id, result.reason);
-      void discard(path);
       return;
     }
-    const room = suggestedRoom(result.subject);
-    update(id, (it) => {
-      const seen = { status: "ready" as const, subject: result.subject, token: result.token };
-      // Nothing said yet: take the room the check saw, and otherwise leave the
-      // tile waiting — `problemOf` asks for it rather than filing it as "Other".
-      if (!it.label) return room ? { ...seen, label: room, note: `Tagged as ${photoRoomLabel(room)} — that is what the photo shows.` } : { ...seen, note: undefined };
-      if (photoProblem(result.subject, it.label) === null) return { ...seen, note: undefined };
-      // A room photo under the wrong strict tag moves to the room it shows; a
-      // part of the home the check can't name goes back to the member to tag.
-      return room
-        ? { ...seen, label: room, note: `Tagged as ${photoRoomLabel(room)} — that is what the photo shows.` }
-        : { ...seen, label: "" as Tag, note: `We couldn't see ${photoSubjectPhrase(it.label as PhotoSubject)} here.` };
-    });
+    update(id, { status: "waiting", error: result.message, subject: undefined, token: undefined });
   };
 
-  const upload = async (id: string, file: File, label: Tag) => {
-    let path: string | null = null;
-    let room: Tag = label;
+  /** Send one photo's bytes to be checked, and stored only if it passes. */
+  const verify = async (id: string, file: File, label: PhotoRoom) => {
+    update(id, { status: "checking", error: undefined });
     try {
-      // Looked at here in the browser first: a photo that isn't of the home is
-      // turned away before it is uploaded at all.
-      const local = await inspectPhoto(file);
-      if (local.kind === "reject") {
-        turnAway(id, local.reason);
-        return;
-      }
-      // An untagged photo takes the room the browser check named; a tagged one
-      // is only moved when the tag and the photo disagree.
-      if (local.kind === "room" && (!label || photoProblem(local.room, label) !== null)) {
-        room = local.room;
-        update(id, { label: room, note: `Tagged as ${photoRoomLabel(room)} — that is what the photo shows.` });
-      }
-      update(id, { status: "uploading" });
+      const body = new FormData();
       const blob = await compressImage(file);
-      const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-      path = `${userId}/${crypto.randomUUID()}.${ext}`;
-      const supabase = createClient();
-      const { error } = await supabase.storage
-        .from("listing-photos")
-        .upload(path, blob, { contentType: blob.type || "image/jpeg" });
-      if (error) throw new Error("Upload failed — check your connection and try again.");
-      const url = supabase.storage.from("listing-photos").getPublicUrl(path).data.publicUrl;
-      update(id, { url, path });
-      await check(id, url, path, room);
+      body.append("photo", blob, file.name);
+      body.append("label", label);
+      settle(id, await checkAndUploadPhotoAction(body));
     } catch (e) {
-      update(id, { status: "failed", error: e instanceof Error ? e.message : "Upload failed." });
+      update(id, { status: "failed", error: e instanceof Error ? e.message : "Could not read this photo." });
     }
+  };
+
+  /** Re-check a photo that is already stored (only photos saved before the check existed). */
+  const verifyStored = async (id: string, url: string, label: PhotoRoom) => {
+    update(id, { status: "checking", error: undefined });
+    settle(id, await checkStoredPhotoAction(url, label));
   };
 
   const addFiles = (files: FileList | null) => {
@@ -214,20 +190,34 @@ export function PhotoPicker({
       id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
       name: file.name,
       url: null,
-      path: null,
       preview: URL.createObjectURL(file),
       label: guessRoom(file.name),
-      status: "looking",
+      file,
+      status: "waiting",
     }));
     setItems((prev) => [...prev, ...next]);
-    next.forEach((it, i) => void upload(it.id, fresh[i], it.label));
+    // One at a time: the free Gemini tier is per-minute, and ten photos at
+    // once would spend a whole minute's worth of it in a single burst.
+    void (async () => {
+      for (const it of next) {
+        if (it.label) await verify(it.id, it.file!, it.label);
+      }
+    })();
     if (fileInput.current) fileInput.current.value = "";
   };
 
   const retag = (it: Item, label: Tag) => {
-    update(it.id, { label, note: undefined });
-    // A photo saved before the check existed has no verdict yet — get one for its new tag.
-    if (it.status === "ready" && !it.subject && it.url) void check(it.id, it.url, it.path, label);
+    update(it.id, { label, error: undefined });
+    if (!label) return;
+    // Not stored yet — it was either refused or waiting for a room. Look again
+    // now that we know what the member says it is.
+    if (it.file) {
+      void verify(it.id, it.file, label);
+      return;
+    }
+    // Already in storage but with no verdict: a photo saved before the check
+    // existed, or one whose last tag it refused. Look again for the new tag.
+    if (it.url && !it.subject && it.status !== "checking") void verifyStored(it.id, it.url, label);
   };
 
   return (
@@ -286,9 +276,9 @@ export function PhotoPicker({
                   alt={`Photo ${i + 1}: ${photoRoomLabel(it.label)}`}
                   className={`h-full w-full object-cover transition-opacity ${dim ? "opacity-50" : "opacity-100"}`}
                 />
-                {it.status === "looking" || it.status === "uploading" || it.status === "checking" ? (
+                {it.status === "checking" ? (
                   <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[11px] font-semibold uppercase tracking-widest text-white">
-                    {it.status === "uploading" ? "Uploading…" : "Checking…"}
+                    Checking…
                   </span>
                 ) : null}
                 {overlay ? (
@@ -332,7 +322,6 @@ export function PhotoPicker({
                     that keeps its own tag until the member picks a real room. */}
                 {it.label === "other" ? <option value="other">{photoRoomLabel("other")}</option> : null}
               </select>
-              {it.note ? <figcaption className="mt-1 text-[11px] leading-tight text-accent">{it.note}</figcaption> : null}
             </figure>
           );
         })}
@@ -357,11 +346,7 @@ export function PhotoPicker({
             {covered.has(room) ? "✓" : "○"} {photoRoomLabel(room)}
           </span>
         ))}
-        {busy ? (
-          <span aria-live="polite">
-            {items.some((i) => i.status === "uploading") ? "Uploading photos…" : "Checking photos…"}
-          </span>
-        ) : null}
+        {busy ? <span aria-live="polite">Checking photos…</span> : null}
         {flagged ? <span className="text-danger">Tag or remove the marked photo to publish.</span> : null}
       </div>
     </div>
