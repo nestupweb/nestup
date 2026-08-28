@@ -8,6 +8,9 @@ vi.mock("next/image", () => ({
   default: ({ fill, sizes, ...props }: { fill?: boolean; sizes?: string; src: string; alt: string; className?: string }) => <img {...props} />,
 }));
 vi.mock("@/app/actions/co-posters", () => ({ respondToInviteAction: vi.fn() }));
+// Realtime needs a mounted router and a browser Supabase client; it renders
+// nothing, so these tests stub it and it is covered on its own terms.
+vi.mock("@/components/profile/SharedListingSync", () => ({ SharedListingSync: () => null }));
 
 import { EDIT_PHOTOS_HREF, MyListing } from "@/components/profile/MyListing";
 
@@ -51,9 +54,9 @@ describe("MyListing", () => {
 });
 
 /**
- * Shared listings (migration 0032). A co-posted room is shown, not managed:
- * editing, closing and deleting stay with the member who created it, which is
- * also the only thing the database allows.
+ * Shared listings (0032) and co-ownership (0033). A confirmed roommate does not
+ * just see the room — they manage it on the same terms as its creator, because
+ * it is one record and RLS lets the whole household write it.
  */
 describe("MyListing — shared listings", () => {
   const invite: PendingInvite = {
@@ -86,15 +89,18 @@ describe("MyListing — shared listings", () => {
     expect(within(section).getByRole("link", { name: "Room in Haifa" })).toHaveAttribute("href", "/browse/l2");
   });
 
-  test("a co-poster gets no owner's buttons on a room that is not theirs", () => {
+  // 0033 reversed this: a confirmed roommate co-OWNS the room and gets exactly
+  // the buttons its creator has. The badge says whose name is on it, not what
+  // they may do.
+  test("a co-poster gets the same buttons as the creator", () => {
     const co = { ...listing, id: "l2", title: "Room in Haifa" } as Listing;
     render(<MyListing listings={[]} shared={[co]} />);
 
     const section = screen.getByRole("region", { name: "Room in Haifa" });
-    expect(within(section).queryByRole("link", { name: /^edit photo \d$/i })).toBeNull();
-    expect(within(section).queryByRole("link", { name: /edit listing/i })).toBeNull();
-    expect(within(section).queryByRole("button", { name: /delete listing/i })).toBeNull();
-    expect(within(section).queryByRole("button", { name: /taken/i })).toBeNull();
+    expect(within(section).getByText("Co-poster")).toBeInTheDocument();
+    expect(within(section).getAllByRole("link", { name: /^edit photo \d$/i }).length).toBeGreaterThan(0);
+    expect(within(section).getByRole("link", { name: /edit listing/i })).toBeInTheDocument();
+    expect(within(section).getByRole("button", { name: /delete listing/i })).toBeInTheDocument();
   });
 
   test("with neither invitations nor shared rooms nothing extra is rendered", () => {

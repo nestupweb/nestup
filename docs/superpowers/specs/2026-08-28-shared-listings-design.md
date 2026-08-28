@@ -215,6 +215,62 @@ roommates.
   `roommates_count - 1` in total. Accepted: seed data is synthetic, and the rule
   as specified is about tagged users.
 
+## 6. Co-ownership (migration 0033)
+
+A later change made confirmed roommates **co-owners**, not guests. Three parts:
+
+### One person, one home
+
+A member cannot be invited to a second home: not if they own a live listing,
+and not if they have already confirmed one as a roommate. Enforced in
+`invite_listing_roommates` (which names the person in the error) and again in
+`respond_to_listing_invite`, because an invitation raised before the invitee
+took a room of their own must not become a second home when they finally answer
+it. Declining is always allowed. Only *live* rooms disqualify — a paused, taken
+or deleted listing frees a member to be tagged again. `getBusyMemberIds` filters
+the same people out of the picker so nobody is offered and then refused.
+
+### Equal permissions
+
+`can_manage_listing(listing)` — creator **or** confirmed resident — replaces
+`owner_id = auth.uid()` in the UPDATE and DELETE policies on `listings` and in
+`mark_listing_taken` / `remove_listing`. It is SECURITY DEFINER on purpose:
+`is_household_member` (0008) reads `listings` through RLS and so answers "no"
+for a row the caller cannot already SELECT, which would have left a co-owner
+unable to re-open the very room they had just closed.
+
+Two guards make this safe:
+
+- **`listings_owner_is_permanent`** — a BEFORE UPDATE trigger refusing any
+  change to `owner_id`. Without it a co-owner could set `owner_id` to
+  themselves and RLS would allow it, since they are a household member both
+  before and after; `with check` cannot see the old row, so the rule must be a
+  trigger. `saveListingAction` correspondingly stopped writing `owner_id` on
+  update — it is set once, on insert.
+- **a household SELECT policy** — a co-owner could not otherwise read the room
+  once it was paused or taken, which would hide it from My Listings and make
+  `remove_listing`'s own SELECT come up empty and report "already gone".
+
+Because RLS now decides rather than an `owner_id` filter, the writes ask which
+rows actually came back (`.select("id")`): a row RLS refuses returns zero rows
+and **no error**, which would otherwise read as a silent success.
+
+Tagging stays the creator's alone, so a co-owner's save skips
+`inviteRoommates` and their form hides the picker.
+
+**This makes delete a one-way door for the whole household**: any co-owner can
+take the room down for all of them, and `remove_listing` is irreversible.
+
+### Shared state
+
+There is only ever one `listings` row, so there is no copy to reconcile — every
+co-owner reads and writes the same record, and `revalidatePath` refreshes it
+everywhere. `SharedListingSync` makes it *immediate*: `listings` joins the
+realtime publication and each co-owner's My Listings subscribes to the rooms
+they manage (one binding per room, not a blanket subscription), refreshing on
+any change. The token must reach the socket before the channel joins, exactly as
+`ChatRealtime` documents.
+
 ## 5. Tests
 
 - `tests/unit/co-posters.test.ts` — the cap at every boundary, the invitation

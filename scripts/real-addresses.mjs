@@ -56,8 +56,18 @@ const UA = "NestUp/1.0 (student project; https://nestup-kappa.vercel.app)";
 const OVERPASS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.osm.ch/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ];
+/**
+ * Consecutive Overpass failures before the run stops asking it at all.
+ *
+ * Overpass cuts you off after a few hundred queries and stays that way for
+ * hours. Once that has happened, every town costs a minute of timeouts before
+ * falling back to Nominatim, which turned a 20-minute job into a two-hour one.
+ * (`overpass.osm.ch` is not in the list on purpose: it answers instantly and
+ * holds only Swiss data, so it returns zero elements rather than an error.)
+ */
+const OVERPASS_STRIKES = 3;
 /** How far out of the centre a town's streets are collected. */
 const TOWN_RADIUS_M = 3000;
 /**
@@ -95,21 +105,32 @@ function query(centre) {
   ].join("\n");
 }
 
+let overpassStrikes = 0;
+
 async function overpass(q) {
+  if (overpassStrikes >= OVERPASS_STRIKES) return null;
+
   for (const endpoint of OVERPASS) {
     try {
       const res = await fetch(`${endpoint}?data=${encodeURIComponent(q)}`, {
         headers: { "User-Agent": UA, Accept: "application/json" },
-        signal: AbortSignal.timeout(45_000),
+        signal: AbortSignal.timeout(25_000),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        overpassStrikes = 0;
+        return await res.json();
+      }
     } catch {
       /* busy, blocked, or offline — try the next mirror */
     }
-    await sleep(1500);
+    await sleep(1000);
   }
+
   // Waiting out a 429 was the first version of this, and it cost 90 seconds a
   // town before failing anyway. Nominatim knows the same streets.
+  if (++overpassStrikes === OVERPASS_STRIKES) {
+    console.log("  overpass isn't answering — the rest of this run asks Nominatim instead");
+  }
   return null;
 }
 
@@ -243,10 +264,15 @@ async function reverse(point) {
  */
 async function townByAsking(city, centre, wanted) {
   const cached = join(CACHE, `${city.replace(/[^a-z0-9]+/gi, "_")}.reverse.json`);
-  if (existsSync(cached)) return JSON.parse(readFileSync(cached, "utf8"));
+  // A cached pool is only good enough if it can give every room here its own
+  // point. Two rooms on one point make a cluster no amount of zooming splits.
+  if (existsSync(cached)) {
+    const pool = JSON.parse(readFileSync(cached, "utf8"));
+    if (pool.length >= wanted) return pool;
+  }
 
   const found = new Map();
-  for (const point of samplePoints(centre, Math.max(14, wanted * 3))) {
+  for (const point of samplePoints(centre, Math.max(18, wanted * 4))) {
     const hit = await pacedNominatim(() => reverse(point));
     const road = hit?.address?.road;
     const lat = Number(hit?.lat);
@@ -471,11 +497,55 @@ if (error) throw new Error(error.message);
 
 console.log(`${rows.length} room(s) to check\n`);
 
+/**
+ * How far from its city centre a room may sit before the match is suspect.
+ *
+ * Generous — Jerusalem really is that big — but "Ben Yehuda 16, Tel Aviv"
+ * pinned 10 km out is Nominatim having found a Ben Yehuda somewhere else.
+ */
+const FAR_FROM_CITY_M = 8000;
+
+/**
+ * True for a room whose stored point can't actually be its address.
+ *
+ * Two of these turned up in the old data and neither is fixable by asking the
+ * geocoder again, which is why they're caught here rather than by re-running
+ * the lookup:
+ *
+ *   · **A point shared with another room.** Nominatim answers an unknown house
+ *     number with the middle of the street, so four rooms on Keren HaYesod in
+ *     Herzliya came back on the same pixel. Identical points also make a
+ *     cluster that no amount of zooming can split.
+ *   · **A point nowhere near the city.** A street name that exists in the
+ *     wrong town matched, and the old 25 km sanity check was wide enough to
+ *     let it through.
+ *
+ * Both are free to detect: it's all in the rows we've already read.
+ */
+function suspectPoint(row, sharedPoints) {
+  if (row.lat == null || row.lng == null) return true;
+  if (sharedPoints.has(`${row.lat},${row.lng}`)) return true;
+  const centre = CITY_CENTRES[row.city];
+  return Boolean(centre && distanceM({ lat: row.lat, lng: row.lng }, centre) > FAR_FROM_CITY_M);
+}
+
 /** Split the room's stored address, however the row happens to hold it. */
 function parts(row) {
   const street = (row.street || row.address?.replace(/\s+\d+[A-Za-z]?\s*$/, "") || "").trim();
   const number = (row.house_number || row.address?.match(/(\d+[A-Za-z]?)\s*$/)?.[1] || "").trim();
   return { street, number };
+}
+
+// Points more than one room claims. Counted once, up front.
+const pointTally = new Map();
+for (const row of rows) {
+  if (row.lat == null) continue;
+  const key = `${row.lat},${row.lng}`;
+  pointTally.set(key, (pointTally.get(key) ?? 0) + 1);
+}
+const sharedPoints = new Set([...pointTally].filter(([, n]) => n > 1).map(([key]) => key));
+if (sharedPoints.size) {
+  console.log(`${sharedPoints.size} point(s) are claimed by more than one room — those rooms get a real address\n`);
 }
 
 // ── Pass 1: a room whose own address is real keeps it, re-pinned exactly. ──
@@ -485,7 +555,7 @@ let checked = 0;
 
 for (const row of rows) {
   const { street, number } = parts(row);
-  if (row.coords_source !== "geocoded" || !street) {
+  if (row.coords_source !== "geocoded" || !street || suspectPoint(row, sharedPoints)) {
     needsAddress.push(row);
     continue;
   }
@@ -543,6 +613,11 @@ for (const city of towns) {
     console.log(`  ${city}: no real streets found — ${roomsHere.length} room(s) left alone`);
     tally.stuck += roomsHere.length;
     continue;
+  }
+  if (pool.length < roomsHere.length) {
+    // Said out loud rather than swallowed: some rooms here will share a point,
+    // and a silent wrap-around is how that would go unnoticed.
+    console.log(`  ${city}: only ${pool.length} address(es) for ${roomsHere.length} room(s) — some will share a point`);
   }
 
   for (const [index, row] of roomsHere.entries()) {

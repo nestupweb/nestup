@@ -67,7 +67,6 @@ async function resolveCoords(
       .from("listings")
       .select("street, house_number, city, coords_source, lat")
       .eq("id", listingId)
-      .eq("owner_id", userId)
       .maybeSingle();
     const prev = row as
       | { street: string; house_number: string; city: string; coords_source: CoordsSource; lat: number | null }
@@ -193,6 +192,21 @@ export async function saveListingAction(
   // Every photo was looked at when it was uploaded; publish only accepts photos
   // whose signed verdict fits the tag (or pairs already saved on this listing).
   const listingId = String(formData.get("listing_id") ?? "");
+
+  // Who is saving: the creator, or a confirmed roommate who co-owns this room
+  // (0033)? They may change everything about the listing alike — the one thing
+  // only the creator does is tag roommates. A brand-new room has no owner but
+  // the person publishing it.
+  let isOwner = true;
+  if (listingId) {
+    const { data: ownerRow } = await supabase
+      .from("listings")
+      .select("owner_id")
+      .eq("id", listingId)
+      .maybeSingle();
+    isOwner = (ownerRow as { owner_id: string } | null)?.owner_id === user.id;
+  }
+
   if (isPhotoCheckEnabled()) {
     if (newFiles.length > 0) return { error: "Please add photos through the photo picker so they can be checked." };
     const trusted = new Map<string, PhotoRoom>();
@@ -201,7 +215,6 @@ export async function saveListingAction(
         .from("listings")
         .select("photo_urls, photo_labels")
         .eq("id", listingId)
-        .eq("owner_id", user.id)
         .maybeSingle();
       const row = data as { photo_urls: string[]; photo_labels: string[] | null } | null;
       row?.photo_urls.forEach((u, i) => trusted.set(u, photoRoomSchema.parse(row.photo_labels?.[i] ?? "other")));
@@ -235,6 +248,9 @@ export async function saveListingAction(
       placePin: true,
     };
   }
+  // `owner_id` is deliberately absent: it is set once, on insert. Since 0033 a
+  // confirmed roommate saves this same record, and re-writing owner_id would
+  // both hand them the room and trip the listings_owner_is_permanent trigger.
   const row = {
     ...parsed.data,
     title,
@@ -244,16 +260,25 @@ export async function saveListingAction(
     photo_labels,
     viewing_slots,
     is_active,
-    owner_id: user.id,
     updated_at: new Date().toISOString(),
   };
 
   let publishedId = "";
   if (listingId) {
-    const { error } = await supabase.from("listings").update(row).eq("id", listingId).eq("owner_id", user.id);
+    // No `owner_id` filter any more — "the household updates their listing"
+    // (0033) decides. A row RLS refuses comes back as zero rows and no error,
+    // which would otherwise look like a silent success.
+    const { data, error } = await supabase.from("listings").update(row).eq("id", listingId).select("id");
     if (error) return { error: "Could not save the listing. Please try again." };
+    if (!data || data.length === 0) {
+      return { error: "You can no longer edit this listing." };
+    }
   } else {
-    const { data, error } = await supabase.from("listings").insert(row).select("id").single();
+    const { data, error } = await supabase
+      .from("listings")
+      .insert({ ...row, owner_id: user.id })
+      .select("id")
+      .single();
     if (error) return { error: "Could not save the listing. Please try again." };
     publishedId = (data as { id: string }).id;
   }
@@ -263,9 +288,15 @@ export async function saveListingAction(
   // only *asked*; each of them decides for themselves whether the room joins
   // their own My Listings. A failure here is reported without pretending the
   // listing didn't save, because it did.
-  const invited = await inviteRoommates(supabase, listingId || publishedId, taggedIds);
-  if (invited.error) {
-    return { error: `Your listing is saved, but your roommates weren’t added — ${invited.error}` };
+  // Tagging is the creator's alone (0033 kept `invite_listing_roommates`
+  // owner-only), so a co-owner saving the form skips it rather than being told
+  // off by the database for a picker they were never shown.
+  const savedId = listingId || publishedId;
+  if (isOwner) {
+    const invited = await inviteRoommates(supabase, savedId, taggedIds);
+    if (invited.error) {
+      return { error: `Your listing is saved, but your roommates weren’t added — ${invited.error}` };
+    }
   }
 
   // A brand-new room tells the seekers who asked to hear about matches. It runs
@@ -287,9 +318,14 @@ export async function saveListingAction(
 export type DeleteListingState = { error?: string };
 
 /**
- * Deleting the member's own room. Scoped by `owner_id` as well as `id`, so a
- * forged `listing_id` can only ever match something the signed-in member
- * already owns; RLS enforces the same rule underneath.
+ * Taking down a room the member manages — since 0033 that is the creator OR any
+ * confirmed roommate, who has the same buttons. There is no `owner_id` filter
+ * left to scope it: `remove_listing` and the RLS policies behind it are what
+ * decide, so a forged `listing_id` matches only a room the caller is really
+ * part of, and the function answers -1 when it is not.
+ *
+ * It is a one-way door for the whole household: any co-owner can take the room
+ * down for all of them, and nothing puts it back.
  *
  * It does not delete the row. A real delete cascades to the conversations about
  * the room and every message in them (0001/0004) — so the people who wrote
@@ -308,13 +344,12 @@ export async function deleteListingAction(
   const listingId = String(formData.get("listing_id") ?? "").trim();
   if (!listingId) return { error: "Could not tell which listing to delete." };
 
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   // The notice names the room, so read the title before it goes.
   const { data: row } = await supabase
     .from("listings")
     .select("title")
     .eq("id", listingId)
-    .eq("owner_id", user.id)
     .is("removed_at", null)
     .maybeSingle();
   if (!row) return { error: "That listing is already gone." };

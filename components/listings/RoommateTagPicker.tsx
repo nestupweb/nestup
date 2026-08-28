@@ -32,9 +32,12 @@ const label = "block text-xs font-medium uppercase tracking-widest text-muted";
 export function RoommateTagPicker({
   initial,
   roommatesCount,
+  listingId,
 }: {
   initial: TaggedMember[];
   roommatesCount: number;
+  /** Lets the search treat this room's own roommates as still available. */
+  listingId?: string;
 }) {
   const [tagged, setTagged] = useState<TaggedMember[]>(initial);
   const [query, setQuery] = useState("");
@@ -61,7 +64,7 @@ export function RoommateTagPicker({
     if (tooShort || resultsFor === q) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const { members } = await searchMembersAction(q);
+      const { members } = await searchMembersAction(q, listingId);
       if (cancelled) return;
       setResults(members);
       setResultsFor(q);
@@ -71,7 +74,7 @@ export function RoommateTagPicker({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [q, tooShort, resultsFor]);
+  }, [q, tooShort, resultsFor, listingId]);
 
   // Clicking away closes the suggestions without clearing what was typed.
   useEffect(() => {
@@ -186,7 +189,10 @@ export function RoommateTagPicker({
 
       {searching ? <p className="mt-2 text-xs text-muted">Searching…</p> : null}
       {!searching && query.trim().length >= MIN_MEMBER_QUERY && shown.length === 0 ? (
-        <p className="mt-2 text-xs text-muted">No members found by that name.</p>
+        <p className="mt-2 text-xs text-muted">
+          Nobody free by that name — members who already have a listing of their own, or who have
+          joined another home, can&rsquo;t be tagged.
+        </p>
       ) : null}
 
       {tagged.length > 0 ? (

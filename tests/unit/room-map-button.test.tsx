@@ -69,14 +69,36 @@ test("the legend names the room first, then only the kinds actually shown", asyn
   expect(entries).toEqual(["This room", "Cafés", "Bars"]);
 });
 
-test("a places lookup that fails still opens the map on the room", async () => {
-  fetchMock.mockRejectedValueOnce(new Error("overpass is busy"));
+test("a busy lookup is retried, not accepted as an empty street", async () => {
+  // `ok: false` means nobody answered. Taking that as "no cafés here" is how a
+  // room in the middle of Tel Aviv ends up looking like it has nothing around it.
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ places: [], ok: false }) });
+  render(<RoomMapButton point={POINT} address="Florentin 54" city="Tel Aviv" note="Florentin 54, Tel Aviv." />);
+
+  await open();
+
+  expect(await screen.findByTestId("map", undefined, { timeout: 5000 })).toHaveTextContent("2 places");
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+test("a lookup nobody answers still opens the map on the room", async () => {
+  fetchMock.mockResolvedValue({ ok: true, json: async () => ({ places: [], ok: false }) });
+  render(<RoomMapButton point={POINT} address="Florentin 54" city="Tel Aviv" note="Florentin 54, Tel Aviv." />);
+
+  await open();
+
+  expect(await screen.findByTestId("map", undefined, { timeout: 5000 })).toHaveTextContent("0 places");
+  await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+});
+
+test("a street with genuinely nothing on it is taken at its word", async () => {
+  fetchMock.mockResolvedValue({ ok: true, json: async () => ({ places: [], ok: true }) });
   render(<RoomMapButton point={POINT} address="Florentin 54" city="Tel Aviv" note="Florentin 54, Tel Aviv." />);
 
   await open();
 
   expect(await screen.findByTestId("map")).toHaveTextContent("0 places");
-  await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+  expect(fetchMock).toHaveBeenCalledTimes(1); // no pointless retry
 });
 
 test("closing is obvious — a labelled button, Escape, and focus comes back", async () => {

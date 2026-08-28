@@ -16,6 +16,8 @@ vi.mock("next/image", () => ({
 vi.mock("next/navigation", () => ({ usePathname: () => "/profile" }));
 vi.mock("@/app/actions/about", () => ({ saveAboutAction: vi.fn(async () => ({ saved: true })) }));
 
+vi.mock("@/components/profile/SharedListingSync", () => ({ SharedListingSync: () => null }));
+
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 
 const profile: Profile = {

@@ -90,6 +90,11 @@ export function inviteErrorMessage(dbMessage: string): string {
   const m = dbMessage.toLowerCase();
   if (m.includes("at most")) return "You tagged more roommates than there are rooms — untag someone and try again.";
   if (m.includes("blocked")) return "You can’t tag a member you’ve blocked.";
+  // 0033: one person, one home. The database names them, so keep the name.
+  if (m.includes("already has an active listing")) {
+    const who = dbMessage.replace(/ already has an active listing.*/i, "").trim();
+    return `${who || "That member"} already has a listing of their own — they can’t join another.`;
+  }
   if (m.includes("only the listing owner")) return "Only the member who posted the room can tag roommates.";
   if (m.includes("tagged member not found")) return "One of the people you tagged is no longer a member.";
   if (m.includes("listing not found")) return "That listing is gone.";
@@ -100,6 +105,9 @@ export function inviteErrorMessage(dbMessage: string): string {
 export function respondErrorMessage(dbMessage: string): string {
   const m = dbMessage.toLowerCase();
   if (m.includes("already answered")) return "You’ve already answered this invitation.";
+  if (m.includes("you already have an active listing")) {
+    return "You already have a listing of your own — take it down first if you want to join this one.";
+  }
   if (m.includes("only the invited member")) return "This invitation isn’t yours to answer.";
   if (m.includes("invite not found")) return "That invitation is no longer there.";
   return "Could not save your answer. Please try again.";
@@ -114,6 +122,7 @@ export function respondErrorMessage(dbMessage: string): string {
 export function inviteErrorStatus(dbMessage: string): number {
   const m = dbMessage.toLowerCase();
   if (m.includes("only the listing owner") || m.includes("blocked")) return 403;
+  if (m.includes("already has an active listing")) return 409;
   if (m.includes("listing not found") || m.includes("tagged member not found")) return 404;
   if (m.includes("at most")) return 422;
   return 400;
@@ -123,7 +132,7 @@ export function respondErrorStatus(dbMessage: string): number {
   const m = dbMessage.toLowerCase();
   if (m.includes("only the invited member")) return 403;
   if (m.includes("invite not found")) return 404;
-  if (m.includes("already answered")) return 409;
+  if (m.includes("already answered") || m.includes("already have an active listing")) return 409;
   return 400;
 }
 

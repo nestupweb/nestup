@@ -9,7 +9,13 @@ import { beforeEach, expect, test, vi } from "vitest";
  */
 const rpc = vi.hoisted(() => vi.fn());
 const update = vi.hoisted(() => vi.fn());
-const state = vi.hoisted(() => ({ rows: [] as unknown[], count: 0, listing: null as unknown }));
+const state = vi.hoisted(() => ({
+  rows: [] as unknown[],
+  count: 0,
+  listing: null as unknown,
+  /** What the UPDATE's .select() returns: one row when RLS let the write through. */
+  updatedRows: [{ id: "l1" }] as unknown[],
+}));
 
 vi.mock("@/lib/auth", () => ({
   requireUser: async () => ({
@@ -24,11 +30,14 @@ vi.mock("@/lib/auth", () => ({
             then: undefined,
           }),
         }),
+        // Since 0033 the update is scoped by id alone — RLS decides who may
+        // write — so the action asks which rows came back instead of trusting
+        // an owner_id filter it no longer sends.
         update: (values: unknown) => ({
           eq: () => ({
-            eq: async () => {
+            select: async () => {
               update(values);
-              return { error: null };
+              return { data: state.updatedRows, error: null };
             },
           }),
         }),
@@ -44,6 +53,7 @@ beforeEach(() => {
   rpc.mockReset();
   update.mockReset();
   state.listing = { id: LISTING };
+  state.updatedRows = [{ id: LISTING }];
 });
 
 test("closing a room passes the trimmed message and reports how many were told", async () => {

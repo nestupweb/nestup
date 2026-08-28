@@ -85,6 +85,8 @@ describe("database refusals become sentences and status codes", () => {
     ["only the listing owner may tag roommates", /only the member who posted/i, 403],
     ["tagged member not found", /no longer a member/i, 404],
     ["listing not found", /listing is gone/i, 404],
+    // 0033 — one person, one home. The name comes through from the database.
+    ["Nir Sharabi already has an active listing", /nir sharabi already has a listing of their own/i, 409],
     ["some unmapped postgres noise", /could not save your roommates/i, 400],
   ])("invite: %s", (dbMessage, sentence, status) => {
     expect(inviteErrorMessage(dbMessage)).toMatch(sentence);
@@ -95,6 +97,7 @@ describe("database refusals become sentences and status codes", () => {
     ["this invite was already answered", /already answered/i, 409],
     ["only the invited member may answer this", /isn’t yours to answer/i, 403],
     ["invite not found", /no longer there/i, 404],
+    ["you already have an active listing", /you already have a listing of your own/i, 409],
     ["something else entirely", /could not save your answer/i, 400],
   ])("respond: %s", (dbMessage, sentence, status) => {
     expect(respondErrorMessage(dbMessage)).toMatch(sentence);

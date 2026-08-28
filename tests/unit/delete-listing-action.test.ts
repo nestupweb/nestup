@@ -2,9 +2,10 @@
 import { beforeEach, expect, test, vi } from "vitest";
 
 /**
- * Deleting your own listing. The row is matched by owner_id as well as id, so a
- * forged listing_id in the form can only ever reach something the signed-in
- * member already owns — the same belt-and-braces rule the update path uses.
+ * Deleting a listing you manage. Since 0033 that is the creator OR any
+ * confirmed roommate, so there is no owner_id filter left in the query: RLS and
+ * `remove_listing` decide, and a forged listing_id reaches nothing the caller
+ * is not really part of.
  *
  * Since 0028 it does not delete the row: a real delete cascades to the
  * conversations about the room and every message in them, which would destroy
@@ -24,14 +25,9 @@ vi.mock("@/lib/auth", () => ({
           eq: (_c1: string, id: string) => {
             state.seen.id = id;
             return {
-              eq: (_c2: string, owner: string) => {
-                state.seen.owner = owner;
-                return {
-                  is: () => ({
-                    maybeSingle: async () => ({ data: state.title === null ? null : { title: state.title } }),
-                  }),
-                };
-              },
+              is: () => ({
+                maybeSingle: async () => ({ data: state.title === null ? null : { title: state.title } }),
+              }),
             };
           },
         }),
@@ -74,8 +70,10 @@ test("deleting tells everyone the room is gone, without claiming it was taken", 
   expect(rpc.mock.calls[0][1].p_message).toMatch(/no longer available/i);
   // A room can be pulled for any reason — the notice must not invent a deal.
   expect(rpc.mock.calls[0][1].p_message).not.toMatch(/taken/i);
-  // The lookup is scoped to the caller, not just to the id in the form.
-  expect(state.seen).toEqual({ id: LISTING, owner: "me-111" });
+  // The lookup carries the id alone now: co-owners delete too (0033), so
+  // "may this member?" is answered by RLS and by remove_listing — which returns
+  // -1 for anyone outside the household — not by an owner_id filter here.
+  expect(state.seen).toEqual({ id: LISTING });
 });
 
 test("a room that is already gone says so instead of pretending", async () => {

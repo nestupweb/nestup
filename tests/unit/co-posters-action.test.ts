@@ -125,3 +125,52 @@ test("tagging a blocked member is refused with a 403", async () => {
   expect(result.error).toMatch(/blocked/i);
   expect(result.status).toBe(403);
 });
+
+/**
+ * One person, one home (0033). `getBusyMemberIds` is what keeps the picker from
+ * offering someone the database would then refuse.
+ */
+function housingClient(ownerRows: unknown[], residentRows: unknown[]) {
+  const chain = (rows: unknown[]) => {
+    const node: Record<string, unknown> = {};
+    for (const m of ["select", "in", "eq"]) node[m] = () => node;
+    node.is = async () => ({ data: rows, error: null });
+    return node;
+  };
+  return {
+    from: (table: string) => chain(table === "listings" ? ownerRows : residentRows),
+  } as never;
+}
+
+test("a member who owns a live listing is unavailable", async () => {
+  const { getBusyMemberIds } = await import("@/lib/invites");
+  const busy = await getBusyMemberIds(housingClient([{ owner_id: A }], []), [A, INVITE]);
+  expect([...busy]).toEqual([A]);
+});
+
+test("a member who already confirmed another home is unavailable", async () => {
+  const { getBusyMemberIds } = await import("@/lib/invites");
+  const busy = await getBusyMemberIds(
+    housingClient([], [{ resident_id: A, listing_id: "other-listing" }]),
+    [A]
+  );
+  expect(busy.has(A)).toBe(true);
+});
+
+test("this room's own confirmed roommates stay available to it", async () => {
+  const { getBusyMemberIds } = await import("@/lib/invites");
+  // Without `exceptListing`, re-saving a form would report every roommate who
+  // had already joined it as housed elsewhere.
+  const busy = await getBusyMemberIds(
+    housingClient([], [{ resident_id: A, listing_id: LISTING }]),
+    [A],
+    LISTING
+  );
+  expect(busy.size).toBe(0);
+});
+
+test("nobody to check means no round-trip", async () => {
+  const { getBusyMemberIds } = await import("@/lib/invites");
+  const exploding = { from: () => { throw new Error("should not query"); } } as never;
+  expect((await getBusyMemberIds(exploding, [])).size).toBe(0);
+});

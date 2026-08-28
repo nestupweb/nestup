@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MarkTaken } from "@/components/listings/MarkTaken";
 import { ListingActions } from "@/components/profile/ListingActions";
 import { CoPosterInvites } from "@/components/profile/CoPosterInvites";
+import { SharedListingSync } from "@/components/profile/SharedListingSync";
 import { PencilIcon } from "@/components/ui/PencilIcon";
 import { photoRoomLabel } from "@/lib/constants";
 import type { PendingInvite } from "@/lib/co-posters";
@@ -27,8 +28,10 @@ export const EDIT_PHOTOS_HREF = "/listing#photos";
  *   2. the room they host, with the buttons that manage it;
  *   3. the rooms they co-post — shared listings they confirmed.
  *
- * A co-posted room is shown, not managed: editing, closing and deleting stay
- * with the member who created it, which is also what the database allows.
+ * A co-posted room carries the SAME buttons as one they host (0033): a
+ * confirmed roommate edits, closes, re-opens and deletes the room exactly as its
+ * creator does, because it is one record and they co-own it. The "Co-poster"
+ * badge says whose name is on it, not what they are allowed to do.
  * Other members never see this tab — /people/[id] has its own listing section.
  */
 export function MyListing({
@@ -42,8 +45,12 @@ export function MyListing({
   /** Rooms this member confirmed as a co-poster (never their own). */
   shared?: Listing[];
 }) {
+  // Every room this member co-owns, so a change by any of them lands here live.
+  const managedIds = [...listings, ...shared].map((l) => l.id);
+
   return (
     <div className="space-y-8">
+      <SharedListingSync listingIds={managedIds} />
       <CoPosterInvites invites={invites} />
 
       {listings.length === 0 ? (
@@ -105,12 +112,9 @@ function ListingPhotos({ listing, coPoster = false }: { listing: Listing; coPost
                   sizes="(min-width: 1024px) 200px, (min-width: 640px) 25vw, 33vw"
                   className="object-cover"
                 />
-                {/* The pencil edits the room; a co-poster does not own it. */}
-                {coPoster ? null : (
-                  <Link href={EDIT_PHOTOS_HREF} aria-label={`Edit photo ${i + 1}`} className={PENCIL}>
-                    <PencilIcon />
-                  </Link>
-                )}
+                <Link href={EDIT_PHOTOS_HREF} aria-label={`Edit photo ${i + 1}`} className={PENCIL}>
+                  <PencilIcon />
+                </Link>
               </div>
               {room ? (
                 <figcaption className="mt-1.5 truncate text-[11px] font-semibold uppercase tracking-wider text-muted">
@@ -120,7 +124,7 @@ function ListingPhotos({ listing, coPoster = false }: { listing: Listing; coPost
             </figure>
           );
         })}
-        {photos.length === 0 && !coPoster ? (
+        {photos.length === 0 ? (
           <Link href={EDIT_PHOTOS_HREF} className={DASHED}>
             <span className="text-3xl font-light leading-none">+</span>
             <span className={DASHED_LABEL}>Add photos</span>
@@ -128,8 +132,8 @@ function ListingPhotos({ listing, coPoster = false }: { listing: Listing; coPost
         ) : null}
       </div>
 
-      {/* Managing the room belongs to whoever created it. */}
-      {coPoster ? null : photos.length > 0 ? (
+      {/* Every confirmed roommate manages the room, creator or not (0033). */}
+      {photos.length > 0 ? (
         <ListingActions listingId={listing.id} editHref={EDIT_PHOTOS_HREF}>
           <MarkTaken listingId={listing.id} title={listing.title} takenAt={listing.taken_at} />
         </ListingActions>

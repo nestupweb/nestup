@@ -73,6 +73,70 @@ export async function respondToInvite(
   return { listingId: typeof data === "string" ? data : undefined };
 }
 
+/**
+ * Of `ids`, the ones who already have a home — a live listing they posted, or
+ * one they have already confirmed as a roommate.
+ *
+ * One person, one home (0033). `invite_listing_roommates` refuses these anyway;
+ * this is so the picker never offers someone it would then have to reject.
+ * Only *live* rooms count, so a paused, taken or deleted listing frees a member
+ * to be tagged again — and `exceptListing` lets the room being edited off the
+ * hook, or every roommate who had already joined it would look unavailable.
+ */
+export async function getBusyMemberIds(
+  supabase: SupabaseClient,
+  ids: readonly string[],
+  exceptListing?: string
+): Promise<Set<string>> {
+  const busy = new Set<string>();
+  if (ids.length === 0) return busy;
+
+  const [owned, resident] = await Promise.all([
+    supabase
+      .from("listings")
+      .select("owner_id")
+      .in("owner_id", ids)
+      .eq("is_active", true)
+      .is("removed_at", null),
+    supabase
+      .from("listing_residents")
+      .select("resident_id, listing_id, listings!inner(id)")
+      .in("resident_id", ids)
+      .eq("listings.is_active", true)
+      .is("listings.removed_at", null),
+  ]);
+
+  for (const row of (owned.data as { owner_id: string }[] | null) ?? []) busy.add(row.owner_id);
+  for (const row of (resident.data as { resident_id: string; listing_id: string }[] | null) ?? []) {
+    if (row.listing_id !== exceptListing) busy.add(row.resident_id);
+  }
+  return busy;
+}
+
+/**
+ * The one room this member manages: the one they posted, or — failing that —
+ * the one they co-post. Since 0033 a confirmed roommate edits the same record
+ * the creator does, so the listing form has to find it for either of them.
+ */
+export async function getManagedListing(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Listing | null> {
+  const { data } = await supabase
+    .from("listings")
+    .select("*")
+    .eq("owner_id", userId)
+    .is("removed_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const own = (data as Listing | null) ?? null;
+  if (own) return own;
+
+  const shared = await getCoPostedListings(supabase, userId);
+  return shared[0] ?? null;
+}
+
 type InviteJoin = {
   id: string;
   status: ListingInviteStatus;

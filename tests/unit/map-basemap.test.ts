@@ -75,16 +75,11 @@ describe("basemaps", () => {
       );
       expect(labels.length).toBeGreaterThan(20);
       for (const layer of labels) {
-        // Asking for the raw `name` first is exactly the bug this replaced:
-        // in Israel that field is Hebrew.
-        // No `["get", "name"]` at the end on purpose: falling back to the raw
-        // name is what leaves a lone Hebrew label on an English map.
-        expect(layer.layout!["text-field"]).toEqual([
-          "coalesce",
-          ["get", "name:en"],
-          ["get", "name_en"],
-          ["get", "name:latin"],
-        ]);
+        // `name:en` alone. Every wider net puts the Hebrew back: `name` is
+        // the local name, and both `name_en` and `name:latin` are defined to
+        // fall back to it when there's no English. See the note on
+        // ENGLISH_LABEL in scripts/build-english-basemaps.mjs.
+        expect(layer.layout!["text-field"]).toEqual(["get", "name:en"]);
       }
     }
   });

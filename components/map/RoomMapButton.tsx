@@ -43,13 +43,24 @@ export function RoomMapButton({
   const where = [address, city].filter(Boolean).join(", ");
 
   const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/places?lat=${point.lat}&lng=${point.lng}`);
-      const body = (await res.json()) as { places?: Place[] };
-      setPlaces(body.places ?? []);
-    } catch {
-      setPlaces([]); // the room's own pin is the part that matters
+    // `ok: false` means nobody answered, which is not the same as a street with
+    // nothing on it — Overpass is a volunteer service and being busy is its
+    // normal state. One retry turns most of those into an answer; after that
+    // the map opens with just the room, which is still a working map.
+    for (const wait of [0, 1500]) {
+      if (wait) await new Promise((done) => setTimeout(done, wait));
+      try {
+        const res = await fetch(`/api/places?lat=${point.lat}&lng=${point.lng}`);
+        const body = (await res.json()) as { places?: Place[]; ok?: boolean };
+        if (body.ok !== false) {
+          setPlaces(body.places ?? []);
+          return;
+        }
+      } catch {
+        /* offline or aborted — try once more, then give up quietly */
+      }
     }
+    setPlaces([]); // the room's own pin is the part that matters
   }, [point.lat, point.lng]);
 
   function show() {

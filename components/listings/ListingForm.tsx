@@ -26,11 +26,17 @@ export function ListingForm({
   listing,
   userId,
   taggedRoommates = [],
+  canTagRoommates = true,
 }: {
   listing: Listing | null;
   userId: string;
   /** Roommates already tagged on this listing, with each one's answer. */
   taggedRoommates?: TaggedMember[];
+  /**
+   * False for a confirmed roommate editing a room they co-own: they may change
+   * every detail, but tagging stays with the member who created it (0033).
+   */
+  canTagRoommates?: boolean;
 }) {
   const [state, form, pending] = useStickyForm<ListingFormState>(saveListingAction, {});
   // Controlled, because the co-poster cap is `roommates_count - 1` and has to
@@ -44,9 +50,15 @@ export function ListingForm({
 
   return (
     <form {...form} className="mx-auto w-full max-w-3xl px-4 pb-12 sm:px-6">
-      <h1 className="text-3xl font-bold">{listing ? "Your listing" : "List your room"}</h1>
+      <h1 className="text-3xl font-bold">
+        {listing ? (canTagRoommates ? "Your listing" : "Your shared listing") : "List your room"}
+      </h1>
       <p className="mt-1 text-sm text-muted">
-        {listing ? "Edit details or pause the listing." : "Post a room and start reviewing interested seekers."}
+        {!listing
+          ? "Post a room and start reviewing interested seekers."
+          : canTagRoommates
+            ? "Edit details or pause the listing."
+            : "You co-post this room. Your changes are the same room everyone else sees."}
       </p>
 
       {listing ? <input type="hidden" name="listing_id" value={listing.id} /> : null}
@@ -157,6 +169,7 @@ export function ListingForm({
       </section>
 
       {/* ===== Who else lives here ===== */}
+      {canTagRoommates ? (
       <section className={section}>
         <h2 className={heading}>Who else lives here</h2>
         <p className="mt-1 text-sm text-muted">
@@ -166,9 +179,14 @@ export function ListingForm({
           are advertising.
         </p>
         <div className="mt-3">
-          <RoommateTagPicker initial={taggedRoommates} roommatesCount={roommatesCount} />
+          <RoommateTagPicker
+            initial={taggedRoommates}
+            roommatesCount={roommatesCount}
+            listingId={listing?.id}
+          />
         </div>
       </section>
+      ) : null}
 
       {/* ===== House rules & features ===== */}
       <section className={section}>

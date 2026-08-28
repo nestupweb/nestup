@@ -25,13 +25,14 @@ function refreshEverywhere(listingId: string): void {
  */
 export async function listingChatCountAction(listingId: string): Promise<{ count: number }> {
   if (!UUID_RE.test(String(listingId ?? ""))) return { count: 0 };
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
 
+  // Since 0033 a confirmed roommate co-owns the room, so the count is theirs to
+  // see too; RLS ("the household reads their listing") is what decides.
   const { data: listing } = await supabase
     .from("listings")
     .select("id")
     .eq("id", listingId)
-    .eq("owner_id", user.id)
     .maybeSingle();
   if (!listing) return { count: 0 };
 
@@ -75,14 +76,18 @@ export async function markListingTakenAction(_prev: TakenState, formData: FormDa
 /** A deal that fell through: the room goes back up and stays out of the notice path. */
 export async function reopenListingAction(listingId: string): Promise<TakenState> {
   if (!UUID_RE.test(String(listingId ?? ""))) return { error: GENERIC };
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
 
-  const { error } = await supabase
+  // No owner_id filter: "the household updates their listing" (0033) decides,
+  // and a row it refuses returns zero rows rather than an error — so ask which
+  // rows actually changed instead of assuming.
+  const { data, error } = await supabase
     .from("listings")
     .update({ is_active: true, taken_at: null, updated_at: new Date().toISOString() })
     .eq("id", listingId)
-    .eq("owner_id", user.id);
+    .select("id");
   if (error) return { error: "Could not re-open the listing. Please try again." };
+  if (!data || data.length === 0) return { error: "You can no longer manage this listing." };
 
   refreshEverywhere(listingId);
   return {};

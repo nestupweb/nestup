@@ -1,7 +1,7 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { boundsOf, distanceM, hashUnit, pointOf, shouldGeocode } from "@/lib/geo";
 import { locationNote } from "@/lib/location";
-import { nearCity, parseNominatim } from "@/lib/geocode";
+import { geocodeAddress, nearCity, parseNominatim } from "@/lib/geocode";
 
 const TLV = { lat: 32.0853, lng: 34.7818 };
 
@@ -106,5 +106,57 @@ describe("locationNote", () => {
     // fallback itself (2026-08-28). Nothing should say the pin is a guess,
     // because a guessed pin can no longer be stored.
     expect(locationNote(base)).not.toMatch(/approximate|roughly|near/i);
+  });
+});
+
+describe("geocodeAddress", () => {
+  const ADDRESS = { street: "Florentin", house_number: "54", city: "Tel Aviv" };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function answers(body: unknown, ok = true) {
+    const fetchMock = vi.fn().mockResolvedValue({ ok, json: async () => body });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  test("a real address comes back as a point", async () => {
+    answers([{ lat: "32.0578", lon: "34.7686" }]);
+    await expect(geocodeAddress(ADDRESS)).resolves.toEqual({
+      status: "found",
+      lat: 32.0578,
+      lng: 34.7686,
+    });
+  });
+
+  test("an address that doesn't exist is 'missing', never the city centre", async () => {
+    // The old version answered with the middle of Tel Aviv and called it
+    // approximate. Now the owner gets asked to place the pin instead.
+    answers([]);
+    await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "missing" });
+  });
+
+  test("a hit in the wrong city is 'missing' too", async () => {
+    answers([{ lat: "29.5569", lon: "34.9498" }]); // Eilat, ~300 km away
+    await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "missing" });
+  });
+
+  test("a geocoder that won't answer is told apart from one that says no", async () => {
+    // This distinction is the whole point: an outage must not cost the owner
+    // their listing, but a wrong address must not be saved as if it were right.
+    const fetchMock = vi.fn().mockRejectedValue(new Error("network"));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "unavailable" });
+  });
+
+  test("asks once, for the full address only", async () => {
+    // The street alone used to be a second try, which returned a point
+    // somewhere along the street and got nudged to stop rooms stacking.
+    const fetchMock = answers([{ lat: "32.0578", lon: "34.7686" }]);
+    await geocodeAddress(ADDRESS);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("Florentin+54");
   });
 });

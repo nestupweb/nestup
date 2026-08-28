@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { getBlockedIds } from "@/lib/moderation";
-import { respondToInvite } from "@/lib/invites";
-import { MEMBER_SEARCH_LIMIT, MIN_MEMBER_QUERY, type TaggedMember } from "@/lib/co-posters";
+import { getBusyMemberIds, respondToInvite } from "@/lib/invites";
+import { MEMBER_SEARCH_LIMIT, MIN_MEMBER_QUERY, UUID_RE, type TaggedMember } from "@/lib/co-posters";
 
 /**
  * Shared listings — what the browser may call.
@@ -33,7 +33,10 @@ function refreshEverywhere(listingId?: string): void {
  * is a worse way to find out — and `blocked_user_ids()` still never says which
  * way round the block runs.
  */
-export async function searchMembersAction(query: string): Promise<{ members: TaggedMember[] }> {
+export async function searchMembersAction(
+  query: string,
+  listingId?: string
+): Promise<{ members: TaggedMember[] }> {
   const q = String(query ?? "").trim();
   if (q.length < MIN_MEMBER_QUERY) return { members: [] };
 
@@ -48,13 +51,21 @@ export async function searchMembersAction(query: string): Promise<{ members: Tag
       .ilike("full_name", pattern)
       .neq("user_id", user.id)
       .order("full_name")
-      .limit(MEMBER_SEARCH_LIMIT + 10),
+      // Room to drop the unavailable before trimming to the visible few.
+      .limit(MEMBER_SEARCH_LIMIT * 6),
     getBlockedIds(supabase),
   ]);
 
-  const members = ((data as TaggedMember[] | null) ?? [])
-    .filter((m) => !blocked.has(m.user_id))
-    .slice(0, MEMBER_SEARCH_LIMIT);
+  const candidates = ((data as TaggedMember[] | null) ?? []).filter((m) => !blocked.has(m.user_id));
+  // One person, one home (0033): someone who already has a listing cannot be
+  // invited to another, so they are never offered.
+  const busy = await getBusyMemberIds(
+    supabase,
+    candidates.map((m) => m.user_id),
+    UUID_RE.test(String(listingId ?? "")) ? listingId : undefined
+  );
+
+  const members = candidates.filter((m) => !busy.has(m.user_id)).slice(0, MEMBER_SEARCH_LIMIT);
   return { members };
 }
 
