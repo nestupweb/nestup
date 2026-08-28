@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { boundsOf, distanceM, hashUnit, pointOf, scatter, shouldGeocode } from "@/lib/geo";
+import { boundsOf, distanceM, hashUnit, pointOf, shouldGeocode } from "@/lib/geo";
 import { locationNote } from "@/lib/location";
 import { nearCity, parseNominatim } from "@/lib/geocode";
 
@@ -14,32 +14,6 @@ describe("hashUnit", () => {
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThanOrEqual(1);
     }
-  });
-});
-
-describe("scatter", () => {
-  test("stays within the radius and never moves for the same key", () => {
-    for (let i = 0; i < 200; i++) {
-      const p = scatter(TLV, `room-${i}`, 150);
-      expect(distanceM(TLV, p)).toBeLessThanOrEqual(151);
-    }
-    expect(scatter(TLV, "room-1", 150)).toEqual(scatter(TLV, "room-1", 150));
-  });
-
-  test("different keys land in different places", () => {
-    const a = scatter(TLV, "a", 500);
-    const b = scatter(TLV, "b", 500);
-    expect(a).not.toEqual(b);
-    expect(distanceM(a, b)).toBeGreaterThan(0);
-  });
-
-  test("spreads outward rather than bunching in the middle", () => {
-    // sqrt on the radius gives an even area distribution: with a uniform
-    // spread, half the points fall beyond ~70% of the radius.
-    const far = Array.from({ length: 400 }, (_, i) => scatter(TLV, `k${i}`, 1000)).filter(
-      (p) => distanceM(TLV, p) > 700
-    );
-    expect(far.length).toBeGreaterThan(120);
   });
 });
 
@@ -113,7 +87,6 @@ describe("locationNote", () => {
     house_number: "54",
     address: "Florentin 54",
     neighborhood: "Florentin",
-    coords_source: "geocoded" as const,
   };
 
   test("names the address the pin sits on, without saying Florentin twice", () => {
@@ -128,10 +101,10 @@ describe("locationNote", () => {
     expect(locationNote({ ...base, street: "", house_number: "", address: "", neighborhood: "" })).toBe("Tel Aviv.");
   });
 
-  test("owns up when the address couldn't be placed", () => {
-    const vague = locationNote({ ...base, coords_source: "city" });
-    expect(vague).toMatch(/approximate/i);
-    expect(vague).toMatch(/Tel Aviv/);
-    expect(vague).not.toMatch(/Florentin 54/);
+  test("never hedges — a room is either at its address or has no map", () => {
+    // The "approximate, city centre" wording went with the city-centre
+    // fallback itself (2026-08-28). Nothing should say the pin is a guess,
+    // because a guessed pin can no longer be stored.
+    expect(locationNote(base)).not.toMatch(/approximate|roughly|near/i);
   });
 });

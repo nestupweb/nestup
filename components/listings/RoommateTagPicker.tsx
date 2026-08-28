@@ -142,7 +142,11 @@ export function RoommateTagPicker({
           aria-autocomplete="list"
           disabled={max === 0 || full}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder={
             max === 0

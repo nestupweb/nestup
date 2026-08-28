@@ -60,6 +60,15 @@ const OVERPASS = [
 ];
 /** How far out of the centre a town's streets are collected. */
 const TOWN_RADIUS_M = 3000;
+/**
+ * How far from the centre an address may actually be handed out.
+ *
+ * The query casts wider than this so a big town still fills up, but 3 km out
+ * of a small one is usually the *next* town — and a room whose city says
+ * "Abu Ghosh" shouldn't be pinned in Kiryat Ye'arim. Relaxed automatically
+ * when a town has nothing this close.
+ */
+const ADDRESS_RADIUS_M = 2000;
 /** A hit further than this from its city centre is a wrong match, not a room. */
 const MAX_M_FROM_CITY = 25_000;
 /** Half a degree either way — a generous city, far short of the next one. */
@@ -141,7 +150,7 @@ async function townPlaces(city, centre) {
 
     if (element.type === "way" && tags.highway && Array.isArray(element.geometry)) {
       const english = tags["name:en"] ?? (latin(tags.name) ? tags.name : null);
-      if (!english || !tags.name) continue;
+      if (!english || !tags.name || !streetLike(english)) continue;
       englishByLocal.set(tags.name, english);
       const points = element.geometry.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon));
       if (points.length) streets.push({ name: english, points: points.map((p) => [p.lat, p.lon]) });
@@ -162,7 +171,7 @@ async function townPlaces(city, centre) {
   // A building is only usable once its street can be said in English.
   const addressed = doors
     .map((d) => ({ ...d, name: englishByLocal.get(d.street) ?? (latin(d.street) ? d.street : null) }))
-    .filter((d) => d.name);
+    .filter((d) => streetLike(d.name));
 
   const places = { streets, addressed };
   writeFileSync(cached, JSON.stringify(places));
@@ -181,7 +190,7 @@ function round(n) {
  * on a mapped vertex of the street it names is exactly where it says it is, it
  * just doesn't claim a door number.
  */
-function candidates(places) {
+function candidates(places, centre) {
   const fromDoors = places.addressed.map((d) => ({
     street: d.name,
     number: d.number,
@@ -207,12 +216,17 @@ function candidates(places) {
       .map((x) => x.c);
 
   const seen = new Set();
-  return [...spread(fromDoors), ...spread(fromStreets)].filter((c) => {
+  const all = [...spread(fromDoors), ...spread(fromStreets)].filter((c) => {
     const key = `${c.lat},${c.lng}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+
+  // Close to the middle of town if the town has anything there; the wider net
+  // only comes back out for the villages that don't.
+  const near = all.filter((c) => distanceM(c, centre) <= ADDRESS_RADIUS_M);
+  return near.length ? near : all;
 }
 
 /* ------------------------------------------------------------------ *
@@ -436,7 +450,7 @@ for (const city of towns) {
     continue;
   }
 
-  const pool = candidates(places);
+  const pool = candidates(places, centre);
   if (pool.length === 0) {
     console.log(`  ${city}: no named streets found — ${roomsHere.length} room(s) left alone`);
     tally.stuck += roomsHere.length;
