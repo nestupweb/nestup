@@ -201,6 +201,15 @@ roommates.
 - **Co-posters cannot edit the listing.** Loosening the owner-only update policy
   would have meant reworking mark-taken and delete ownership too; display plus
   household access covers what "co-poster" is for here.
+- **"Shared with you" is keyed on membership, not on an accepted invite** (decided
+  2026-08-28 after seeing it live). `getCoPostedListings` reads `listing_residents`,
+  so the 1,289 seed residency rows put ~2.17 rooms into the average seed account's
+  My Listings even though `listing_invites` is empty. That is deliberate: the same
+  relation already lists those members under "Who lives here" and shows the room on
+  their `/people/[id]` page, so gating this one view on an invite would have a
+  member appear in a household on the listing page while that room was missing from
+  their own profile. The alternative — joining through `listing_invites` — is a
+  one-line change in `lib/invites.ts` if that trade is ever revisited.
 - **The cap counts invitations, not residents.** A household seeded with
   residents who were never invited through this path could exceed
   `roommates_count - 1` in total. Accepted: seed data is synthetic, and the rule

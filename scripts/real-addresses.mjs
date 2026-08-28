@@ -124,6 +124,17 @@ function latin(value) {
 }
 
 /**
+ * True for a name that reads as a street rather than a route.
+ *
+ * OSM names some inter-village roads after both ends ("Nazlat Abu Nar -
+ * Attil"). They are real roads, but "Nazlat Abu Nar - Attil 12" is not an
+ * address anyone would write on an envelope.
+ */
+function streetLike(name) {
+  return typeof name === "string" && name.length <= 40 && !name.includes(" - ");
+}
+
+/**
  * Everything in one town worth pinning a room on, in English.
  *
  * Streets are collected with their Hebrew name as well, because that is the
