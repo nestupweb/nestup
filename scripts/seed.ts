@@ -121,6 +121,7 @@ async function main() {
   }
   console.log(`\nOwners: ${seeded} seeded, ${skipped} already existed.`);
 
+  await seedSeekers(idByEmail);
   await addRoommates(idByEmail);
   console.log(`Demo accounts sign in with password ${PASSWORD}`);
 }
