@@ -22,7 +22,7 @@ const RoomMap = dynamic(() => import("@/components/map/RoomMap"), {
  *
  * What's around the room is fetched on that first press, not with the page:
  * it's an Overpass lookup, and most visitors never open the map. If it comes
- * back empty — a busy mirror, or genuinely nothing within a few minutes' walk
+ * back empty — a busy mirror, or genuinely nothing within a ten-minute walk
  * — the map still opens with the room on it.
  *
  * The rooms nearby come the other way, with the page: that's our own database
@@ -97,7 +97,7 @@ export function RoomMapButton({
               ? "Looking around the street…"
               : places.length === 0
                 ? city
-                : `${city} · ${places.length} place${places.length === 1 ? "" : "s"} within a few minutes' walk`
+                : `${city} · ${places.length} place${places.length === 1 ? "" : "s"} within a kilometre`
           }
           footer={<Legend places={places ?? []} nearby={nearby.length} />}
           onClose={hide}

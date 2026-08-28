@@ -1,5 +1,6 @@
 import { renderIntro } from "@/lib/swipe-intro";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buildInterest, rankByAffinity, type DwellRow, type InterestVector } from "@/lib/affinity";
 import { lifestyleScore, socialScore, sortKey } from "@/lib/compatibility";
 import { getBlockedIds } from "@/lib/moderation";
 import type { Listing, Profile } from "@/lib/types";
@@ -157,4 +158,54 @@ export async function getSwipeDeck(supabase: SupabaseClient, seeker: Profile): P
     : listings;
 
   return buildDeck(seeker, visibleListings, (owners as Profile[] | null) ?? [], residents).slice(0, DECK_SIZE);
+}
+
+/** What the deck needs to keep personalising while the seeker is still swiping. */
+export interface PersonalisedDeck {
+  entries: DeckEntry[];
+  /** The seeker's learned taste; `{}` until they have looked at anything. */
+  interest: InterestVector;
+  /** How many rooms that taste is built from — the ranker's confidence. */
+  events: number;
+}
+
+/**
+ * The deck, re-ordered by how much attention the seeker has paid to rooms like
+ * each one (`lib/affinity.ts`).
+ *
+ * Personalisation runs strictly *after* `getSwipeDeck`, which is what keeps the
+ * guarantee simple: the hard filters and the `MIN_DECK_SCORE` gate have already
+ * chosen the rooms, and this can only change the order they arrive in. A failed
+ * or empty attention history degrades to exactly today's compatibility ordering.
+ *
+ * The rooms the taste is built from are read separately from the deck, because
+ * a room the seeker lingered on has usually been swiped away by now and so is
+ * deliberately absent from `entries`.
+ */
+export async function getPersonalisedDeck(
+  supabase: SupabaseClient,
+  seeker: Profile
+): Promise<PersonalisedDeck> {
+  const [entries, { data: dwellRows }] = await Promise.all([
+    getSwipeDeck(supabase, seeker),
+    supabase
+      .from("listing_dwell")
+      .select("listing_id, dwell_ms, photos_seen, pages_seen")
+      .eq("user_id", seeker.user_id)
+      .order("updated_at", { ascending: false })
+      .limit(200),
+  ]);
+
+  const rows = (dwellRows as DwellRow[] | null) ?? [];
+  if (rows.length === 0) return { entries, interest: {}, events: 0 };
+
+  const { data: seenListings } = await supabase
+    .from("listings")
+    .select("*")
+    .in("id", rows.map((r) => r.listing_id));
+
+  const byId = new Map(((seenListings as Listing[] | null) ?? []).map((l) => [l.id, l]));
+  const interest = buildInterest(rows, byId);
+  const events = rows.filter((r) => byId.has(r.listing_id)).length;
+  return { entries: rankByAffinity(entries, interest, events), interest, events };
 }

@@ -26,8 +26,8 @@ export interface Place {
   lng: number;
 }
 
-/** How far around the room to look. A few minutes' walk. */
-export const PLACE_RADIUS_M = 400;
+/** How far around the room to look — a ten-minute walk (user request, 2026-08-28). */
+export const PLACE_RADIUS_M = 1000;
 
 /**
  * The most pins worth drawing.
@@ -35,8 +35,12 @@ export const PLACE_RADIUS_M = 400;
  * These are DOM markers, and a busy corner of Tel Aviv can return several
  * hundred within the radius — which is both slow and unreadable. The closest
  * ones are the ones that say something about the room anyway.
+ *
+ * Raised with the radius: at 60 the nearest sixty in central Tel Aviv were all
+ * inside the old four hundred metres, so widening the search alone would have
+ * changed nothing anyone could see.
  */
-export const MAX_PLACES = 60;
+export const MAX_PLACES = 150;
 
 /** OSM `amenity` values, grouped into the four kinds the legend names. */
 const AMENITIES: Record<string, PlaceKind> = {

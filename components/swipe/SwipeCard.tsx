@@ -23,11 +23,16 @@ export function SwipeCard({
   seeker,
   leaving,
   onDecide,
+  onPhotoView,
+  onPageView,
 }: {
   entry: DeckEntry;
   seeker: Profile;
   leaving: SwipeDirection | null;
   onDecide: (direction: SwipeDirection) => void;
+  /** Deliberate navigation, counted as evidence of interest — see lib/affinity.ts. */
+  onPhotoView?: () => void;
+  onPageView?: () => void;
 }) {
   const { listing, lifestyle, social } = entry;
   // Story order: living room → bedroom → bathroom, then the rest as posted.
@@ -36,8 +41,18 @@ export function SwipeCard({
   const [photo, setPhoto] = useState(0);
   const [page, setPage] = useState(0);
 
-  const prevPhoto = () => setPhoto((i) => (i - 1 + count) % count);
-  const nextPhoto = () => setPhoto((i) => (i + 1) % count);
+  const prevPhoto = () => {
+    onPhotoView?.();
+    setPhoto((i) => (i - 1 + count) % count);
+  };
+  const nextPhoto = () => {
+    onPhotoView?.();
+    setPhoto((i) => (i + 1) % count);
+  };
+  const goToPage = (next: number) => {
+    onPageView?.();
+    setPage(next);
+  };
 
   const motion =
     leaving === "like" ? "swipe-exit-like" : leaving === "skip" ? "swipe-exit-skip" : "swipe-enter";
@@ -164,7 +179,7 @@ export function SwipeCard({
       </div>
 
       {/* ===== Information panel ===== */}
-      <SwipePanel entry={entry} seeker={seeker} page={page} onPageChange={setPage} />
+      <SwipePanel entry={entry} seeker={seeker} page={page} onPageChange={goToPage} />
     </article>
   );
 }
