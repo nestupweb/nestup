@@ -17,14 +17,8 @@ export function locationNote(
   // `address` is the whole thing ("Florentin 54"); the listing form splits the
   // same into street + number. Either way the house number belongs in the line.
   const street = [listing.street, listing.house_number].filter(Boolean).join(" ").trim() || listing.address || "";
-  const parts = [street, listing.neighborhood, listing.city].filter(Boolean);
   // A room on Florentin street in Florentin shouldn't read "Florentin, Florentin".
-  const seen = new Set<string>();
-  const line = parts.filter((part) => {
-    const key = part.toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  return `${line.join(", ")}.`;
+  const streetName = street.replace(/\s+\d+\s*$/, "").trim().toLowerCase();
+  const quarter = listing.neighborhood && listing.neighborhood.toLowerCase() !== streetName ? listing.neighborhood : "";
+  return `${[street, quarter, listing.city].filter(Boolean).join(", ")}.`;
 }

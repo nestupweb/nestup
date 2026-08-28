@@ -24,8 +24,13 @@
  *   · Photon has no such limit and answers in about a second, but its free
  *     instance stops answering after a few hundred requests in a row.
  * So Photon runs on a fast metronome, Nominatim strictly one at a time with a
- * 1.2s gap, and a room only reaches Nominatim when Photon has nothing. The
- * script is resumable, so a run that gets throttled can simply be run again.
+ * 1.2s gap, and a room only reaches Nominatim when Photon has nothing. Once
+ * Photon has failed `PHOTON_STRIKES` times in a row the run stops asking it at
+ * all: when it is down its requests don't fail, they hang until they time out,
+ * and enough hung sockets starve the fallback as well — a run that looked like
+ * "Nominatim finds nothing" was really "no request gets out of the process".
+ * The script is resumable, so a run that gets throttled can simply be run
+ * again.
  * `lib/geocode.ts` still uses Nominatim for the one lookup a real listing does
  * when it is saved.
  *
@@ -51,6 +56,8 @@ const UA = "NestUp/1.0 (student project; https://nestup-kappa.vercel.app)";
 const GAP_MS = 250;
 /** Nominatim's published limit, with a margin. */
 const NOMINATIM_GAP_MS = 1200;
+/** Consecutive Photon failures before the run gives up on it. */
+const PHOTON_STRIKES = 5;
 /** How many replies we're willing to be waiting on at any moment. */
 const IN_FLIGHT = 4;
 /** Half a degree either way — a generous city, far short of the next one. */
@@ -150,9 +157,18 @@ async function askNominatim(query, city) {
 }
 
 /** Photon if it will answer, Nominatim if it won't. */
+let photonStrikes = 0;
 async function lookup(query, city) {
-  const quick = await paced(() => askPhoton(query, city));
-  if (quick) return quick;
+  if (photonStrikes < PHOTON_STRIKES) {
+    const quick = await paced(() => askPhoton(query, city));
+    if (quick) {
+      photonStrikes = 0;
+      return quick;
+    }
+    if (++photonStrikes === PHOTON_STRIKES) {
+      console.log("  photon isn't answering — the rest of this run goes to Nominatim");
+    }
+  }
   return pacedNominatim(() => askNominatim(query, city));
 }
 
