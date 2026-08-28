@@ -45,7 +45,7 @@ const out = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "mapli
  * instead. The streets themselves are covered: `name:latin` is generated, not
  * typed by hand.
  */
-export const ENGLISH_LABEL = ["coalesce", ["get", "name:en"], ["get", "name_en"], ["get", "name:latin"]];
+export const ENGLISH_LABEL = ["coalesce", ["get", "name:en"], ["get", "name_en"]];
 
 /** True for a text-field that prints a place's name in any of the style's forms. */
 function printsAName(field) {
