@@ -43,6 +43,16 @@ describe("map colours", () => {
     }
   });
 
+  test("a pin's card covers the pins underneath it, the room's own included", () => {
+    // `.room-pin` is lifted over the place dots, which without this rule also
+    // lifts it over the card a red pin opens — the green pin showing through
+    // the photo was exactly that.
+    const roomPin = Number(/\.room-pin\s*\{[^}]*z-index:\s*(\d+)/.exec(css)?.[1]);
+    const popup = Number(/\.maplibregl-popup\s*\{[^}]*z-index:\s*(\d+)/.exec(css)?.[1]);
+    expect(roomPin).toBeGreaterThan(0);
+    expect(popup).toBeGreaterThan(roomPin);
+  });
+
   test("the rooms nearby are their own red — not the accent, not a restaurant", () => {
     // On a room's map the accent means "the room you're looking at" and this
     // red means "one you could look at instead". A restaurant sharing either

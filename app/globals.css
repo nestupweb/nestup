@@ -242,6 +242,11 @@ body {
    falafel place would be a bad enough bug to be worth saying twice. */
 .room-pin { z-index: 2; }
 
+/* ...and the card a pin opens goes over everything, the room's own pin
+   included. Without this the green pin is lifted above the popup by the rule
+   right above and shows through the photo. */
+.maplibregl-popup { z-index: 3; }
+
 /* The map panel's entrance — it arrives over the page rather than replacing it. */
 @keyframes map-open {
   from { opacity: 0; transform: translateY(10px) scale(0.985); }
