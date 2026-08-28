@@ -277,6 +277,20 @@ deliberately excluded from the seeder's roommate pass: giving a seeker a
 `listing_residents` row would house them and take them straight back out of the
 picker, which is the one thing they exist to be in.
 
+### Search: filter before the limit (migration 0034)
+
+Filtering availability in TypeScript over a capped page was wrong. With 815 of
+842 members housed, nearly the whole fetched window was discarded and the picker
+showed **2 people where the database held 4** — over-fetching only moves the
+number. `search_available_members` now applies all three rules (name match, not
+blocked either way, no home of their own) *before* the `limit`, so N results
+means N. SECURITY DEFINER, because it must read `blocks` in both directions —
+which a member may not do (0029) — without revealing which way the block runs;
+it answers only for `auth.uid()`, never for an id passed in. A `pg_trgm` GIN
+index backs the leading-wildcard ILIKE.
+
+Verified live: the same search went from 2 offered to 4, matching the database.
+
 ### Shared state
 
 There is only ever one `listings` row, so there is no copy to reconcile — every

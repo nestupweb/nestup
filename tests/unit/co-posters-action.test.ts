@@ -127,50 +127,43 @@ test("tagging a blocked member is refused with a 403", async () => {
 });
 
 /**
- * One person, one home (0033). `getBusyMemberIds` is what keeps the picker from
- * offering someone the database would then refuse.
+ * One person, one home (0033). The three rules — name, blocks, housing — live
+ * in `search_available_members` (0034) so they run BEFORE the limit; filtering a
+ * capped page in TypeScript showed two people where four matched.
  */
-function housingClient(ownerRows: unknown[], residentRows: unknown[]) {
-  const chain = (rows: unknown[]) => {
-    const node: Record<string, unknown> = {};
-    for (const m of ["select", "in", "eq"]) node[m] = () => node;
-    node.is = async () => ({ data: rows, error: null });
-    return node;
-  };
-  return {
-    from: (table: string) => chain(table === "listings" ? ownerRows : residentRows),
-  } as never;
-}
+test("the search asks the database for available members only", async () => {
+  rpc.mockResolvedValue({
+    data: [{ user_id: A, full_name: "Barak Shapira", avatar_url: null, occupation: "Vet" }],
+    error: null,
+  });
+  const { searchMembersAction } = await import("@/app/actions/co-posters");
 
-test("a member who owns a live listing is unavailable", async () => {
-  const { getBusyMemberIds } = await import("@/lib/invites");
-  const busy = await getBusyMemberIds(housingClient([{ owner_id: A }], []), [A, INVITE]);
-  expect([...busy]).toEqual([A]);
+  const { members } = await searchMembersAction("bar", LISTING);
+
+  expect(members).toHaveLength(1);
+  expect(members[0].full_name).toBe("Barak Shapira");
+  expect(rpc).toHaveBeenCalledWith("search_available_members", {
+    p_query: "bar",
+    p_listing: LISTING,
+    p_limit: 8,
+  });
 });
 
-test("a member who already confirmed another home is unavailable", async () => {
-  const { getBusyMemberIds } = await import("@/lib/invites");
-  const busy = await getBusyMemberIds(
-    housingClient([], [{ resident_id: A, listing_id: "other-listing" }]),
-    [A]
-  );
-  expect(busy.has(A)).toBe(true);
+test("the room being edited is passed through, so its own roommates stay offerable", async () => {
+  rpc.mockResolvedValue({ data: [], error: null });
+  const { searchMembersAction } = await import("@/app/actions/co-posters");
+
+  await searchMembersAction("noa", LISTING);
+  expect(rpc.mock.calls[0][1].p_listing).toBe(LISTING);
+
+  // A junk listing id must not be forwarded as a filter.
+  rpc.mockClear();
+  await searchMembersAction("noa", "not-a-uuid");
+  expect(rpc.mock.calls[0][1].p_listing).toBeNull();
 });
 
-test("this room's own confirmed roommates stay available to it", async () => {
-  const { getBusyMemberIds } = await import("@/lib/invites");
-  // Without `exceptListing`, re-saving a form would report every roommate who
-  // had already joined it as housed elsewhere.
-  const busy = await getBusyMemberIds(
-    housingClient([], [{ resident_id: A, listing_id: LISTING }]),
-    [A],
-    LISTING
-  );
-  expect(busy.size).toBe(0);
-});
-
-test("nobody to check means no round-trip", async () => {
-  const { getBusyMemberIds } = await import("@/lib/invites");
-  const exploding = { from: () => { throw new Error("should not query"); } } as never;
-  expect((await getBusyMemberIds(exploding, [])).size).toBe(0);
+test("a failed search is an empty list, never a thrown page", async () => {
+  rpc.mockResolvedValue({ data: null, error: { message: "boom" } });
+  const { searchMembersAction } = await import("@/app/actions/co-posters");
+  expect(await searchMembersAction("bar")).toEqual({ members: [] });
 });

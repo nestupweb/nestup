@@ -1,4 +1,5 @@
 import {
+  MEMBER_SEARCH_LIMIT,
   UUID_RE,
   cleanIds,
   inviteErrorMessage,
@@ -74,43 +75,29 @@ export async function respondToInvite(
 }
 
 /**
- * Of `ids`, the ones who already have a home — a live listing they posted, or
- * one they have already confirmed as a roommate.
+ * Members the tag picker may offer: name match, not blocked either way, and no
+ * home of their own (0033).
  *
- * One person, one home (0033). `invite_listing_roommates` refuses these anyway;
- * this is so the picker never offers someone it would then have to reject.
- * Only *live* rooms count, so a paused, taken or deleted listing frees a member
- * to be tagged again — and `exceptListing` lets the room being edited off the
- * hook, or every roommate who had already joined it would look unavailable.
+ * One RPC rather than a query plus a TypeScript filter, because the three rules
+ * have to be applied *before* the limit — filtering a capped page discarded
+ * almost everything once most members were housed, and the picker showed two
+ * people where four matched. `search_available_members` (0034) does all of it
+ * in one pass; `exceptListing` keeps the room being edited from disqualifying
+ * its own roommates.
  */
-export async function getBusyMemberIds(
+export async function searchAvailableMembers(
   supabase: SupabaseClient,
-  ids: readonly string[],
-  exceptListing?: string
-): Promise<Set<string>> {
-  const busy = new Set<string>();
-  if (ids.length === 0) return busy;
-
-  const [owned, resident] = await Promise.all([
-    supabase
-      .from("listings")
-      .select("owner_id")
-      .in("owner_id", ids)
-      .eq("is_active", true)
-      .is("removed_at", null),
-    supabase
-      .from("listing_residents")
-      .select("resident_id, listing_id, listings!inner(id)")
-      .in("resident_id", ids)
-      .eq("listings.is_active", true)
-      .is("listings.removed_at", null),
-  ]);
-
-  for (const row of (owned.data as { owner_id: string }[] | null) ?? []) busy.add(row.owner_id);
-  for (const row of (resident.data as { resident_id: string; listing_id: string }[] | null) ?? []) {
-    if (row.listing_id !== exceptListing) busy.add(row.resident_id);
-  }
-  return busy;
+  query: string,
+  exceptListing?: string,
+  limit = MEMBER_SEARCH_LIMIT
+): Promise<TaggedMember[]> {
+  const { data, error } = await supabase.rpc("search_available_members", {
+    p_query: query,
+    p_listing: UUID_RE.test(String(exceptListing ?? "")) ? exceptListing : null,
+    p_limit: limit,
+  });
+  if (error) return [];
+  return (data as TaggedMember[] | null) ?? [];
 }
 
 /**
