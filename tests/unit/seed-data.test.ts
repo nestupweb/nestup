@@ -6,6 +6,8 @@ import {
   HANDCRAFTED,
   INTERESTS as SEED_INTERESTS,
   SEEDS,
+  SEEKERS,
+  SEEKER_COUNT,
   WAVE2,
   WAVE2_COUNT,
   WAVE3_CITIES,
@@ -302,5 +304,60 @@ describe("fifth wave — no city left with a dead deck", () => {
       if (best === 0) dead.push(city);
     }
     expect(dead, `no room scores ${MIN_DECK_SCORE}+ for anyone in these towns`).toEqual([]);
+  });
+});
+
+/**
+ * Seekers — members with a profile and no listing (added for "one person, one
+ * home", migration 0033). They are the only accounts the roommate tag picker
+ * can offer, so the properties that keep them taggable are the ones worth
+ * pinning.
+ */
+describe("seekers", () => {
+  test("there are 25 of them, and none carries a listing", () => {
+    expect(SEEKERS).toHaveLength(SEEKER_COUNT);
+    expect(SEEKER_COUNT).toBe(25);
+    for (const s of SEEKERS) {
+      expect(s).not.toHaveProperty("listing");
+    }
+  });
+
+  test("their emails continue after the last owner, without colliding", () => {
+    const ownerEmails = new Set(SEEDS.map((s) => s.email));
+    for (const s of SEEKERS) {
+      expect(ownerEmails.has(s.email)).toBe(false);
+      expect(s.email).toMatch(/^seed\.user\d+@nestup\.dev$/);
+    }
+    const firstNumber = Number(/user(\d+)@/.exec(SEEKERS[0].email)![1]);
+    expect(firstNumber).toBe(SEEDS.length + 1);
+    expect(new Set(SEEKERS.map((s) => s.email)).size).toBe(SEEKERS.length);
+  });
+
+  test("no seeker shares a name with an owner — the picker must not show twins", () => {
+    const ownerNames = new Set(SEEDS.map((s) => s.profile.full_name));
+    for (const s of SEEKERS) expect(ownerNames.has(s.profile.full_name)).toBe(false);
+    expect(new Set(SEEKERS.map((s) => s.profile.full_name)).size).toBe(SEEKERS.length);
+  });
+
+  test("each has a portrait and a complete enough profile to render", () => {
+    for (const s of SEEKERS) {
+      expect(s.profile.avatar_url).toBeTruthy();
+      expect(s.profile.full_name.length).toBeGreaterThan(2);
+      expect(s.profile.age).toBeGreaterThanOrEqual(18);
+      expect(s.profile.occupation).toBeTruthy();
+      expect(s.profile.preferred_cities.length).toBeGreaterThan(0);
+    }
+  });
+
+  test("portraits come from the eye-checked pool, never a fresh image", () => {
+    const owners = new Set(SEEDS.map((s) => s.profile.avatar_url).filter(Boolean));
+    for (const s of SEEKERS) expect(owners.has(s.profile.avatar_url)).toBe(true);
+  });
+
+  test("generation is deterministic — re-importing gives the same people", async () => {
+    const again = (await import("../../scripts/seed-data.ts")).SEEKERS;
+    expect(again.map((s) => `${s.email}:${s.profile.full_name}`)).toEqual(
+      SEEKERS.map((s) => `${s.email}:${s.profile.full_name}`)
+    );
   });
 });

@@ -4,7 +4,11 @@
  * fills the smaller cities + a third wave of 336 that reaches every remaining
  * city + a fourth of 248 that adds two rooms to every city there is + a fifth
  * of 75 that tops up the towns whose swipe deck was still empty
- * (see `seed-data.ts`).
+ * (see `seed-data.ts`), plus 25 seekers who have a profile and NO listing.
+ *
+ * The seekers exist because of "one person, one home" (migration 0033): a
+ * member who already has an active listing cannot be tagged as somebody's
+ * roommate, so with every owner housed the tag picker had nobody to offer.
  *
  * Idempotent — safe to re-run:
  *  - a seed user whose email already exists is left alone (its portrait is
@@ -16,7 +20,7 @@
  * Demo accounts sign in with password "Demo1234!".
  */
 import { createClient } from "@supabase/supabase-js";
-import { SEEDS, SEED_EMAIL_DOMAIN } from "./seed-data.ts";
+import { SEEDS, SEEKERS, SEED_EMAIL_DOMAIN } from "./seed-data.ts";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -119,6 +123,42 @@ async function main() {
 
   await addRoommates(idByEmail);
   console.log(`Demo accounts sign in with password ${PASSWORD}`);
+}
+
+/**
+ * Members with a profile and no room of their own — the people the roommate tag
+ * picker can offer (migration 0033: anyone with an active listing is off
+ * limits). Same idempotence rule as the owners: an existing email is left
+ * alone, never rewritten.
+ *
+ * Deliberately NOT added to `idByEmail` for the roommate pass below — giving a
+ * seeker a `listing_residents` row would house them and take them straight back
+ * out of the picker, which is the one thing they exist to be in.
+ */
+async function seedSeekers(idByEmail: Map<string, string>) {
+  let seeded = 0;
+  let skipped = 0;
+  for (const s of SEEKERS) {
+    if (idByEmail.has(s.email)) {
+      skipped++;
+      continue;
+    }
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email: s.email,
+      password: PASSWORD,
+      email_confirm: true,
+    });
+    if (error || !created.user) {
+      throw new Error(`createUser(${s.email}): ${error?.message ?? "no user returned"}`);
+    }
+    const { error: pErr } = await admin
+      .from("profiles")
+      .insert({ user_id: created.user.id, ...s.profile });
+    if (pErr) throw new Error(`profile(${s.email}): ${pErr.message}`);
+    seeded++;
+    console.log(`+ seeded seeker ${s.email} — ${s.profile.full_name}`);
+  }
+  console.log(`Seekers (no listing): ${seeded} seeded, ${skipped} already existed.`);
 }
 
 /**

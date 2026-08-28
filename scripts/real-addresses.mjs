@@ -201,8 +201,12 @@ async function townPlaces(city, centre) {
     .map((d) => ({ ...d, name: englishByLocal.get(d.street) ?? (latin(d.street) ? d.street : null) }))
     .filter((d) => streetLike(d.name));
 
+  // An empty answer is never cached. A mirror that returns zero elements
+  // rather than an error — a regional extract asked about the wrong country
+  // does exactly that — would otherwise poison this town for every later run,
+  // and that is precisely what left 110 rooms unplaced on the first pass.
   const places = { streets, addressed };
-  writeFileSync(cached, JSON.stringify(places));
+  if (streets.length || addressed.length) writeFileSync(cached, JSON.stringify(places));
   return places;
 }
 
@@ -287,7 +291,7 @@ async function townByAsking(city, centre, wanted) {
   }
 
   const pool = [...found.values()];
-  writeFileSync(cached, JSON.stringify(pool));
+  if (pool.length) writeFileSync(cached, JSON.stringify(pool));
   return pool;
 }
 

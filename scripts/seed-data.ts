@@ -1216,3 +1216,57 @@ const WAVE5_SEEDS = generateSeeds(WAVE5_COUNT, {
 export const SEEDS: Seed[] = [
   ...HANDCRAFTED, ...WAVE1_SEEDS, ...WAVE2_SEEDS, ...WAVE3_SEEDS, ...WAVE4_SEEDS, ...WAVE5_SEEDS,
 ];
+
+// ===================== seekers: members with no room of their own =====================
+//
+// Every wave above posts a listing, which was fine until "one person, one home"
+// (migration 0033): a member who already has an active listing cannot be tagged
+// as somebody's roommate, and with all 813 owners housed there was nobody left
+// for the tag picker to offer — it came back empty for every search.
+//
+// These are the other side of the marketplace, and the app had none of them:
+// people looking for a room rather than advertising one. They are exactly what
+// the picker is for, and they also make the seeker half of the demo real.
+//
+// New data, never a rewrite: a new wave appended here, deterministic, drawing on
+// the same eye-checked portrait pool as waves 2-5 rather than pulling unlooked-at
+// images. Nothing above this line changes, so the wave-1 fingerprint still holds.
+
+/** Members with a profile and NO listing — the people who can be tagged. */
+export interface SeekerSeed {
+  email: string;
+  profile: SeedProfile;
+}
+
+export const SEEKER_COUNT = 25;
+
+/** Spread across the launch cities, so a search in any of them finds someone. */
+const SEEKER_CITY_PLAN: (readonly [string, number])[] = [
+  ["Tel Aviv", 6], ["Ramat Gan", 3], ["Givatayim", 3], ["Jerusalem", 3], ["Haifa", 2],
+  ["Herzliya", 2], ["Raanana", 2], ["Petah Tikva", 1], ["Rishon LeZion", 1],
+  ["Netanya", 1], ["Rehovot", 1], ["Beer Sheva", 1],
+];
+
+export const SEEKERS_WAVE: Wave = {
+  prngSeed: 20260830,
+  cityPlan: SEEKER_CITY_PLAN,
+  firstUser:
+    HANDCRAFTED_BASE.length + GENERATED_COUNT + WAVE2_COUNT + WAVE3_COUNT + WAVE4_COUNT + WAVE5_COUNT + 1,
+  portraits: WAVE2_PORTRAITS,
+  // The listing these produce is thrown away below; the stride only keeps the
+  // PRNG walking the same pools the other waves use.
+  photos: (i, withExtra) => photoStory(WAVE2_POOLS, i * 13 + 7, withExtra),
+  cyclePortraits: true,
+};
+
+/**
+ * Generated with the same machinery as an owner wave, then stripped of its
+ * listing — that is the whole difference. Reusing `generateSeeds` keeps the
+ * names, portraits, interests and Daily-life answers consistent with everyone
+ * else, and keeps `takenNames` doing its job so no seeker shares a name with an
+ * owner.
+ */
+export const SEEKERS: SeekerSeed[] = generateSeeds(SEEKER_COUNT, {
+  ...SEEKERS_WAVE,
+  takenNames: SEEDS.map((s) => s.profile.full_name),
+}).map(({ email, profile }) => ({ email, profile }));

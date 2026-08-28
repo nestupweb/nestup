@@ -261,6 +261,22 @@ Tagging stays the creator's alone, so a co-owner's save skips
 **This makes delete a one-way door for the whole household**: any co-owner can
 take the room down for all of them, and `remove_listing` is irreversible.
 
+### Seed consequence: seekers
+
+Enforcing "one person, one home" against the existing demo data left **2 of 817
+members taggable** — every one of the 813 seed owners has an active listing, so
+the picker came back empty for every search. The rule is right for real users;
+the seed data simply had no seekers in it, only owners.
+
+Fixed with data rather than by softening the rule: a wave of 25 members with a
+profile and **no listing** (`SEEKERS` in `scripts/seed-data.ts`), spread across
+the launch cities. Appended as a new wave in keeping with the add-only seed rule
+— nothing above it changes, the wave-1 sha256 fingerprint still holds, and the
+portraits come from the same eye-checked pool waves 2–5 use. They are
+deliberately excluded from the seeder's roommate pass: giving a seeker a
+`listing_residents` row would house them and take them straight back out of the
+picker, which is the one thing they exist to be in.
+
 ### Shared state
 
 There is only ever one `listings` row, so there is no copy to reconcile — every
