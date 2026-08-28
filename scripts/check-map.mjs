@@ -3,10 +3,12 @@
  *
  * Confirms, in a real browser: no map is drawn until an icon is pressed, the
  * basemap is CARTO served by us, its labels come back in English (not Hebrew),
- * the room's pin is distinct from the coloured place pins, and the legend
- * names what's on the map. Runs in light and dark.
+ * the room's pin is distinct from the coloured place pins and from the red
+ * pins of the rooms nearby, and the legend names what's on the map. Runs in
+ * light and dark.
  */
 import { chromium } from "playwright";
+import { inflateSync } from "node:zlib";
 
 const base = (process.argv[2] ?? "https://nestup-kappa.vercel.app").replace(/\/$/, "");
 const failures = [];
@@ -14,6 +16,73 @@ const note = (ok, label, extra = "") => {
   console.log(`${ok ? "  ok  " : "FAIL  "}${label}${extra ? " — " + extra : ""}`);
   if (!ok) failures.push(label);
 };
+
+/**
+ * Pixels of one exact colour in a PNG buffer.
+ *
+ * Hand-rolled rather than pulling in a decoder: PNG's filters are a few lines,
+ * and the check needs one colour counted, not an image library.
+ */
+function countPixels(png, [wantR, wantG, wantB]) {
+  let at = 8;
+  const chunks = [];
+  let width = 0;
+  let height = 0;
+  let bpp = 0;
+  while (at < png.length) {
+    const size = png.readUInt32BE(at);
+    const kind = png.toString("ascii", at + 4, at + 8);
+    if (kind === "IHDR") {
+      width = png.readUInt32BE(at + 8);
+      height = png.readUInt32BE(at + 12);
+      // Playwright hands back 8-bit RGB or RGBA depending on the page.
+      if (png[at + 16] !== 8) return -1;
+      bpp = png[at + 17] === 6 ? 4 : png[at + 17] === 2 ? 3 : 0;
+      if (!bpp) return -1;
+    }
+    if (kind === "IDAT") chunks.push(png.subarray(at + 8, at + 8 + size));
+    at += size + 12;
+  }
+  const raw = inflateSync(Buffer.concat(chunks));
+  const stride = width * bpp;
+  const line = Buffer.alloc(stride);
+  const above = Buffer.alloc(stride);
+  let found = 0;
+  let read = 0;
+  for (let y = 0; y < height; y++) {
+    const filter = raw[read++];
+    raw.copy(line, 0, read, read + stride);
+    read += stride;
+    for (let i = 0; i < stride; i++) {
+      const a = i >= bpp ? line[i - bpp] : 0;
+      const b = above[i];
+      const c = i >= bpp ? above[i - bpp] : 0;
+      let add = 0;
+      if (filter === 1) add = a;
+      else if (filter === 2) add = b;
+      else if (filter === 3) add = (a + b) >> 1;
+      else if (filter === 4) {
+        const p = a + b - c;
+        const pa = Math.abs(p - a);
+        const pb = Math.abs(p - b);
+        const pc = Math.abs(p - c);
+        add = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      line[i] = (line[i] + add) & 0xff;
+    }
+    for (let x = 0; x < stride; x += bpp) {
+      if (
+        Math.abs(line[x] - wantR) <= 6 &&
+        Math.abs(line[x + 1] - wantG) <= 6 &&
+        Math.abs(line[x + 2] - wantB) <= 6
+      ) {
+        found++;
+      }
+    }
+    line.copy(above);
+  }
+  return found;
+}
 
 const browser = await chromium.launch();
 
@@ -93,6 +162,14 @@ async function run(theme) {
 
   const legend = await page.locator('[role="dialog"] ul li').allInnerTexts();
   note(legend[0]?.includes("This room"), "legend leads with the room", legend.join(" · "));
+  note(/\d+ other rooms? nearby/.test(legend[1] ?? ""), "and the alternatives second", legend[1] ?? "none");
+
+  // The alternatives are a GL layer, so they leave no DOM to count: what can be
+  // checked from out here is that their red is actually being painted, and that
+  // it isn't the restaurants' red wearing a disguise.
+  const shot = await page.locator('[role="dialog"] .maplibregl-canvas').screenshot();
+  const reds = countPixels(shot, [0xdc, 0x23, 0x33]);
+  note(reds > 40, "nearby rooms are painted in their own red", `${reds} pixel(s)`);
 
   // Basemap: ours, CARTO underneath, nothing from the rejected provider
   const styleUrl = styleRequests.find((u) => /positron-en|dark-matter-en/.test(u));
