@@ -60,10 +60,12 @@ subject values:
 - bedroom — a bedroom; a bed is the main subject.
 - bathroom — a bathroom, shower room or toilet.
 - kitchen — a kitchen or kitchenette, including a dining corner that is part of it.
-- balcony — an outdoor space of the home: a balcony, terrace, roof, veranda, covered porch, garden or yard. The camera stands *on* that space — its floor, railing or furniture is close and fills much of the frame, and the home appears only as the wall behind it.
-- exterior — the building seen from outside: its facade, its entrance, a stairwell, or the street in front of it. The camera stands away from the home and you can see the shape of the building itself — choose this even when a garden, driveway, pool or porch is in the foreground.
+- balcony — an outdoor space of the home: a balcony, terrace, roof, veranda, covered porch, garden or yard. What the picture is *of* is that space — its floor, railing, plants or furniture — and it counts whether the camera stands on it or looks out at it through the doors that open onto it.
+- exterior — the building seen from outside, so that the shape of the building itself is what the picture is of: its facade, its entrance, a stairwell, or the street. Choose this even when a garden, driveway, pool or porch is in the foreground.
 - other_apartment — another part of a home that fits none of the above: a hallway, storage or laundry room, a mamad, a floor plan, an empty room with nothing to identify it, a view from a window.
 - not_apartment — anything that is not a photo of a home: people or pets as the subject, food, vehicles, screenshots, documents, memes, landscapes, shops, offices, blank or unreadable images.
+
+Balcony and exterior are the pair that is easy to confuse, so ask what the picture is of: if you can see the shape of the building it is exterior, and if you see only the outdoor space and the wall behind it, it is balcony.
 
 Judge only what is in the picture. The uploader's tag is told to you so your sentence can address it — it is never evidence about what the photo shows, and a photo that does not show that room must not be given its value.
 

@@ -1,0 +1,16 @@
+import { createClient } from "@supabase/supabase-js";
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+const { data, error } = await admin.from("listings").select("id, city, address, street, house_number, coords_source, lat, lng, is_active, removed_at");
+if (error) throw error;
+console.log("total rows:", data.length);
+const by = {};
+for (const r of data) by[r.coords_source ?? "null"] = (by[r.coords_source ?? "null"] || 0) + 1;
+console.log("coords_source:", by);
+console.log("no lat:", data.filter(r => r.lat == null).length);
+const cities = {};
+for (const r of data) if (r.coords_source === "city") cities[r.city] = (cities[r.city]||0)+1;
+const list = Object.entries(cities).sort((a,b)=>b[1]-a[1]);
+console.log("cities needing work:", list.length, "rooms:", list.reduce((s,[,n])=>s+n,0));
+console.log(JSON.stringify(list));
+console.log("sample city rows:", JSON.stringify(data.filter(r=>r.coords_source==="city").slice(0,5)));
+console.log("sample geocoded:", JSON.stringify(data.filter(r=>r.coords_source==="geocoded").slice(0,3)));
