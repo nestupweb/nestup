@@ -119,22 +119,27 @@ export async function classifyListingPhoto(image: PhotoBytes, label: PhotoRoom):
 
   // Down the chain while the answer is "busy, try later"; a real error (a bad
   // key, a rejected request) stops on the spot rather than asking two more
-  // models the same broken question.
+  // models the same broken question. All three can be busy at once — seen on
+  // 2026-08-28 — so the whole chain is walked twice with a pause between,
+  // which is still under three seconds of waiting before we give up.
   let last: unknown;
-  for (const model of PHOTO_CHECK_MODELS) {
-    let response;
-    try {
-      response = await ask(model);
-    } catch (e) {
-      last = e;
-      if (!isTransient(e)) throw e;
-      continue;
+  for (const attempt of [0, 1]) {
+    if (attempt) await new Promise((r) => setTimeout(r, 1500));
+    for (const model of PHOTO_CHECK_MODELS) {
+      let response;
+      try {
+        response = await ask(model);
+      } catch (e) {
+        last = e;
+        if (!isTransient(e)) throw e;
+        continue;
+      }
+      // A safety block means the picture is not something we want on a listing anyway.
+      if (response.promptFeedback?.blockReason) {
+        return { subject: "not_apartment", reason: "This photo can't be used on a listing.", model };
+      }
+      return { ...read(response.text), model };
     }
-    // A safety block means the picture is not something we want on a listing anyway.
-    if (response.promptFeedback?.blockReason) {
-      return { subject: "not_apartment", reason: "This photo can't be used on a listing.", model };
-    }
-    return { ...read(response.text), model };
   }
   throw last instanceof Error ? last : new Error("The photo check is busy — please try again in a moment.");
 }
