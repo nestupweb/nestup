@@ -1,12 +1,10 @@
 "use client";
 
-import "leaflet/dist/leaflet.css";
-import { useEffect, useState } from "react";
-import { Circle, MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
-import { ATTRIBUTION, DARK_TILE_CLASS, MAX_ZOOM, ROOM_ZOOM, TILES } from "@/components/map/basemap";
+import { useEffect, useMemo, useState } from "react";
+import { Map, MapControls, MapGeoJSON, MapMarker, MarkerContent, useMap } from "@/components/ui/map";
+import { MAP_COLORS, MAP_STYLES, MAX_ZOOM, ROOM_ZOOM } from "@/components/map/basemap";
 import { useIsTouch, useMapTheme } from "@/components/map/useMapTheme";
-import { pinIcon } from "@/components/map/pin";
-import { APPROX_RADIUS_M, type LatLng } from "@/lib/geo";
+import { APPROX_RADIUS_M, circlePolygon, type LatLng } from "@/lib/geo";
 
 /**
  * Where one room is. Two modes:
@@ -31,43 +29,45 @@ export default function RoomMap({
   label: string;
   className?: string;
 }) {
+  const theme = useMapTheme();
+  const colors = MAP_COLORS[theme];
   const [active, setActive] = useState(false);
   const touch = useIsTouch();
   const interactive = !touch || active;
 
+  const area = useMemo(() => circlePolygon(point, APPROX_RADIUS_M), [point]);
+
   return (
     <div className={`relative overflow-hidden rounded-2xl border border-hairline ${className}`}>
-      <MapContainer
-        center={[point.lat, point.lng]}
+      <Map
+        theme={theme}
+        styles={MAP_STYLES}
+        center={[point.lng, point.lat]}
         zoom={ROOM_ZOOM}
         maxZoom={MAX_ZOOM}
-        scrollWheelZoom={false}
-        dragging={interactive}
-        touchZoom={interactive}
-        doubleClickZoom={interactive}
-        zoomControl
-        attributionControl
+        scrollZoom={false}
         className="h-full w-full"
-        style={{ background: "transparent" }}
         aria-label={`Map showing ${label}`}
       >
-        <ThemedTiles />
+        <Interactivity enabled={interactive} />
+        <MapControls position="bottom-right" showZoom />
         {exact ? (
-          <Marker position={[point.lat, point.lng]} icon={pinIcon()} title={label} />
+          <MapMarker longitude={point.lng} latitude={point.lat}>
+            <MarkerContent>
+              <span
+                title={label}
+                className="block h-3.5 w-3.5 rounded-full border-2 border-accent-contrast bg-accent shadow-[0_1px_4px_rgba(0,0,0,0.4)]"
+              />
+            </MarkerContent>
+          </MapMarker>
         ) : (
-          <Circle
-            center={[point.lat, point.lng]}
-            radius={APPROX_RADIUS_M}
-            pathOptions={{
-              color: "var(--accent)",
-              fillColor: "var(--accent)",
-              fillOpacity: 0.18,
-              weight: 2,
-              opacity: 0.7,
-            }}
+          <MapGeoJSON
+            data={area}
+            fillPaint={{ "fill-color": colors.accent, "fill-opacity": 0.18 }}
+            linePaint={{ "line-color": colors.accent, "line-width": 2, "line-opacity": 0.7 }}
           />
         )}
-      </MapContainer>
+      </Map>
 
       {touch && !active ? (
         <button
@@ -85,25 +85,21 @@ export default function RoomMap({
   );
 }
 
-/** Swaps the tile set when the app's theme changes, without remounting the map. */
-function ThemedTiles() {
-  const map = useMap();
-  const theme = useMapTheme();
-
-  // Leaflet sizes itself against the container; a card that mounts hidden
-  // (inside a tab, say) measures 0×0 until told to look again.
+/**
+ * Panning and pinch-zoom, switched at runtime.
+ *
+ * MapLibre reads its handler options once, when the map is built, so the
+ * "tap to activate" overlay can't work by re-rendering with different props —
+ * the handlers have to be turned on the instance itself.
+ */
+function Interactivity({ enabled }: { enabled: boolean }) {
+  const { map } = useMap();
   useEffect(() => {
-    const t = window.setTimeout(() => map.invalidateSize(), 120);
-    return () => window.clearTimeout(t);
-  }, [map]);
-
-  return (
-    <TileLayer
-      key={theme}
-      url={TILES[theme]}
-      attribution={ATTRIBUTION}
-      maxZoom={MAX_ZOOM}
-      className={theme === "dark" ? DARK_TILE_CLASS : undefined}
-    />
-  );
+    if (!map) return;
+    for (const handler of [map.dragPan, map.touchZoomRotate, map.doubleClickZoom]) {
+      if (enabled) handler.enable();
+      else handler.disable();
+    }
+  }, [map, enabled]);
+  return null;
 }

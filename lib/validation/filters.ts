@@ -23,12 +23,7 @@ export type ListingSort = (typeof LISTING_SORTS)[number]["key"];
 const sortKeys = LISTING_SORTS.map((s) => s.key) as [ListingSort, ...ListingSort[]];
 const leaseTermKeys = LEASE_TERMS.map((t) => t.key) as [LeaseTerm, ...LeaseTerm[]];
 
-/** List or map on the Listings page. */
-export const LISTING_VIEWS = ["list", "map"] as const;
-export type ListingView = (typeof LISTING_VIEWS)[number];
-
 export const listingFiltersSchema = z.object({
-  view: z.enum(LISTING_VIEWS).default("list").catch("list"),
   sort: z.enum(sortKeys).default("newest").catch("newest"),
   city: z.enum(CITIES).optional().catch(undefined),
   rent_min: optionalInt.catch(undefined),

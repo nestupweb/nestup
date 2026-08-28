@@ -1,31 +1,45 @@
 /**
- * Basemap tiles: OpenStreetMap's own raster tiles — free, no API key, no
- * account, and the best street-level detail in Israel of the keyless options.
+ * Basemap styles for the mapcn map component (`components/ui/map.tsx`).
  *
- * (CARTO's basemaps were the first choice and were dropped on 2026-08-27: they
- * now stamp "API KEY REQUIRED" across every tile served without a key.)
+ * MapLibre draws vector tiles, so light and dark are two real styles rather
+ * than one set of tiles under a CSS filter — labels stay readable and water
+ * stays blue in both. These are mapcn's own defaults: CARTO's Positron and
+ * Dark Matter GL styles, free and keyless (verified 2026-08-28: style, vector
+ * tiles and the Open Sans glyphs the cluster labels need all serve 200s
+ * without an account). CARTO's licence covers non-commercial use, which a
+ * university project is.
  *
- * There is no keyless dark raster basemap, so the dark theme reuses the same
- * tiles under a CSS inversion — see `.leaflet-tiles-dark` in globals.css.
- * Attribution is required and Leaflet's own control renders it.
- *
- * If this app ever takes real traffic, OSM's tile policy asks apps to move to a
- * dedicated provider (MapTiler, Stadia — both have free tiers, both need a key):
- * https://operations.osmfoundation.org/policies/tiles/
+ * (Not to be confused with CARTO's *raster* tiles, which this app used until
+ * 2026-08-27 and which now stamp "API KEY REQUIRED" across every image.)
  */
-export const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-
-/** Kept as a map for callers that switch on theme; both point at OSM. */
-export const TILES = {
-  light: TILE_URL,
-  dark: TILE_URL,
+export const MAP_STYLES = {
+  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 } as const;
 
-/** Applied to the dark tile layer to turn the light basemap into a dark one. */
-export const DARK_TILE_CLASS = "leaflet-tiles-dark";
-
-export const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+/**
+ * MapLibre paints its own layers, so the pins can't be styled in CSS: these
+ * are the palette values from globals.css, written out for the GL renderer.
+ * `tests/map-colors.test.ts` fails if they drift from the stylesheet.
+ *
+ * `shades` runs small → large clusters; `on` is the count printed inside one,
+ * and `ring` the outline drawn around it — the page's own ground colour, so a
+ * pin reads as sitting on the app rather than on the tiles.
+ */
+export const MAP_COLORS = {
+  light: {
+    accent: "#2e7d5e",
+    shades: ["#2e7d5e", "#256349", "#1a4635"] as [string, string, string],
+    on: "#faf7f2",
+    ring: "#faf7f2",
+  },
+  dark: {
+    accent: "#c9a468",
+    shades: ["#c9a468", "#b08c4f", "#96733a"] as [string, string, string],
+    on: "#191613",
+    ring: "#191613",
+  },
+} as const;
 
 export const MAX_ZOOM = 18;
 

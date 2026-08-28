@@ -127,3 +127,26 @@ export function distanceM(a: LatLng, b: LatLng): number {
   const dLng = (b.lng - a.lng) * mPerDegLng((a.lat + b.lat) / 2);
   return Math.round(Math.hypot(dLat, dLng));
 }
+
+/**
+ * The "somewhere around here" circle as a GeoJSON polygon.
+ *
+ * MapLibre's circle layers are sized in screen pixels, which would make a
+ * 150 m area grow as the viewer zooms out — the one thing this circle must
+ * not do, since its whole job is to say how big the uncertainty is. A polygon
+ * is drawn in real coordinates, so it stays 150 m across at every zoom.
+ */
+export function circlePolygon(
+  centre: LatLng,
+  radiusM: number,
+  steps = 64
+): { type: "Feature"; geometry: { type: "Polygon"; coordinates: [number, number][][] }; properties: Record<string, never> } {
+  const dLat = radiusM / M_PER_DEG_LAT;
+  const dLng = radiusM / mPerDegLng(centre.lat);
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * 2 * Math.PI;
+    ring.push([centre.lng + dLng * Math.cos(angle), centre.lat + dLat * Math.sin(angle)]);
+  }
+  return { type: "Feature", geometry: { type: "Polygon", coordinates: [ring] }, properties: {} };
+}

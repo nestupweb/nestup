@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   APPROX_RADIUS_M,
   boundsOf,
+  circlePolygon,
   distanceM,
   hashUnit,
   pointOf,
@@ -149,5 +150,28 @@ describe("locationNote", () => {
     expect(locationNote({ ...base, coords_source: "city" }, true)).toMatch(/Somewhere in Tel Aviv/i);
     // a city-level room never claims a street address, even to the owner
     expect(locationNote({ ...base, coords_source: "city" }, true)).not.toMatch(/Exact location/i);
+  });
+});
+
+describe("circlePolygon", () => {
+  const centre = { lat: 32.0853, lng: 34.7818 };
+
+  test("closes, and every vertex sits the asked-for distance away", () => {
+    const ring = circlePolygon(centre, APPROX_RADIUS_M).geometry.coordinates[0];
+    expect(ring).toHaveLength(65); // 64 steps + the repeat that closes it
+    expect(ring[0]).toEqual(ring[ring.length - 1]);
+    for (const [lng, lat] of ring) {
+      expect(distanceM(centre, { lat, lng })).toBeGreaterThanOrEqual(APPROX_RADIUS_M - 2);
+      expect(distanceM(centre, { lat, lng })).toBeLessThanOrEqual(APPROX_RADIUS_M + 2);
+    }
+  });
+
+  test("is drawn in real coordinates, so it doesn't change size with the zoom", () => {
+    const small = circlePolygon(centre, 150).geometry.coordinates[0];
+    const big = circlePolygon(centre, 300).geometry.coordinates[0];
+    expect(distanceM(centre, { lat: big[0][1], lng: big[0][0] })).toBeCloseTo(
+      2 * distanceM(centre, { lat: small[0][1], lng: small[0][0] }),
+      -1
+    );
   });
 });

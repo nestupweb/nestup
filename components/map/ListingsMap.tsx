@@ -1,137 +1,116 @@
 "use client";
 
-import "leaflet/dist/leaflet.css";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import { ATTRIBUTION, COUNTRY_ZOOM, DARK_TILE_CLASS, MAX_ZOOM, TILES } from "@/components/map/basemap";
-import { clusterIcon, priceIcon } from "@/components/map/pin";
+import { Map, MapClusterLayer, MapControls, MapPopup } from "@/components/ui/map";
+import { COUNTRY_ZOOM, MAP_COLORS, MAP_STYLES, MAX_ZOOM } from "@/components/map/basemap";
 import { useMapTheme } from "@/components/map/useMapTheme";
 import { ISRAEL_CENTRE } from "@/lib/city-centres";
-import { clusterPoints, zoomIntoCluster } from "@/lib/cluster";
 import { boundsOf } from "@/lib/geo";
 import type { ListingPin } from "@/lib/listings";
 
 /**
- * Every room matching the current filters, on one map.
+ * Every room on NestUp, on one map.
  *
- * Pins that sit on top of each other at the current zoom collapse into a
- * numbered circle (see `lib/cluster.ts`); clicking one zooms in until it comes
- * apart. A lone pin shows its rent, and clicking it opens a small card with a
- * way through to the room.
- *
- * Panning deliberately does NOT re-filter: the sidebar decides what is on the
- * map, so moving around can never quietly drop rooms the member asked for.
+ * Clustering is MapLibre's own (`MapClusterLayer`), which is why this can draw
+ * eight hundred rooms without breaking a sweat: the points live in the GL
+ * layer rather than as eight hundred DOM markers. Clicking a cluster zooms in
+ * until it comes apart; clicking a single room opens a card with a way
+ * through to it.
  */
 export default function ListingsMap({ pins }: { pins: ListingPin[] }) {
-  const bounds = useMemo(() => boundsOf(pins, 0.02), [pins]);
+  const theme = useMapTheme();
+  const colors = MAP_COLORS[theme];
+  const [chosen, setChosen] = useState<ListingPin | null>(null);
+
+  const data = useMemo(
+    () => ({
+      type: "FeatureCollection" as const,
+      features: pins.map((pin) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [pin.lng, pin.lat] as [number, number] },
+        properties: pin,
+      })),
+    }),
+    [pins]
+  );
+
+  // Opening on the rooms themselves rather than a fixed view of the country:
+  // the panel is a different shape on a phone and on a laptop, and fitting the
+  // bounds is the only thing that looks right on both.
+  const box = useMemo(() => boundsOf(pins, 0.05), [pins]);
 
   return (
-    <MapContainer
-      center={[ISRAEL_CENTRE.lat, ISRAEL_CENTRE.lng]}
+    <Map
+      theme={theme}
+      styles={MAP_STYLES}
+      center={[ISRAEL_CENTRE.lng, ISRAEL_CENTRE.lat]}
       zoom={COUNTRY_ZOOM}
       maxZoom={MAX_ZOOM}
-      scrollWheelZoom
+      {...(box
+        ? {
+            bounds: [
+              [box.west, box.south],
+              [box.east, box.north],
+            ] as [[number, number], [number, number]],
+            fitBoundsOptions: { padding: 16 },
+          }
+        : {})}
       className="h-full w-full"
       aria-label={`Map of ${pins.length} room${pins.length === 1 ? "" : "s"}`}
     >
-      <ThemedTiles />
-      {/* Pins first, on purpose: its zoom listener has to be attached before
-          FitTo runs, or the zoom change that fitBounds makes is missed and
-          every room stays welded into one country-sized cluster. */}
-      <Pins pins={pins} />
-      {bounds ? <FitTo bounds={bounds} /> : null}
-    </MapContainer>
-  );
-}
+      <MapControls position="bottom-right" showZoom showLocate />
 
-/** Opens on the rooms themselves rather than a fixed view of the country. */
-function FitTo({ bounds }: { bounds: { south: number; west: number; north: number; east: number } }) {
-  const map = useMap();
-  useEffect(() => {
-    map.fitBounds(
-      [
-        [bounds.south, bounds.west],
-        [bounds.north, bounds.east],
-      ],
-      { padding: [28, 28], maxZoom: 15 }
-    );
-  }, [map, bounds]);
-  return null;
-}
+      <MapClusterLayer
+        data={data}
+        clusterRadius={60}
+        clusterMaxZoom={12}
+        clusterColors={colors.shades}
+        clusterThresholds={[25, 120]}
+        clusterTextColor={colors.on}
+        strokeColor={colors.ring}
+        pointColor={colors.accent}
+        pointRadius={7}
+        onPointClick={(feature) => setChosen(feature.properties as ListingPin)}
+      />
 
-function Pins({ pins }: { pins: ListingPin[] }) {
-  const map = useMap();
-  const [zoom, setZoom] = useState(() => map.getZoom());
-  // `moveend` as well as `zoomend`: fitBounds can land on a new zoom without a
-  // separate zoom event, and a stale zoom here means stale clusters.
-  useMapEvents({
-    zoomend: () => setZoom(map.getZoom()),
-    moveend: () => setZoom(map.getZoom()),
-  });
-
-  const clusters = useMemo(() => clusterPoints(pins, zoom), [pins, zoom]);
-
-  return (
-    <>
-      {clusters.map((c) =>
-        c.items.length === 1 ? (
-          <Marker
-            key={c.key}
-            position={[c.lat, c.lng]}
-            icon={priceIcon(`₪${c.items[0].rent.toLocaleString()}`)}
-            title={c.items[0].title}
-          >
-            <Popup minWidth={200} maxWidth={240}>
-              <PinCard listing={c.items[0]} />
-            </Popup>
-          </Marker>
-        ) : (
-          <Marker
-            key={c.key}
-            position={[c.lat, c.lng]}
-            icon={clusterIcon(c.items.length)}
-            title={`${c.items.length} rooms`}
-            eventHandlers={{
-              click: () => map.setView([c.lat, c.lng], zoomIntoCluster(map.getZoom(), MAX_ZOOM)),
-            }}
-          />
-        )
-      )}
-    </>
+      {chosen ? (
+        <MapPopup
+          longitude={chosen.lng}
+          latitude={chosen.lat}
+          onClose={() => setChosen(null)}
+          closeButton
+          offset={12}
+          className="w-[13.5rem]"
+        >
+          <PinCard listing={chosen} />
+        </MapPopup>
+      ) : null}
+    </Map>
   );
 }
 
 /** The little card behind a pin. */
 function PinCard({ listing }: { listing: ListingPin }) {
   return (
-    <Link href={`/browse/${listing.id}`} className="block w-[200px] overflow-hidden rounded-xl no-underline">
+    <Link href={`/browse/${listing.id}`} className="block no-underline">
       {listing.photo ? (
-        // Plain <img>: this markup is injected into Leaflet's popup, outside
+        // Plain <img>: this markup is portalled into MapLibre's popup, outside
         // Next's layout pass, so next/image's sizing would fight it.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={listing.photo} alt="" className="h-24 w-full object-cover" loading="lazy" />
+        <img src={listing.photo} alt="" className="h-24 w-full rounded-lg object-cover" loading="lazy" />
       ) : null}
-      <span className="block px-3 py-2">
-        <span className="block text-sm font-bold text-ink">₪{listing.rent.toLocaleString()}<span className="font-normal text-muted"> /mo</span></span>
+      <span className="mt-2 block">
+        <span className="block text-sm font-bold text-ink">
+          ₪{listing.rent.toLocaleString()}
+          <span className="font-normal text-muted"> /mo</span>
+        </span>
         <span className="mt-0.5 block truncate text-xs text-muted">
           {listing.city}
           {listing.neighborhood ? ` · ${listing.neighborhood}` : ""}
         </span>
+        <span className="mt-1.5 block text-xs font-semibold text-accent">View room →</span>
       </span>
     </Link>
-  );
-}
-
-function ThemedTiles() {
-  const theme = useMapTheme();
-  return (
-    <TileLayer
-      key={theme}
-      url={TILES[theme]}
-      attribution={ATTRIBUTION}
-      maxZoom={MAX_ZOOM}
-      className={theme === "dark" ? DARK_TILE_CLASS : undefined}
-    />
   );
 }
