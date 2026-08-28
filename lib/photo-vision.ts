@@ -19,8 +19,16 @@ import { photoRoomLabel, MAX_IMAGE_BYTES } from "@/lib/constants";
 import { PHOTO_SUBJECTS, type PhotoSubject } from "@/lib/photo-rules";
 import type { PhotoRoom } from "@/lib/types";
 
-/** Free tier in Google AI Studio; fast enough to run while the member waits. */
-export const PHOTO_CHECK_MODEL = "gemini-3.7-flash";
+/**
+ * Tried in order, all free-tier in Google AI Studio. A member is waiting on
+ * this call, so a model that answers "high demand, try again later" must not
+ * be the end of it: on 2026-08-28 `gemini-3.7-flash` was returning 503 for
+ * minutes at a time while 3.6 answered in 3.4 s. 3.6 leads because it was the
+ * fastest of the three that day and reads a room just as well; naming a room
+ * is not the kind of task where the newest model pulls ahead.
+ */
+export const PHOTO_CHECK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.7-flash"] as const;
+export const PHOTO_CHECK_MODEL = PHOTO_CHECK_MODELS[0];
 
 /** One photo, ready to be sent inline. */
 export interface PhotoBytes {
@@ -34,6 +42,8 @@ export interface PhotoVerdict {
   subject: PhotoSubject;
   /** One plain-English sentence about what the photo shows, for the uploader. */
   reason: string;
+  /** Which of `PHOTO_CHECK_MODELS` actually answered — for the probe and the logs. */
+  model: string;
 }
 
 const verdictSchema = z.object({
@@ -50,8 +60,8 @@ subject values:
 - bedroom — a bedroom; a bed is the main subject.
 - bathroom — a bathroom, shower room or toilet.
 - kitchen — a kitchen or kitchenette, including a dining corner that is part of it.
-- balcony — a balcony, terrace, roof, garden or yard that belongs to a home.
-- exterior — the building from outside, its entrance, stairwell, or the street in front of it.
+- balcony — an outdoor space of the home: a balcony, terrace, roof, veranda, covered porch, garden or yard. The camera stands *on* that space — its floor, railing or furniture is close and fills much of the frame, and the home appears only as the wall behind it.
+- exterior — the building seen from outside: its facade, its entrance, a stairwell, or the street in front of it. The camera stands away from the home and you can see the shape of the building itself — choose this even when a garden, driveway, pool or porch is in the foreground.
 - other_apartment — another part of a home that fits none of the above: a hallway, storage or laundry room, a mamad, a floor plan, an empty room with nothing to identify it, a view from a window.
 - not_apartment — anything that is not a photo of a home: people or pets as the subject, food, vehicles, screenshots, documents, memes, landscapes, shops, offices, blank or unreadable images.
 
@@ -83,9 +93,9 @@ function isTransient(e: unknown): boolean {
 export async function classifyListingPhoto(image: PhotoBytes, label: PhotoRoom): Promise<PhotoVerdict> {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  const ask = () =>
+  const ask = (model: string) =>
     ai.models.generateContent({
-      model: PHOTO_CHECK_MODEL,
+      model,
       contents: [
         {
           role: "user",
@@ -105,25 +115,35 @@ export async function classifyListingPhoto(image: PhotoBytes, label: PhotoRoom):
       },
     });
 
-  let response;
-  try {
-    response = await ask();
-  } catch (e) {
-    if (!isTransient(e)) throw e;
-    await new Promise((r) => setTimeout(r, 1200));
-    response = await ask();
+  // Down the chain while the answer is "busy, try later"; a real error (a bad
+  // key, a rejected request) stops on the spot rather than asking two more
+  // models the same broken question.
+  let last: unknown;
+  for (const model of PHOTO_CHECK_MODELS) {
+    let response;
+    try {
+      response = await ask(model);
+    } catch (e) {
+      last = e;
+      if (!isTransient(e)) throw e;
+      continue;
+    }
+    // A safety block means the picture is not something we want on a listing anyway.
+    if (response.promptFeedback?.blockReason) {
+      return { subject: "not_apartment", reason: "This photo can't be used on a listing.", model };
+    }
+    return { ...read(response.text), model };
   }
+  throw last instanceof Error ? last : new Error("The photo check is busy — please try again in a moment.");
+}
 
-  // A safety block means the picture is not something we want on a listing anyway.
-  if (response.promptFeedback?.blockReason) {
-    return { subject: "not_apartment", reason: "This photo can't be used on a listing." };
-  }
-
-  const text = response.text?.trim();
-  if (!text) throw new Error("Photo check returned an empty answer.");
+/** The model's JSON, or an error naming what was wrong with it. */
+function read(text: string | undefined): Omit<PhotoVerdict, "model"> {
+  const body = text?.trim();
+  if (!body) throw new Error("Photo check returned an empty answer.");
   let json: unknown;
   try {
-    json = JSON.parse(text);
+    json = JSON.parse(body);
   } catch {
     throw new Error("Photo check returned an unexpected answer.");
   }

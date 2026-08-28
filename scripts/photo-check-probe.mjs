@@ -35,7 +35,7 @@ registerHooks({
   },
 });
 
-const { classifyListingPhoto, fetchPhotoBytes, PHOTO_CHECK_MODEL } = await import("@/lib/photo-vision.ts");
+const { classifyListingPhoto, fetchPhotoBytes, PHOTO_CHECK_MODELS } = await import("@/lib/photo-vision.ts");
 const { photoProblem } = await import("@/lib/photo-rules.ts");
 
 const args = process.argv.slice(2);
@@ -47,7 +47,7 @@ if (!process.env.GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is not set — add it to .env.local first.");
   process.exit(1);
 }
-console.log(`model: ${PHOTO_CHECK_MODEL}
+console.log(`models: ${PHOTO_CHECK_MODELS.join(" → ")}
 `);
 
 const MIME = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
@@ -80,7 +80,7 @@ for (let i = 0; i < args.length; i += 2) {
       mark = right ? "  [hit]" : "  [MISS]";
     }
     console.log(`${problem ? "REJECT" : "ACCEPT"}  tag=${tag.padEnd(11)} saw=${verdict.subject.padEnd(15)} ${name}${mark}`);
-    console.log(`        ${verdict.reason}`);
+    console.log(`        ${verdict.reason}   [${verdict.model}]`);
     if (problem) console.log(`        → ${problem}`);
   } catch (e) {
     failures++;
