@@ -607,6 +607,22 @@ for (const row of needsAddress) {
   byCity.get(row.city).push(row);
 }
 
+/**
+ * Points already spoken for — by a room we aren't touching, and by every room
+ * this run places as it goes.
+ *
+ * Towns 2 km apart share candidates (Nazareth and Nof HaGalil overlap), and
+ * the pool is ordered by a hash of the address, so both towns' first pick can
+ * be the *same building*. Without this the run was stable but wrong: it
+ * re-assigned the same two rooms the same shared point every time, and the
+ * count of shared points barely moved.
+ */
+const claimed = new Set();
+const beingReplaced = new Set(needsAddress.map((row) => row.id));
+for (const row of rows) {
+  if (row.lat != null && !beingReplaced.has(row.id)) claimed.add(`${row.lat},${row.lng}`);
+}
+
 const towns = [...byCity.keys()].sort();
 let town = 0;
 for (const city of towns) {
@@ -645,7 +661,17 @@ for (const city of towns) {
   }
 
   for (const [index, row] of roomsHere.entries()) {
-    const pick = pool[index % pool.length];
+    // Walk on from this room's own slot until an address nobody else holds.
+    let pick = pool[index % pool.length];
+    for (let step = 0; step < pool.length; step++) {
+      const candidate = pool[(index + step) % pool.length];
+      if (!claimed.has(`${candidate.lat},${candidate.lng}`)) {
+        pick = candidate;
+        break;
+      }
+    }
+    claimed.add(`${pick.lat},${pick.lng}`);
+
     await save(row.id, {
       address: pick.number ? `${pick.street} ${pick.number}` : pick.street,
       street: pick.street,
