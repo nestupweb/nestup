@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { MAP_COLORS, MAP_STYLES, PLACES } from "@/components/map/basemap";
+import { MAP_COLORS, MAP_STYLES, NEARBY_ROOM_COLOR, PLACES } from "@/components/map/basemap";
 
 const css = readFileSync(join(import.meta.dirname, "../../app/globals.css"), "utf8");
 
@@ -40,6 +40,18 @@ describe("map colours", () => {
       expect(colour).toMatch(/^#[0-9a-f]{6}$/);
       expect(colour).not.toBe(MAP_COLORS.light.accent);
       expect(colour).not.toBe(MAP_COLORS.dark.accent);
+    }
+  });
+
+  test("the rooms nearby are their own red — not the accent, not a restaurant", () => {
+    // On a room's map the accent means "the room you're looking at" and this
+    // red means "one you could look at instead". A restaurant sharing either
+    // hex would undo the whole point of colouring them.
+    expect(NEARBY_ROOM_COLOR).toMatch(/^#[0-9a-f]{6}$/);
+    expect(NEARBY_ROOM_COLOR).not.toBe(MAP_COLORS.light.accent);
+    expect(NEARBY_ROOM_COLOR).not.toBe(MAP_COLORS.dark.accent);
+    for (const { color } of Object.values(PLACES)) {
+      expect(color).not.toBe(NEARBY_ROOM_COLOR);
     }
   });
 });

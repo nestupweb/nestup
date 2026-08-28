@@ -7,12 +7,12 @@ import { MAP_COLORS } from "@/components/map/basemap";
 import type { ListingPin } from "@/lib/listings";
 
 /**
- * Every room on one map, as pins.
+ * A set of rooms on a map, as pins.
  *
  * This replaced clustering on 2026-08-28. Clusters drew big accent circles
  * with a room count in them, which the user read — reasonably — as "what are
  * these blobs?": the map of all rooms looked nothing like the map of one room.
- * Now both draw the same accent teardrop.
+ * Now both draw the same teardrop.
  *
  * Eight hundred pins can't all be legible at country zoom, and the fix is
  * MapLibre's own: `icon-allow-overlap: false` means a pin that would land on
@@ -22,11 +22,11 @@ import type { ListingPin } from "@/lib/listings";
  *
  * One GL symbol layer rather than 800 DOM markers, which is what makes it
  * quick — the same reason the cluster layer was used before.
+ *
+ * The same layer draws the alternatives on a single room's map (`RoomMap`), in
+ * red and a size up, which is why the colour, the size and the layer's name
+ * are props: two of these can share a map without colliding over ids.
  */
-
-const SOURCE = "nestup-rooms";
-const LAYER = "nestup-room-pins";
-const ICON = "nestup-room-pin";
 
 /** The teardrop from a room's own map, drawn for the GL renderer. */
 function pinSvg(fill: string, ink: string): string {
@@ -49,16 +49,28 @@ export function RoomPinsLayer({
   pins,
   theme,
   onSelect,
+  fill,
+  size = 0.42,
+  name = "rooms",
 }: {
   pins: ListingPin[];
   /** Redraws the icon when the theme flips — the accent changes with it. */
   theme: "light" | "dark";
   onSelect: (pin: ListingPin) => void;
+  /** Defaults to the app's accent; the alternatives on a room's map pass red. */
+  fill?: string;
+  /** Multiplies the icon. Bigger on a room's map, where there are few pins. */
+  size?: number;
+  /** Namespaces the source, layer and image, so two layers can share a map. */
+  name?: string;
 }) {
   const { map, isLoaded } = useMap();
 
   useEffect(() => {
     if (!map || !isLoaded) return;
+    const SOURCE = `nestup-${name}`;
+    const LAYER = `nestup-${name}-pins`;
+    const ICON = `nestup-${name}-pin`;
     let cancelled = false;
 
     const data = {
@@ -72,7 +84,7 @@ export function RoomPinsLayer({
 
     const draw = async () => {
       const colors = MAP_COLORS[theme];
-      const image = await loadPin(colors.accent, colors.on);
+      const image = await loadPin(fill ?? colors.accent, colors.on);
       // The style can be swapped (theme change) while the image decodes, and
       // adding a layer to a style that is on its way out throws.
       if (cancelled || !map.isStyleLoaded()) return;
@@ -90,7 +102,7 @@ export function RoomPinsLayer({
           source: SOURCE,
           layout: {
             "icon-image": ICON,
-            "icon-size": 0.42,
+            "icon-size": size,
             // Anchored at the point of the teardrop, so the pin marks the
             // address rather than hovering above it.
             "icon-anchor": "bottom",
@@ -138,7 +150,7 @@ export function RoomPinsLayer({
       if (map.getLayer(LAYER)) map.removeLayer(LAYER);
       if (map.getSource(SOURCE)) map.removeSource(SOURCE);
     };
-  }, [map, isLoaded, pins, theme, onSelect]);
+  }, [map, isLoaded, pins, theme, onSelect, fill, size, name]);
 
   return null;
 }

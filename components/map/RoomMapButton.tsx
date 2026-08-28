@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useRef, useState } from "react";
-import { PLACES, type PlaceKind } from "@/components/map/basemap";
+import { NEARBY_ROOM_COLOR, PLACES, type PlaceKind } from "@/components/map/basemap";
 import { MapDialog, MapIconButton, MapSkeleton } from "@/components/map/MapPanel";
 import type { LatLng } from "@/lib/geo";
+import type { ListingPin } from "@/lib/listings";
 import type { Place } from "@/lib/places";
 
 const RoomMap = dynamic(() => import("@/components/map/RoomMap"), {
@@ -23,12 +24,17 @@ const RoomMap = dynamic(() => import("@/components/map/RoomMap"), {
  * it's an Overpass lookup, and most visitors never open the map. If it comes
  * back empty — a busy mirror, or genuinely nothing within a few minutes' walk
  * — the map still opens with the room on it.
+ *
+ * The rooms nearby come the other way, with the page: that's our own database
+ * and one boxed query, so there's nothing to wait for and no second failure
+ * mode to design around.
  */
 export function RoomMapButton({
   point,
   address,
   city,
   note,
+  nearby,
 }: {
   point: LatLng;
   /** The street line, as it's written on the listing. */
@@ -36,6 +42,8 @@ export function RoomMapButton({
   city: string;
   /** The address as a sentence, from `lib/location.ts` — shown beside the icon. */
   note: string;
+  /** Other rooms within a few kilometres, drawn in red. Never includes this one. */
+  nearby: ListingPin[];
 }) {
   const [open, setOpen] = useState(false);
   const [places, setPlaces] = useState<Place[] | null>(null);
@@ -91,10 +99,14 @@ export function RoomMapButton({
                 ? city
                 : `${city} · ${places.length} place${places.length === 1 ? "" : "s"} within a few minutes' walk`
           }
-          footer={<Legend places={places ?? []} />}
+          footer={<Legend places={places ?? []} nearby={nearby.length} />}
           onClose={hide}
         >
-          {places === null ? <MapSkeleton /> : <RoomMap point={point} label={where} places={places} />}
+          {places === null ? (
+            <MapSkeleton />
+          ) : (
+            <RoomMap point={point} label={where} places={places} nearby={nearby} />
+          )}
         </MapDialog>
       ) : null}
     </div>
@@ -107,7 +119,7 @@ export function RoomMapButton({
  * Only the kinds actually on the map are listed — a legend entry for bars in a
  * village with no bar teaches the reader nothing.
  */
-function Legend({ places }: { places: Place[] }) {
+function Legend({ places, nearby }: { places: Place[]; nearby: number }) {
   const present = (Object.keys(PLACES) as PlaceKind[]).filter((kind) =>
     places.some((place) => place.kind === kind)
   );
@@ -118,6 +130,16 @@ function Legend({ places }: { places: Place[] }) {
         <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden="true" />
         This room
       </li>
+      {nearby > 0 ? (
+        <li className="flex items-center gap-1.5">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: NEARBY_ROOM_COLOR }}
+            aria-hidden="true"
+          />
+          {nearby} other room{nearby === 1 ? "" : "s"} nearby
+        </li>
+      ) : null}
       {present.map((kind) => (
         <li key={kind} className="flex items-center gap-1.5">
           <span

@@ -67,7 +67,7 @@ export async function queryAllListingPins(): Promise<ListingPin[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("listings")
-    .select("id, lat, lng, rent, title, city, neighborhood, photo_urls")
+    .select(PIN_FIELDS)
     .eq("is_active", true)
     .is("removed_at", null)
     .not("lat", "is", null)
@@ -77,6 +77,63 @@ export async function queryAllListingPins(): Promise<ListingPin[]> {
     .neq("coords_source", "city")
     .limit(MAX_PINS);
   if (error) return [];
+  return toPins(data);
+}
+
+/**
+ * How far around a room still counts as "nearby" on that room's own map.
+ *
+ * Ten kilometres: the map opens at street zoom, so this is well past the edge
+ * of the first few zoom-outs, and in a country this size it's a metro area's
+ * worth of alternatives rather than the whole map again.
+ */
+export const NEARBY_RADIUS_M = 10_000;
+
+/** And how many of them the map will draw. */
+export const MAX_NEARBY_PINS = 300;
+
+/**
+ * The other rooms around one room, for the map on its page.
+ *
+ * Same rules as the map of everything — active, not removed, placed at its own
+ * address — minus the room you're already looking at, and boxed to
+ * `NEARBY_RADIUS_M` so a listing page doesn't ship all eight hundred pins.
+ *
+ * A box rather than a circle, because it's two indexed range comparisons and
+ * the corners being a few kilometres generous costs nothing: these are
+ * alternatives to scroll past, not a search result.
+ */
+export async function queryNearbyListingPins(
+  point: { lat: number; lng: number },
+  excludeId: string
+): Promise<ListingPin[]> {
+  const supabase = await createClient();
+  const dLat = NEARBY_RADIUS_M / 111_320;
+  // A degree of longitude shortens towards the poles; at Israel's latitude
+  // it's about 0.85 of a degree of latitude.
+  const dLng = dLat / Math.max(0.2, Math.cos((point.lat * Math.PI) / 180));
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(PIN_FIELDS)
+    .eq("is_active", true)
+    .is("removed_at", null)
+    .neq("id", excludeId)
+    .neq("coords_source", "city")
+    .gte("lat", point.lat - dLat)
+    .lte("lat", point.lat + dLat)
+    .gte("lng", point.lng - dLng)
+    .lte("lng", point.lng + dLng)
+    .limit(MAX_NEARBY_PINS);
+  if (error) return [];
+  return toPins(data);
+}
+
+/** The eight columns a pin needs — nothing else is read off the row. */
+const PIN_FIELDS = "id, lat, lng, rent, title, city, neighborhood, photo_urls";
+
+/** Rows to pins, dropping anything that turned out to have no position. */
+function toPins(data: unknown): ListingPin[] {
   const rows = (data ?? []) as {
     id: string;
     lat: number | null;

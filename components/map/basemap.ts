@@ -54,6 +54,17 @@ export const PLACES: Record<PlaceKind, { color: string; label: string }> = {
   shop: { color: "#2f6fb5", label: "Shops" },
 };
 
+/**
+ * The rooms *other* than the one you're looking at, on a single room's map.
+ *
+ * Red, so it reads as "not this one" at a glance, and deliberately not the
+ * restaurant red above: these are teardrops rather than dots, and a step more
+ * saturated, so a street of restaurants can't be mistaken for a street of
+ * rooms going spare. Like the place colours it doesn't change with the theme —
+ * it carries on both Positron's near-white ground and Dark Matter's near-black.
+ */
+export const NEARBY_ROOM_COLOR = "#dc2333";
+
 export const MAX_ZOOM = 18;
 
 /** Close enough to see the street the room is on, and what's on it. */

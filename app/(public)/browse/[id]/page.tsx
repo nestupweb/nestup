@@ -9,6 +9,7 @@ import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIco
 import { RoomMapButton } from "@/components/map/RoomMapButton";
 import { pointOf } from "@/lib/geo";
 import { locationNote } from "@/lib/location";
+import { queryNearbyListingPins } from "@/lib/listings";
 import type { Listing, Profile } from "@/lib/types";
 
 export default async function ListingDetailPage({
@@ -64,6 +65,11 @@ export default async function ListingDetailPage({
   // resolved still has a city-centre point in the column from the old
   // pipeline; showing it would be claiming a precision we don't have.
   const place = listing.coords_source === "city" ? null : pointOf(listing);
+
+  // The alternatives the map draws in red. Only fetched for a room we can put
+  // on a map at all, and only ever the rooms around it (user request,
+  // 2026-08-28: compare this one against what else is going, on one map).
+  const nearby = place ? await queryNearbyListingPins(place, listing.id) : [];
 
   const features = FEATURES.filter((f) => listing[f.key]);
   const viewingHours = describeSlots(normalizeSlots(listing.viewing_slots));
@@ -150,6 +156,7 @@ export default async function ListingDetailPage({
                 address={listing.address || [listing.street, listing.house_number].filter(Boolean).join(" ")}
                 city={listing.city}
                 note={locationNote(listing)}
+                nearby={nearby}
               />
             </div>
           </section>
