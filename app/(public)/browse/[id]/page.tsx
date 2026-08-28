@@ -60,7 +60,10 @@ export default async function ListingDetailPage({
 
   // The household and anyone already chatting about the room see the real
   // point; everyone else gets the neighbourhood circle (see lib/location.ts).
-  const place = pointOf(listing);
+  // Only a room we can place exactly gets a map. One whose address never
+  // resolved still has a city-centre point in the column from the old
+  // pipeline; showing it would be claiming a precision we don't have.
+  const place = listing.coords_source === "city" ? null : pointOf(listing);
 
   const features = FEATURES.filter((f) => listing[f.key]);
   const viewingHours = describeSlots(normalizeSlots(listing.viewing_slots));

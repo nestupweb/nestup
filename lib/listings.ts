@@ -71,6 +71,10 @@ export async function queryAllListingPins(): Promise<ListingPin[]> {
     .eq("is_active", true)
     .is("removed_at", null)
     .not("lat", "is", null)
+    // Every pin on this map is at the room's own address. A room whose
+    // address couldn't be placed is left off it entirely rather than drawn
+    // near the middle of its city (user decision, 2026-08-28).
+    .neq("coords_source", "city")
     .limit(MAX_PINS);
   if (error) return [];
   const rows = (data ?? []) as {

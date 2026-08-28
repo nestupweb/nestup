@@ -96,24 +96,20 @@ function query(centre) {
 }
 
 async function overpass(q) {
-  for (let round = 0; round < 3; round++) {
-    for (const endpoint of OVERPASS) {
-      try {
-        const res = await fetch(`${endpoint}?data=${encodeURIComponent(q)}`, {
-          headers: { "User-Agent": UA, Accept: "application/json" },
-          signal: AbortSignal.timeout(120_000),
-        });
-        if (res.ok) return await res.json();
-        // 429 = too many requests, 504 = the mirror is busy with someone
-        // else's query. Both are worth waiting out rather than giving up on.
-        if (res.status !== 429 && res.status !== 504) return null;
-      } catch {
-        /* timeout or socket — try the next mirror */
-      }
-      await sleep(2000);
+  for (const endpoint of OVERPASS) {
+    try {
+      const res = await fetch(`${endpoint}?data=${encodeURIComponent(q)}`, {
+        headers: { "User-Agent": UA, Accept: "application/json" },
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (res.ok) return await res.json();
+    } catch {
+      /* busy, blocked, or offline — try the next mirror */
     }
-    await sleep(5000 * (round + 1));
+    await sleep(1500);
   }
+  // Waiting out a 429 was the first version of this, and it cost 90 seconds a
+  // town before failing anyway. Nominatim knows the same streets.
   return null;
 }
 
@@ -180,6 +176,82 @@ async function townPlaces(city, centre) {
 
 function round(n) {
   return Math.round(n * 1e6) / 1e6;
+}
+
+/**
+ * Points spread over a town, without randomness.
+ *
+ * The golden angle puts each next sample as far from the previous ones as it
+ * can, and the square root spaces them evenly by area rather than bunching
+ * them in the middle — the same trick the old scatter used, except these are
+ * only *questions*, never a room's position.
+ */
+function samplePoints(centre, count) {
+  const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+  const points = [];
+  for (let i = 0; i < count; i++) {
+    const distance = Math.sqrt((i + 0.5) / count) * ADDRESS_RADIUS_M;
+    const angle = i * GOLDEN;
+    points.push({
+      lat: centre.lat + (distance * Math.sin(angle)) / 111_320,
+      lng: centre.lng + (distance * Math.cos(angle)) / (111_320 * Math.cos((centre.lat * Math.PI) / 180)),
+    });
+  }
+  return points;
+}
+
+/** Ask Nominatim what is at a point: the building if there is one, else the road. */
+async function reverse(point) {
+  const u = new URL("https://nominatim.openstreetmap.org/reverse");
+  u.searchParams.set("lat", String(point.lat));
+  u.searchParams.set("lon", String(point.lng));
+  u.searchParams.set("format", "jsonv2");
+  u.searchParams.set("zoom", "18");
+  u.searchParams.set("addressdetails", "1");
+  try {
+    const res = await fetch(u, {
+      headers: { "User-Agent": UA, "Accept-Language": "en" },
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The same job as `townPlaces`, for when Overpass won't talk to us.
+ *
+ * Overpass is one volunteer server and it does cut you off after a few hundred
+ * queries — which happened halfway through this job. Nominatim knows the same
+ * streets and answers one a second, so the town is learnt by asking "what is
+ * here?" at points spread across it. `Accept-Language: en` means the road
+ * comes back in English, and the coordinates in the answer are the matched
+ * building's or road's own, not the point we asked about.
+ */
+async function townByAsking(city, centre, wanted) {
+  const cached = join(CACHE, `${city.replace(/[^a-z0-9]+/gi, "_")}.reverse.json`);
+  if (existsSync(cached)) return JSON.parse(readFileSync(cached, "utf8"));
+
+  const found = new Map();
+  for (const point of samplePoints(centre, Math.max(14, wanted * 3))) {
+    const hit = await pacedNominatim(() => reverse(point));
+    const road = hit?.address?.road;
+    const lat = Number(hit?.lat);
+    const lon = Number(hit?.lon);
+    if (!road || !latin(road) || !streetLike(road)) continue;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    if (distanceM({ lat, lng: lon }, centre) > ADDRESS_RADIUS_M) continue;
+
+    const number = usableNumber(hit.address.house_number) ? hit.address.house_number.trim() : "";
+    const key = `${road}|${number}|${round(lat)},${round(lon)}`;
+    if (!found.has(key)) found.set(key, { street: road, number, lat: round(lat), lng: round(lon) });
+  }
+
+  const pool = [...found.values()];
+  writeFileSync(cached, JSON.stringify(pool));
+  return pool;
 }
 
 /**
@@ -444,15 +516,20 @@ for (const city of towns) {
   }
 
   const places = await townPlaces(city, centre);
-  if (!places) {
-    console.log(`  ${city}: OpenStreetMap wouldn't answer — ${roomsHere.length} room(s) left alone`);
-    tally.stuck += roomsHere.length;
-    continue;
+  let pool = places ? candidates(places, centre) : [];
+  let how = "overpass";
+  if (pool.length < roomsHere.length) {
+    // Either Overpass is refusing us, or this town has almost nothing tagged
+    // in English. Asking Nominatim point by point is slower but it always
+    // answers, and it answers in English.
+    const asked = await townByAsking(city, centre, roomsHere.length);
+    if (asked.length > pool.length) {
+      pool = asked;
+      how = "nominatim";
+    }
   }
-
-  const pool = candidates(places, centre);
   if (pool.length === 0) {
-    console.log(`  ${city}: no named streets found — ${roomsHere.length} room(s) left alone`);
+    console.log(`  ${city}: no real streets found — ${roomsHere.length} room(s) left alone`);
     tally.stuck += roomsHere.length;
     continue;
   }
@@ -477,7 +554,7 @@ for (const city of towns) {
   const doors = pool.filter((c) => c.number).length;
   console.log(
     `  ${String(town).padStart(3)}/${towns.length} ${city}: ${roomsHere.length} placed ` +
-      `(${doors} building(s) and ${places.streets.length} street(s) known here)`
+      `from ${pool.length} real address(es), ${doors} with a house number (${how})`
   );
 }
 
