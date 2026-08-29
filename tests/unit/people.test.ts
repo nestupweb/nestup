@@ -11,7 +11,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any",
     shabbat: "traditional", pref_shabbat: "any", chores: ["Dishes"],
     budget_min: 2500, budget_max: 4000, preferred_cities: ["Tel Aviv", "Haifa"],
-    earliest_move_in: "2026-10-01", pref_lease_term: "any", pref_safe_room: "any", notify_new_matches: false, created_at: "", updated_at: "",
+    earliest_move_in: "2026-10-01", pref_lease_term: "any", pref_safe_room: "any", pref_amenities: [], notify_new_matches: false, created_at: "", updated_at: "",
     ...overrides,
   };
 }
@@ -89,6 +89,16 @@ describe("profileGroups", () => {
       .find((g) => g.title === "Looking for")!
       .rows.find((r) => r.label === "Mamad")!;
     expect(row.value).toBe("In the apartment");
+  });
+
+  test("lists the amenities asked for, and says nothing when none are", () => {
+    const rowsOf = (p: Parameters<typeof profileGroups>[0]) =>
+      profileGroups(p, null).find((g) => g.title === "Looking for")?.rows.map((r) => r.label) ?? [];
+    expect(rowsOf(profile())).not.toContain("Amenities");
+    const row = profileGroups(profile({ pref_amenities: ["balcony", "air_conditioning"] }), null)
+      .find((g) => g.title === "Looking for")!
+      .rows.find((r) => r.label === "Amenities")!;
+    expect(row.value).toBe("Balcony, Air conditioning");
   });
 
   test("drops empty rows and groups when there are no details", () => {

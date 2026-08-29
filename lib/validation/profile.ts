@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { BUDGET_CAP, CHORES, CITIES, INTERESTS, MAX_INTERESTS, MIN_INTERESTS, PREF_LEASE_TERMS, PREF_SAFE_ROOMS } from "@/lib/constants";
-import type { PrefLeaseTerm, PrefSafeRoom } from "@/lib/types";
+import { BUDGET_CAP, CHORES, CITIES, INTERESTS, MAX_INTERESTS, MIN_INTERESTS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS } from "@/lib/constants";
+import type { Amenity, PrefLeaseTerm, PrefSafeRoom } from "@/lib/types";
 
 const prefLeaseTermKeys = PREF_LEASE_TERMS.map((o) => o.key) as [PrefLeaseTerm, ...PrefLeaseTerm[]];
 const prefSafeRoomKeys = PREF_SAFE_ROOMS.map((o) => o.key) as [PrefSafeRoom, ...PrefSafeRoom[]];
+const amenityKeys = PREF_AMENITIES.map((o) => o.key) as [Amenity, ...Amenity[]];
 
 /**
  * The Daily life table may be saved half-finished (migration 0035): a blank
@@ -74,6 +75,11 @@ export const profileSchema = z
     // "For how long" — optional so onboarding and older forms still validate.
     pref_lease_term: z.enum(prefLeaseTermKeys).default("any"),
     pref_safe_room: z.enum(prefSafeRoomKeys).default("any"),
+    pref_amenities: z
+      .array(z.enum(amenityKeys))
+      .max(amenityKeys.length)
+      .default([])
+      .transform((arr) => [...new Set(arr)]),
   })
   .refine((p) => p.budget_max === 0 || p.budget_max >= p.budget_min, {
     message: "Max budget must be at least the min budget",

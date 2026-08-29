@@ -1,4 +1,5 @@
 import type {
+  Amenity,
   Diet,
   GuestsFreq,
   LeaseTerm,
@@ -230,4 +231,18 @@ export const FEATURES = [
   { key: "parking", label: "Parking" },
   { key: "elevator", label: "Elevator" },
   { key: "furnished", label: "Furnished" },
-] as const;
+] as const satisfies readonly { key: Amenity; label: string }[];
+
+/**
+ * The same list from the seeker's side, for Profile › Amenities.
+ *
+ * The listing's own features, verbatim — a member asking for a balcony and an
+ * owner ticking "balcony" have to mean the same thing or the two sides never
+ * meet. Pets and smoking are deliberately absent: they're house rules rather
+ * than amenities, and the profile already asks about both in Daily life.
+ */
+export const PREF_AMENITIES = FEATURES;
+
+export function amenityLabel(key: Amenity): string {
+  return FEATURES.find((f) => f.key === key)?.label ?? key;
+}

@@ -32,7 +32,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     sleep_schedule: "flexible", guests_freq: "sometimes",
     interests: ["Music", "Cooking"], ok_with_smoker: true, ok_with_pets: true,
     noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [],
-    budget_min: 0, budget_max: 3000, preferred_cities: [], earliest_move_in: null, pref_lease_term: "any", pref_safe_room: "any", notify_new_matches: false,
+    budget_min: 0, budget_max: 3000, preferred_cities: [], earliest_move_in: null, pref_lease_term: "any", pref_safe_room: "any", pref_amenities: [], notify_new_matches: false,
     created_at: "", updated_at: "", ...overrides,
   };
 }

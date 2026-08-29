@@ -13,7 +13,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import { hourChoices, nearestHour } from "@/lib/clock";
 import { useStickyForm } from "@/lib/hooks";
-import { BED_TIMES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
+import { BED_TIMES, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
 import type { Profile, ProfileDetails } from "@/lib/types";
@@ -151,7 +151,7 @@ export function ProfileForm({
         </Section>
       ) : null}
 
-      <Section step={stepNo()} title="Apartment preferences" hint="Powers the budget, city and move-in parts of your Lifestyle match.">
+      <Section step={stepNo()} title="Apartment preferences" hint="Powers the budget, city and move-in parts of your Lifestyle match. Amenities are what the room itself should have.">
         <div className="rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5">
           <p className={label}>Monthly budget</p>
           <div className="mt-2">
@@ -170,17 +170,42 @@ export function ProfileForm({
               ))}
             </Select>
           </label>
-          <label className={label}>Mamad <span className={note}>· safe room</span>
+          <fieldset className="min-w-0 sm:col-span-2">
+            <legend className={label}>Preferred cities</legend>
+            <div className="mt-1">
+              <CityMultiPicker name="preferred_cities" initial={profile?.preferred_cities ?? []} />
+            </div>
+          </fieldset>
+        </div>
+
+        {/* Amenities — what the room itself should have. The mamad lives here
+            and nowhere else in the profile (user decision, 2026-08-29): it is
+            a feature of the flat, not something about how anyone lives, so
+            Daily life is the wrong place for it. */}
+        <div className="mt-4 rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5">
+          <p className={label}>Amenities <span className={note}>· what the room should have</span></p>
+          <label className="mt-3 block max-w-xs text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+            Mamad <span className={note}>· safe room</span>
             <Select name="pref_safe_room" defaultValue={profile?.pref_safe_room ?? "any"}>
               {PREF_SAFE_ROOMS.map((o) => (
                 <option key={o.key} value={o.key}>{o.label}</option>
               ))}
             </Select>
           </label>
-          <fieldset className="min-w-0 sm:col-span-2">
-            <legend className={label}>Preferred cities</legend>
-            <div className="mt-1">
-              <CityMultiPicker name="preferred_cities" initial={profile?.preferred_cities ?? []} />
+          <fieldset className="mt-4">
+            <legend className={label}>Nice to have</legend>
+            <div className="mt-2.5 flex flex-wrap gap-x-6 gap-y-2.5 text-base">
+              {PREF_AMENITIES.map((a) => (
+                <label key={a.key} className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    name="pref_amenities"
+                    value={a.key}
+                    defaultChecked={(profile?.pref_amenities ?? []).includes(a.key)}
+                  />
+                  {a.label}
+                </label>
+              ))}
             </div>
           </fieldset>
         </div>

@@ -50,6 +50,14 @@ describe("profileSchema", () => {
     // "none" belongs to a listing, not to what someone is looking for.
     expect(profileSchema.safeParse({ ...validProfile, pref_safe_room: "none" }).success).toBe(false);
   });
+  test("amenities default to none, dedupe, and reject anything not a feature", () => {
+    const blank = profileSchema.safeParse(validProfile);
+    expect(blank.success && blank.data.pref_amenities).toEqual([]);
+    const picked = profileSchema.safeParse({ ...validProfile, pref_amenities: ["balcony", "parking", "balcony"] });
+    expect(picked.success && picked.data.pref_amenities).toEqual(["balcony", "parking"]);
+    // Pets and smoking are house rules asked about in Daily life, not amenities.
+    expect(profileSchema.safeParse({ ...validProfile, pref_amenities: ["pets_allowed"] }).success).toBe(false);
+  });
   test("rejects an unknown 'for how long' value", () => {
     expect(profileSchema.safeParse({ ...validProfile, pref_lease_term: "forever" }).success).toBe(false);
   });
