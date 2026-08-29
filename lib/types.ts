@@ -36,25 +36,29 @@ export interface Profile {
   occupation: string;
   bio: string;
   avatar_url: string | null;
-  smoker: boolean;
-  has_pet: boolean;
-  cleanliness: number; // 1..5
-  sleep_schedule: SleepSchedule;
-  guests_freq: GuestsFreq;
-  noise_level: NoiseLevel;
-  diet: Diet;
-  shabbat: Shabbat;
+  // The Daily life table. `null` is "not answered yet" (migration 0035) — the
+  // column used to be NOT NULL with a default, which put words in the member's
+  // mouth. Read these through `withDailyLifeDefaults` (lib/daily-life.ts)
+  // before scoring; `isDailyLifeComplete` is what /swipe requires.
+  smoker: boolean | null;
+  has_pet: boolean | null;
+  cleanliness: number | null; // 1..5
+  sleep_schedule: SleepSchedule | null;
+  guests_freq: GuestsFreq | null;
+  noise_level: NoiseLevel | null;
+  diet: Diet | null;
+  shabbat: Shabbat | null;
   interests: string[];
   chores: string[]; // household chores I'm happy to take on (CHORES)
   // What I want in roommates (the right-hand column of Daily life)
-  ok_with_smoker: boolean;
-  ok_with_pets: boolean;
-  pref_cleanliness: number; // 1..5 — at least this tidy
-  pref_sleep: PrefSleep;
-  pref_guests: PrefGuests;
-  pref_noise: PrefNoise;
-  pref_diet: PrefDiet;
-  pref_shabbat: PrefShabbat;
+  ok_with_smoker: boolean | null;
+  ok_with_pets: boolean | null;
+  pref_cleanliness: number | null; // 1..5 — at least this tidy
+  pref_sleep: PrefSleep | null;
+  pref_guests: PrefGuests | null;
+  pref_noise: PrefNoise | null;
+  pref_diet: PrefDiet | null;
+  pref_shabbat: PrefShabbat | null;
   budget_min: number;
   budget_max: number; // 0 = not set
   preferred_cities: string[];

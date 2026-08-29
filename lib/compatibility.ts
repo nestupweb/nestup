@@ -1,3 +1,4 @@
+import { withDailyLifeDefaults, type AnsweredProfile } from "@/lib/daily-life";
 import type { GuestsFreq, Listing, NoiseLevel, Profile } from "@/lib/types";
 
 export type Perspective = "seeker" | "lister";
@@ -6,8 +7,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const GUEST_ORDER: Record<GuestsFreq, number> = { rare: 0, sometimes: 1, often: 2 };
 const NOISE_ORDER: Record<NoiseLevel, number> = { quiet: 0, moderate: 1, lively: 2 };
 // "The most I'm fine with", on the same scales.
-const GUEST_TOLERANCE: Record<Profile["pref_guests"], number> = { rare: 0, sometimes: 1, any: 2 };
-const NOISE_TOLERANCE: Record<Profile["pref_noise"], number> = { quiet: 0, moderate: 1, any: 2 };
+const GUEST_TOLERANCE: Record<NonNullable<Profile["pref_guests"]>, number> = { rare: 0, sometimes: 1, any: 2 };
+const NOISE_TOLERANCE: Record<NonNullable<Profile["pref_noise"]>, number> = { quiet: 0, moderate: 1, any: 2 };
 
 /**
  * Weights (sum 100). Room facts first, then the Daily life table — each row
@@ -46,26 +47,26 @@ function moveInPoints(seeker: Profile, listing: Listing): number {
   return 0;
 }
 
-function smokingPoints(seeker: Profile, listing: Listing, holder: Profile, other: Profile): number {
+function smokingPoints(seeker: AnsweredProfile, listing: Listing, holder: AnsweredProfile, other: AnsweredProfile): number {
   if (seeker.smoker && !listing.smoking_allowed) return 0;
   if (other.smoker && !holder.ok_with_smoker) return 0;
   return W.smoking;
 }
 
-function petPoints(seeker: Profile, listing: Listing, holder: Profile, other: Profile): number {
+function petPoints(seeker: AnsweredProfile, listing: Listing, holder: AnsweredProfile, other: AnsweredProfile): number {
   if (seeker.has_pet && !listing.pets_allowed) return 0;
   if (other.has_pet && !holder.ok_with_pets) return 0;
   return W.pets;
 }
 
 /** 6 for living alike, 4 for the other person meeting the tidiness I ask for. */
-function cleanlinessPoints(holder: Profile, other: Profile): number {
+function cleanlinessPoints(holder: AnsweredProfile, other: AnsweredProfile): number {
   const alike = Math.max(0, 6 - 1.5 * Math.abs(holder.cleanliness - other.cleanliness));
   const shortfall = Math.max(0, holder.pref_cleanliness - other.cleanliness);
   return alike + Math.max(0, 4 - 2 * shortfall);
 }
 
-function sleepPoints(holder: Profile, other: Profile): number {
+function sleepPoints(holder: AnsweredProfile, other: AnsweredProfile): number {
   if (holder.pref_sleep !== "any") {
     if (other.sleep_schedule === holder.pref_sleep) return W.sleep;
     return other.sleep_schedule === "flexible" ? W.sleep * (2 / 3) : 0;
@@ -75,19 +76,19 @@ function sleepPoints(holder: Profile, other: Profile): number {
   return W.sleep / 3;
 }
 
-function guestPoints(holder: Profile, other: Profile): number {
+function guestPoints(holder: AnsweredProfile, other: AnsweredProfile): number {
   if (GUEST_ORDER[other.guests_freq] > GUEST_TOLERANCE[holder.pref_guests]) return 0;
   const diff = Math.abs(GUEST_ORDER[holder.guests_freq] - GUEST_ORDER[other.guests_freq]);
   return [W.guests, W.guests * (2 / 3), W.guests / 3][diff];
 }
 
-function noisePoints(holder: Profile, other: Profile): number {
+function noisePoints(holder: AnsweredProfile, other: AnsweredProfile): number {
   if (NOISE_ORDER[other.noise_level] > NOISE_TOLERANCE[holder.pref_noise]) return 0;
   const diff = Math.abs(NOISE_ORDER[holder.noise_level] - NOISE_ORDER[other.noise_level]);
   return [W.noise, W.noise * 0.6, W.noise * 0.25][diff];
 }
 
-function dietPoints(holder: Profile, other: Profile): number {
+function dietPoints(holder: AnsweredProfile, other: AnsweredProfile): number {
   switch (holder.pref_diet) {
     case "any":
       return W.diet;
@@ -104,7 +105,7 @@ function dietPoints(holder: Profile, other: Profile): number {
  * Shabbat: what I want in roommates against how the other person keeps it.
  * Someone who preferred not to say is neutral, never a mismatch.
  */
-function shabbatPoints(holder: Profile, other: Profile): number {
+function shabbatPoints(holder: AnsweredProfile, other: AnsweredProfile): number {
   if (holder.pref_shabbat === "any") return W.shabbat;
   if (other.shabbat === "") return neutral(W.shabbat);
   switch (holder.pref_shabbat) {
@@ -125,11 +126,17 @@ function shabbatPoints(holder: Profile, other: Profile): number {
  * `MIN_DECK_SCORE` (lib/swipe.ts); elsewhere scores inform and sort only.
  */
 export function lifestyleScore(
-  seeker: Profile,
+  rawSeeker: Profile,
   listing: Listing,
-  lister: Profile,
+  rawLister: Profile,
   perspective: Perspective
 ): number {
+  // Since 0035 a Daily life answer can be null — not answered yet. Scoring
+  // needs a value in every slot, and the honest stand-in is the one the column
+  // used to default to, so nobody's score moved when the columns became
+  // nullable. Normalising once here keeps every function below unchanged.
+  const seeker = withDailyLifeDefaults(rawSeeker);
+  const lister = withDailyLifeDefaults(rawLister);
   const holder = perspective === "seeker" ? seeker : lister;
   const other = perspective === "seeker" ? lister : seeker;
   return Math.round(

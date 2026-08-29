@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { isDailyLifeComplete } from "@/lib/daily-life";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { uploadImage } from "@/lib/storage";
 import { profileSchema } from "@/lib/validation/profile";
@@ -27,8 +28,11 @@ export async function upsertProfileAction(
     age: formData.get("age"),
     occupation: formData.get("occupation") ?? "",
     bio: formData.get("bio") ?? "",
-    smoker: formData.get("smoker") === "on",
-    has_pet: formData.get("has_pet") === "on",
+    // Daily life is passed through raw: the schema turns a blank into null
+    // ("not answered yet", 0035). Reading it as `=== "on"` here would have
+    // collapsed unanswered into a confident No.
+    smoker: formData.get("smoker"),
+    has_pet: formData.get("has_pet"),
     cleanliness: formData.get("cleanliness"),
     sleep_schedule: formData.get("sleep_schedule"),
     guests_freq: formData.get("guests_freq"),
@@ -39,8 +43,8 @@ export async function upsertProfileAction(
     shabbat: formData.get("shabbat") ?? undefined,
     interests: formData.getAll("interests"),
     chores: formData.getAll("chores"),
-    ok_with_smoker: formData.get("ok_with_smoker") === "on",
-    ok_with_pets: formData.get("ok_with_pets") === "on",
+    ok_with_smoker: formData.get("ok_with_smoker"),
+    ok_with_pets: formData.get("ok_with_pets"),
     pref_cleanliness: formData.get("pref_cleanliness") ?? undefined,
     pref_sleep: formData.get("pref_sleep") ?? undefined,
     pref_guests: formData.get("pref_guests") ?? undefined,
@@ -95,5 +99,9 @@ export async function upsertProfileAction(
 
   revalidatePath("/profile");
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
-  redirect(sanitizeNextPath(String(formData.get("next") ?? "")));
+  const target = sanitizeNextPath(String(formData.get("next") ?? ""));
+  // …except when the Daily life table is still short of answers: /swipe would
+  // bounce them straight back here (0035). Saving is allowed, so the save must
+  // land somewhere that works.
+  redirect(target === "/swipe" && !isDailyLifeComplete(parsed.data) ? "/profile" : target);
 }

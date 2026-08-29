@@ -15,6 +15,7 @@ import { hourChoices, nearestHour } from "@/lib/clock";
 import { useStickyForm } from "@/lib/hooks";
 import { BED_TIMES, PREF_LEASE_TERMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
+import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
@@ -57,15 +58,20 @@ export function ProfileForm({
   onboarding,
   next = "",
   about,
+  needsDailyLife = false,
 }: {
   profile: Profile | null;
   onboarding: boolean;
   next?: string;
   /** Present on the pencil page: the About-me details ride along in this form. */
   about?: { details: ProfileDetails | null; email: string };
+  /** Arrived here from /swipe, which needs the whole Daily life table. */
+  needsDailyLife?: boolean;
 }) {
   const [state, form, pending] = useStickyForm<ProfileFormState>(upsertProfileAction, {});
   const d = about?.details ?? null;
+  // The table may be saved half-answered; only the swipe deck insists on it.
+  const dailyLifeLeft = isDailyLifeComplete(profile) ? 0 : unansweredCount(profile);
   const wake = nearestHour(d?.wake_time ?? "");
   const bed = nearestHour(d?.bed_time ?? "");
   // Sections are numbered in reading order; the Contact and Swipe sections exist on the pencil page only.
@@ -85,6 +91,13 @@ export function ProfileForm({
         <p className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
           One quick step first: complete your profile so the lister knows who&rsquo;s
           writing. Save it and you&rsquo;ll continue straight to your chat.
+        </p>
+      ) : null}
+      {needsDailyLife ? (
+        <p className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent" role="status">
+          Swiping ranks every room against your Daily life answers, so fill the
+          table in below and the deck opens. You can save without it — the rest
+          of NestUp works either way.
         </p>
       ) : null}
 
@@ -166,7 +179,15 @@ export function ProfileForm({
         </div>
       </Section>
 
-      <Section step={stepNo()} title="Daily life" hint="How you live on the left, what you're looking for in roommates on the right — both count toward the Lifestyle match.">
+      <Section
+        step={stepNo()}
+        title="Daily life"
+        hint={
+          dailyLifeLeft > 0
+            ? `How you live on the left, what you're looking for in roommates on the right. ${dailyLifeLeft} still to answer — the swipe deck opens once they all are.`
+            : "How you live on the left, what you're looking for in roommates on the right — both count toward the Lifestyle match."
+        }
+      >
         <DailyLifeFields profile={profile} />
         {about ? (
           <div className="mt-6">

@@ -192,3 +192,33 @@ describe("labels and sorting", () => {
     expect(sortKey(80, null)).toBe(80);
   });
 });
+
+/**
+ * Since migration 0035 a Daily life answer can be null — not answered yet.
+ * Scoring still has to produce a number, and the number must be the one it
+ * produced before the columns became nullable, or every existing match score
+ * would shift under the deck's ≥60 gate.
+ */
+describe("unanswered Daily life rows", () => {
+  const BLANK: Partial<Profile> = {
+    smoker: null, has_pet: null, cleanliness: null, sleep_schedule: null, guests_freq: null,
+    noise_level: null, diet: null, shabbat: null, ok_with_smoker: null, ok_with_pets: null,
+    pref_cleanliness: null, pref_sleep: null, pref_guests: null, pref_noise: null,
+    pref_diet: null, pref_shabbat: null,
+  };
+
+  test("a blank table scores exactly like the old column defaults", () => {
+    // `profile()` above is built from those very defaults.
+    expect(score(profile(BLANK), other())).toBe(score(profile(), other()));
+    expect(score(profile(), other(BLANK))).toBe(score(profile(), other()));
+    expect(score(profile(BLANK), other(BLANK), "lister")).toBe(score(profile(), other(), "lister"));
+  });
+
+  test("an unanswered row never reads as a mismatch", () => {
+    // The other person has not said whether they smoke; a viewer who wants
+    // non-smokers should not have them scored as one.
+    const strict = profile({ ok_with_smoker: false });
+    expect(score(strict, other({ smoker: null }))).toBe(score(strict, other({ smoker: false })));
+    expect(score(strict, other({ smoker: null }))).toBeGreaterThan(score(strict, other({ smoker: true })));
+  });
+});

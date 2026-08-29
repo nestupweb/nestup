@@ -7,7 +7,7 @@ import { DailyLifeFields } from "@/components/profile/DailyLifeFields";
 import { DailyLifeView } from "@/components/profile/DailyLifeView";
 import { SocialLinkInput } from "@/components/profile/SocialLinkInput";
 import { hourChoices, nearestHour } from "@/lib/clock";
-import { dailyLifeRows } from "@/lib/daily-life";
+import { dailyLifeRows, isDailyLifeComplete, unansweredCount, withDailyLifeDefaults } from "@/lib/daily-life";
 import type { Profile } from "@/lib/types";
 
 afterEach(cleanup);
@@ -32,6 +32,49 @@ test("dailyLifeRows puts every habit in words, my side and the roommate side", (
   });
 });
 
+test("an unanswered row reads as a dash, and a plain No still reads as No", () => {
+  const blank = { ...me, smoker: null, ok_with_smoker: null, cleanliness: null, sleep_schedule: null,
+    guests_freq: null, noise_level: null, diet: null, shabbat: null, pref_cleanliness: null,
+    pref_sleep: null, pref_guests: null, pref_noise: null, pref_diet: null, pref_shabbat: null } as Profile;
+  const rows = dailyLifeRows(blank);
+  expect(rows.find((r) => r.key === "smoking")).toMatchObject({ mine: "—", wants: "—" });
+  expect(rows.find((r) => r.key === "cleanliness")).toMatchObject({ mine: "—", wants: "—" });
+  expect(rows.find((r) => r.key === "shabbat")).toMatchObject({ mine: "—", wants: "—" });
+  // has_pet is still `true` here: only the nulls turn into dashes.
+  expect(rows.find((r) => r.key === "pets")).toMatchObject({ mine: "Has a pet" });
+  // …and `false` is an answer, not a blank.
+  expect(dailyLifeRows({ ...blank, smoker: false }).find((r) => r.key === "smoking")).toMatchObject({ mine: "Non-smoker" });
+});
+
+test("a member who never answered opens the table empty, and can still submit it", () => {
+  const blank = { ...me, smoker: null, has_pet: null, cleanliness: null, sleep_schedule: null,
+    guests_freq: null, noise_level: null, diet: null, shabbat: null, ok_with_smoker: null,
+    ok_with_pets: null, pref_cleanliness: null, pref_sleep: null, pref_guests: null,
+    pref_noise: null, pref_diet: null, pref_shabbat: null } as Profile;
+  render(
+    <form aria-label="blank">
+      <DailyLifeFields profile={blank} />
+    </form>
+  );
+  const data = new FormData(screen.getByRole("form", { name: "blank" }) as HTMLFormElement);
+  for (const name of ["smoker", "has_pet", "ok_with_smoker", "ok_with_pets", "cleanliness",
+    "pref_cleanliness", "sleep_schedule", "pref_sleep", "guests_freq", "pref_guests",
+    "noise_level", "pref_noise", "dietary", "pref_diet", "shabbat", "pref_shabbat"]) {
+    expect(data.get(name), name).toBe("");
+  }
+});
+
+test("Shabbat keeps 'Prefer not to say' distinct from not having answered", () => {
+  render(
+    <form aria-label="s">
+      <DailyLifeFields profile={{ ...me, shabbat: "" } as Profile} />
+    </form>
+  );
+  // The column stores "", but a select cannot tell two blank options apart, so
+  // the chosen one travels as a word.
+  expect(new FormData(screen.getByRole("form", { name: "s" }) as HTMLFormElement).get("shabbat")).toBe("prefer_not_to_say");
+});
+
 test("the Daily life table submits one control per cell under the names the action reads", () => {
   render(
     <form aria-label="f">
@@ -40,9 +83,10 @@ test("the Daily life table submits one control per cell under the names the acti
   );
   const form = screen.getByRole("form", { name: "f" }) as HTMLFormElement;
   const data = new FormData(form);
-  expect(data.get("smoker")).toBe(""); // "I don't smoke"
-  expect(data.get("has_pet")).toBe("on");
-  expect(data.get("ok_with_smoker")).toBe("");
+  // "no" and "yes", never "" — the blank is reserved for "not answered" (0035).
+  expect(data.get("smoker")).toBe("no");
+  expect(data.get("has_pet")).toBe("yes");
+  expect(data.get("ok_with_smoker")).toBe("no");
   expect(data.get("cleanliness")).toBe("4");
   expect(data.get("pref_cleanliness")).toBe("3");
   expect(data.get("sleep_schedule")).toBe("early");
@@ -143,4 +187,35 @@ test("SocialLinkInput turns a handle into an opening link, and free text into no
   expect(link).toHaveAttribute("target", "_blank");
   fireEvent.change(screen.getByRole("textbox"), { target: { value: "Noa Peretz" } });
   expect(screen.queryByRole("link")).toBeNull();
+});
+
+/**
+ * What the swipe deck asks before it opens (migration 0035). The deck ranks
+ * every room against these answers, so an unfinished table would sort by
+ * values the member never chose.
+ */
+test("isDailyLifeComplete wants all sixteen answers, and counts what's left", () => {
+  expect(isDailyLifeComplete(me)).toBe(true);
+  expect(unansweredCount(me)).toBe(0);
+  expect(isDailyLifeComplete(null)).toBe(false);
+
+  expect(isDailyLifeComplete({ ...me, pref_noise: null })).toBe(false);
+  expect(unansweredCount({ ...me, pref_noise: null, diet: null })).toBe(2);
+
+  // `false` and "" are answers, not gaps: a non-smoker who prefers not to
+  // discuss Shabbat has finished the table.
+  expect(isDailyLifeComplete({ ...me, smoker: false, has_pet: false, shabbat: "" })).toBe(true);
+});
+
+test("scoring reads an unanswered row as the value the column used to hold", () => {
+  const blank = { ...me, smoker: null, cleanliness: null, pref_noise: null, shabbat: null } as Profile;
+  const filled = withDailyLifeDefaults(blank);
+  // The old NOT NULL defaults, so no existing match score moved when the
+  // columns became nullable.
+  expect(filled.smoker).toBe(false);
+  expect(filled.cleanliness).toBe(3);
+  expect(filled.pref_noise).toBe("any");
+  expect(filled.shabbat).toBe("");
+  // A real answer is never overwritten.
+  expect(withDailyLifeDefaults({ ...me, cleanliness: 5 } as Profile).cleanliness).toBe(5);
 });
