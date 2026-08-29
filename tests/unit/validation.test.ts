@@ -42,6 +42,14 @@ describe("profileSchema", () => {
     const picked = profileSchema.safeParse({ ...validProfile, pref_lease_term: "half_year" });
     expect(picked.success && picked.data.pref_lease_term).toBe("half_year");
   });
+  test("defaults the mamad to no preference and keeps a chosen one", () => {
+    const blank = profileSchema.safeParse(validProfile);
+    expect(blank.success && blank.data.pref_safe_room).toBe("any");
+    const picked = profileSchema.safeParse({ ...validProfile, pref_safe_room: "apartment" });
+    expect(picked.success && picked.data.pref_safe_room).toBe("apartment");
+    // "none" belongs to a listing, not to what someone is looking for.
+    expect(profileSchema.safeParse({ ...validProfile, pref_safe_room: "none" }).success).toBe(false);
+  });
   test("rejects an unknown 'for how long' value", () => {
     expect(profileSchema.safeParse({ ...validProfile, pref_lease_term: "forever" }).success).toBe(false);
   });

@@ -64,6 +64,12 @@ export function invitePrompt(authorName: string): string {
 
 /** Everyone tagged on a listing, with where their invite stands. */
 export interface TaggedMember {
+  /**
+   * Only the search fills this in (0036): it is what separates two members
+   * with near-identical names, which nothing else on the row did. The
+   * already-tagged list shows an invite's status instead and does not need it.
+   */
+  email?: string;
   user_id: string;
   full_name: string;
   avatar_url: string | null;

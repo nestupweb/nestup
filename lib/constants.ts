@@ -8,6 +8,7 @@ import type {
   PrefGuests,
   PrefLeaseTerm,
   PrefNoise,
+  PrefSafeRoom,
   PrefShabbat,
   PrefSleep,
   PropertyType,
@@ -156,6 +157,32 @@ export const SAFE_ROOM_OPTIONS = [
 export function safeRoomLabel(key: SafeRoom): string {
   return SAFE_ROOM_OPTIONS.find((o) => o.key === key)?.label ?? "None";
 }
+
+/**
+ * The same thing from the seeker's side, on Browse and in a profile.
+ *
+ * "Has one" rather than a straight copy of `SAFE_ROOM_OPTIONS`: someone who
+ * wants a mamad will take it in the building, and asking them to tick two
+ * boxes to say so would be the filter getting in their way. Listing a room
+ * with no mamad at all isn't something anyone searches for, so "none" has no
+ * seeker-side twin.
+ */
+export const PREF_SAFE_ROOMS = [
+  { key: "any", label: "No preference" },
+  { key: "has", label: "Has one" },
+  { key: "apartment", label: "In the apartment" },
+] as const satisfies readonly { key: PrefSafeRoom; label: string }[];
+
+export function prefSafeRoomLabel(key: PrefSafeRoom): string {
+  return PREF_SAFE_ROOMS.find((o) => o.key === key)?.label ?? "No preference";
+}
+
+/** Browse's version, which can also ask for the building specifically. */
+export const SAFE_ROOM_FILTERS = [
+  { key: "has", label: "Has one" },
+  { key: "apartment", label: "In the apartment" },
+  { key: "building", label: "In the building" },
+] as const;
 
 /** For how long the room is offered — rough durations only, never an end date. */
 export const LEASE_TERMS = [

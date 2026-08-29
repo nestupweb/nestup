@@ -156,7 +156,7 @@ export function RoommateTagPicker({
               ? "Raise “Current roommates” to tag anyone"
               : full
                 ? "Every spot is tagged"
-                : "Search members by name"
+                : "Search by name or e-mail"
           }
           className={input}
         />
@@ -178,6 +178,9 @@ export function RoommateTagPicker({
                   <Avatar url={m.avatar_url} name={m.full_name} size={10} />
                   <span className="min-w-0">
                     <span className="block truncate text-sm text-ink">{m.full_name}</span>
+                    {/* The address, not the job: two students both called
+                        Daniel were indistinguishable without it (0036). */}
+                    {m.email ? <span className="block truncate text-xs text-muted">{m.email}</span> : null}
                     {m.occupation ? <span className="block truncate text-xs text-muted">{m.occupation}</span> : null}
                   </span>
                 </button>
@@ -190,8 +193,8 @@ export function RoommateTagPicker({
       {searching ? <p className="mt-2 text-xs text-muted">Searching…</p> : null}
       {!searching && query.trim().length >= MIN_MEMBER_QUERY && shown.length === 0 ? (
         <p className="mt-2 text-xs text-muted">
-          Nobody free by that name — members who already have a listing of their own, or who have
-          joined another home, can&rsquo;t be tagged.
+          Nobody free by that name or e-mail — members who already have a listing of their own, or
+          who have joined another home, can&rsquo;t be tagged.
         </p>
       ) : null}
 

@@ -10,8 +10,8 @@ import { RoommateTagPicker } from "@/components/listings/RoommateTagPicker";
 
 afterEach(cleanup);
 
-const maya: TaggedMember = { user_id: "u1", full_name: "Maya Cohen", avatar_url: null, occupation: "Designer" };
-const noa: TaggedMember = { user_id: "u2", full_name: "Noa Levi", avatar_url: null, occupation: "Nurse" };
+const maya: TaggedMember = { user_id: "u1", full_name: "Maya Cohen", avatar_url: null, occupation: "Designer", email: "maya@example.com" };
+const noa: TaggedMember = { user_id: "u2", full_name: "Noa Levi", avatar_url: null, occupation: "Nurse", email: "noa@example.com" };
 
 beforeEach(() => {
   search.mockReset();
@@ -103,4 +103,36 @@ test("a one-letter query never reaches the server", async () => {
   await new Promise((r) => setTimeout(r, 500));
 
   expect(search).not.toHaveBeenCalled();
+});
+
+/**
+ * Two members with near-identical names and the same occupation were the same
+ * row twice on screen (0036). The address is the one thing that tells them
+ * apart, so the row carries it and the search accepts it.
+ */
+test("near-identical names are told apart by the address on the row", async () => {
+  const user = userEvent.setup();
+  const daniel: TaggedMember = { user_id: "d1", full_name: "Daniel", avatar_url: null, occupation: "student", email: "dandush.levy@example.com" };
+  const danielLevy: TaggedMember = { user_id: "d2", full_name: "Daniel Levy", avatar_url: null, occupation: "student", email: "daniellevy0008@example.com" };
+  search.mockResolvedValue({ members: [daniel, danielLevy] });
+
+  const { container } = render(<RoommateTagPicker initial={[]} roommatesCount={3} />);
+  await searchFor(user, "daniel");
+
+  const list = within(screen.getByRole("listbox"));
+  expect(list.getByText("dandush.levy@example.com")).toBeInTheDocument();
+  expect(list.getByText("daniellevy0008@example.com")).toBeInTheDocument();
+
+  // …and the right one of the two can now actually be picked.
+  await user.click(list.getByRole("button", { name: /daniellevy0008/i }));
+  expect(container.querySelector('input[name="tagged_roommates"]')).toHaveValue("d2");
+});
+
+test("typing an address searches on it", async () => {
+  const user = userEvent.setup();
+  render(<RoommateTagPicker initial={[]} roommatesCount={3} />);
+  expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search by name or e-mail");
+
+  await searchFor(user, "maya@");
+  expect(search).toHaveBeenCalledWith("maya@", undefined);
 });

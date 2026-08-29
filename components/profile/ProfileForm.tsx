@@ -13,7 +13,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import { hourChoices, nearestHour } from "@/lib/clock";
 import { useStickyForm } from "@/lib/hooks";
-import { BED_TIMES, PREF_LEASE_TERMS, WAKE_TIMES } from "@/lib/constants";
+import { BED_TIMES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
 import type { Profile, ProfileDetails } from "@/lib/types";
@@ -167,6 +167,13 @@ export function ProfileForm({
             <Select name="pref_lease_term" defaultValue={profile?.pref_lease_term ?? "any"}>
               {PREF_LEASE_TERMS.map((t) => (
                 <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </Select>
+          </label>
+          <label className={label}>Mamad <span className={note}>· safe room</span>
+            <Select name="pref_safe_room" defaultValue={profile?.pref_safe_room ?? "any"}>
+              {PREF_SAFE_ROOMS.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
               ))}
             </Select>
           </label>

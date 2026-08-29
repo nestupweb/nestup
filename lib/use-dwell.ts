@@ -28,8 +28,15 @@ const TICK_MS = 250;
  */
 export function useDwell(key: string | null, onFlush: (key: string, activeMs: number) => void): void {
   // Held in a ref so a changing callback never restarts the measurement.
+  // Written in an effect rather than during render: a render-phase ref write
+  // is not allowed (react-hooks/…, and the React Compiler rejects it), and
+  // this ordering is still correct — effects run top-down, so the ref is
+  // refreshed before the measurement effect below re-subscribes, while a
+  // cleanup still sees the callback that was current when it was scheduled.
   const onFlushRef = useRef(onFlush);
-  onFlushRef.current = onFlush;
+  useEffect(() => {
+    onFlushRef.current = onFlush;
+  });
 
   useEffect(() => {
     if (!key) return;

@@ -25,8 +25,10 @@ function refreshEverywhere(listingId?: string): void {
 }
 
 /**
- * Members who could actually be tagged: the name matches, they are not blocked
- * in either direction, and they have no home of their own (0033).
+ * Members who could actually be tagged: the name or the e-mail matches, they
+ * are not blocked in either direction, and they have no home of their own
+ * (0033). The address is returned as well as searched — it is what separates
+ * two members with near-identical names (0036).
  *
  * All three rules live in `search_available_members` (0034) so that the limit
  * is applied *after* them. Filtering in TypeScript over a capped page was wrong

@@ -75,8 +75,9 @@ export async function respondToInvite(
 }
 
 /**
- * Members the tag picker may offer: name match, not blocked either way, and no
- * home of their own (0033).
+ * Members the tag picker may offer: the name matches anywhere or the e-mail
+ * matches from the start (0036), not blocked either way, and no home of their
+ * own (0033).
  *
  * One RPC rather than a query plus a TypeScript filter, because the three rules
  * have to be applied *before* the limit — filtering a capped page discarded

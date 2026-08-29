@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FEATURES, LEASE_TERMS } from "@/lib/constants";
+import { FEATURES, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
@@ -122,6 +122,14 @@ export function FilterBar() {
                 <option value="">Any length</option>
                 {LEASE_TERMS.map((t) => (
                   <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+              </Select>
+            </label>
+            <label className={label}>Mamad
+              <Select key={params.get("safe_room") ?? ""} name="safe_room" defaultValue={params.get("safe_room") ?? ""}>
+                <option value="">Any</option>
+                {SAFE_ROOM_FILTERS.map((o) => (
+                  <option key={o.key} value={o.key}>{o.label}</option>
                 ))}
               </Select>
             </label>

@@ -56,6 +56,7 @@ export async function upsertProfileAction(
     preferred_cities: formData.getAll("preferred_cities"),
     earliest_move_in: (formData.get("earliest_move_in") as string) || null,
     pref_lease_term: formData.get("pref_lease_term") ?? undefined,
+    pref_safe_room: formData.get("pref_safe_room") ?? undefined,
   });
   if (!parsed.success) {
     const issue = parsed.error.issues[0];

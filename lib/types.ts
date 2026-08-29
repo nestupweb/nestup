@@ -14,6 +14,8 @@ export type PrefShabbat = "any" | "observant" | "traditional" | "not_observant";
 export type SwipeDirection = "like" | "skip";
 export type ListerResponse = "pending" | "liked" | "skipped";
 export type SafeRoom = "none" | "apartment" | "building";
+/** The seeker's side of it: "any" = no preference, "has" = one anywhere in the building. */
+export type PrefSafeRoom = "any" | "has" | "apartment";
 /** Where a listing's map point came from; see migration 0026. */
 export type CoordsSource = "none" | "city" | "geocoded" | "owner";
 /** How long the room is offered for — a rough duration, never an end date. */
@@ -64,6 +66,7 @@ export interface Profile {
   preferred_cities: string[];
   earliest_move_in: string | null; // ISO date
   pref_lease_term: PrefLeaseTerm; // for how long I want to rent; "any" = no preference
+  pref_safe_room: PrefSafeRoom; // the mamad I want; "any" = no preference
   notify_new_matches: boolean; // e-mail me when a newly published room matches my preferences
   created_at: string;
   updated_at: string;

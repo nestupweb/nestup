@@ -40,13 +40,13 @@ export function ProfileTabs({
 }) {
   const [tab, setTab] = useState<TabKey>(initial);
 
-  // "My Listings" carries no count — the tab itself says what is there — but an
+  // "My Listing" carries no count — the tab itself says what is there — but an
   // invitation is waiting on an answer, so that one number is worth showing
   // without making the member open the tab to find it.
   const TABS: { key: TabKey; label: string; items: ProfileTabItem[] | null; count?: boolean; badge?: number }[] =
     [
       { key: "about", label: "About me", items: null },
-      { key: "listings", label: "My Listings", items: mine, count: false, badge: invites.length },
+      { key: "listings", label: "My Listing", items: mine, count: false, badge: invites.length },
       { key: "liked", label: "Liked", items: liked },
       { key: "history", label: "History", items: history },
     ];
