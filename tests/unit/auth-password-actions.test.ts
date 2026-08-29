@@ -6,11 +6,16 @@ import { beforeEach, expect, test, vi } from "vitest";
  * whether an email has an account, and the reset form must only ever change
  * the password of the session the recovery link created.
  */
-const resetPasswordForEmail = vi.fn();
+const sendRecoveryMail = vi.fn();
 const updateUser = vi.fn();
 const getUser = vi.fn();
+// The recovery mail is sent by the app now, not by Supabase Auth (2026-08-29 —
+// GoTrue's mailer has no plain-text part and was measured landing in spam), so
+// the site the link points at is asserted through `sendRecoveryMail` instead
+// of through `resetPasswordForEmail`'s `redirectTo`.
+vi.mock("@/lib/auth-mail", () => ({ sendRecoveryMail, sendConfirmationMail: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { resetPasswordForEmail, updateUser, getUser } }),
+  createClient: async () => ({ auth: { updateUser, getUser } }),
 }));
 const reqHeaders = new Map<string, string>();
 vi.mock("next/headers", () => ({ headers: async () => ({ get: (k: string) => reqHeaders.get(k) ?? null }) }));
@@ -25,7 +30,7 @@ beforeEach(() => {
   reqHeaders.clear();
   reqHeaders.set("host", "nestup-kappa.vercel.app");
   reqHeaders.set("x-forwarded-proto", "https");
-  resetPasswordForEmail.mockReset().mockResolvedValue({ data: {}, error: null });
+  sendRecoveryMail.mockReset().mockResolvedValue({ status: "sent" });
   updateUser.mockReset().mockResolvedValue({ data: {}, error: null });
   getUser.mockReset().mockResolvedValue({ data: { user: { id: "me-111" } } });
 });
@@ -36,23 +41,22 @@ function form(fields: Record<string, string>): FormData {
   return fd;
 }
 
-test("requesting a reset emails a link back to this site's /auth/confirm → /reset-password", async () => {
+test("requesting a reset mails a link built from this site's own origin", async () => {
   const { requestPasswordResetAction } = await import("@/app/actions/auth");
   expect(await requestPasswordResetAction({}, form({ email: "  Noa@Example.com " }))).toEqual({ sent: true });
-  expect(resetPasswordForEmail).toHaveBeenCalledWith("noa@example.com", {
-    redirectTo: "https://nestup-kappa.vercel.app/auth/confirm?next=/reset-password",
-  });
+  expect(sendRecoveryMail).toHaveBeenCalledWith("noa@example.com", "https://nestup-kappa.vercel.app");
 });
 
 test("NEXT_PUBLIC_SITE_URL wins over the request host for the link", async () => {
   process.env.NEXT_PUBLIC_SITE_URL = "https://nestup.example/";
   const { requestPasswordResetAction } = await import("@/app/actions/auth");
   await requestPasswordResetAction({}, form({ email: "noa@example.com" }));
-  expect(resetPasswordForEmail.mock.calls[0][1].redirectTo).toBe("https://nestup.example/auth/confirm?next=/reset-password");
+  expect(sendRecoveryMail.mock.calls[0][1]).toBe("https://nestup.example");
 });
 
 test("does not reveal whether the address has an account", async () => {
-  resetPasswordForEmail.mockResolvedValue({ data: null, error: { status: 400, message: "User not found" } });
+  // An address with no account is reported as sent, with nothing sent.
+  sendRecoveryMail.mockResolvedValue({ status: "sent" });
   const { requestPasswordResetAction } = await import("@/app/actions/auth");
   expect(await requestPasswordResetAction({}, form({ email: "nobody@example.com" }))).toEqual({ sent: true });
 });
@@ -62,10 +66,10 @@ test("rejects a malformed email and surfaces throttling", async () => {
   expect(await requestPasswordResetAction({}, form({ email: "not-an-email" }))).toEqual({
     error: "Please enter a valid email address.",
   });
-  expect(resetPasswordForEmail).not.toHaveBeenCalled();
-  resetPasswordForEmail.mockResolvedValue({ data: null, error: { status: 429, message: "rate limit" } });
+  expect(sendRecoveryMail).not.toHaveBeenCalled();
+  sendRecoveryMail.mockResolvedValue({ status: "throttled", seconds: 42 });
   const r = await requestPasswordResetAction({}, form({ email: "noa@example.com" }));
-  expect(r.error).toMatch(/too many requests/i);
+  expect(r.error).toMatch(/42 seconds/);
 });
 
 test("setting the new password validates, requires the recovery session, then goes to /swipe", async () => {

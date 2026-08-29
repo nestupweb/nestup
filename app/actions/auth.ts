@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { sendConfirmationMail, sendRecoveryMail } from "@/lib/auth-mail";
 import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { SUSPENDED_MESSAGE } from "@/lib/moderation";
@@ -47,33 +48,34 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   // needs an e-mail round-trip to reset is an expensive thing to let through.
   if (password !== confirm) return { error: "The two passwords don't match." };
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) {
-    // Pressing Sign up again while waiting for the first mail lands inside the
-    // one-per-minute window. The account is already there and a link is
-    // already on its way, so this is the "check your inbox" case — telling the
-    // member to try a different address would send them off to build a second
-    // account they don't need.
-    if (isSendRateLimit(error)) return { sent: true, email, throttled: true };
-    return { error: "Could not create the account. Try a different email." };
-  }
-  // Supabase's e-mail enumeration protection never fails a sign-up for an
-  // address that is already taken — it answers 200 with a decoy user: a random
-  // id, no session, and, the one tell, an empty `identities` array. Without
-  // this the member is sent to "Check your inbox" to wait for a mail that is
-  // never coming. Measured against the live project: a new address comes back
-  // with its "email" identity, a confirmed account comes back with none, and
-  // an account that exists but was never confirmed comes back with its real
-  // identity and a fresh link already sent — which is the inbox screen below,
-  // not this. `identities` missing entirely is treated as "not taken", so an
-  // API change can only cost the warning, never invent one.
-  if (data.user?.identities?.length === 0) {
+  // The account and its confirmation code are created together by
+  // `sendConfirmationMail`, which then sends the mail itself. Supabase's own
+  // mailer is no longer asked to send: it offers no plain-text part, and on
+  // 2026-08-29 that was measured putting this exact message in spam while a
+  // multipart one from the same account reached the inbox.
+  //
+  // This also replaces the decoy-user check that used to live here. Supabase's
+  // enumeration protection answered `signUp` for a taken address with 200 and
+  // an empty `identities` array; `generateLink` is explicit instead, failing
+  // with 422 `email_exists` for a CONFIRMED account and quietly re-issuing the
+  // code for one that was never confirmed. Same outcomes, stated directly.
+  const site = await requestOrigin();
+  const result = await sendConfirmationMail(email, site, password);
+  if (result.status === "taken") {
     return { error: "That email is already in use.", taken: true, email };
   }
-  // Email confirmation is ON (`mailer_autoconfirm: false`), so signUp creates the
-  // row but no session: the account cannot be used until the emailed link is
-  // clicked. The address travels back so the next screen can name it — a typo
+  // Pressing Sign up again while waiting for the first mail lands inside the
+  // one-per-minute window. The account is already there and a code is already
+  // on its way, so this is the "check your inbox" case — telling the member to
+  // try a different address would send them off to build a second account they
+  // don't need.
+  if (result.status === "throttled") return { sent: true, email, throttled: true };
+  if (result.status === "error") {
+    return { error: "Could not create the account. Try a different email." };
+  }
+  // Email confirmation is ON (`mailer_autoconfirm: false`), so the row exists
+  // but there is no session: the account cannot be used until the code is
+  // entered. The address travels back so the next screen can name it — a typo
   // is the main reason a confirmation never arrives.
   return { sent: true, email };
 }
@@ -87,23 +89,22 @@ export async function resendConfirmationAction(_prev: AuthState, formData: FormD
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!emailOk(email)) return { error: "Please enter a valid email address." };
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resend({ type: "signup", email });
-  if (error) {
-    if (isSendRateLimit(error)) {
-      const seconds = retryAfterSeconds(error.message);
-      return {
-        error: seconds
-          ? `We just sent one — try again in ${seconds} seconds.`
-          : "We just sent one — give it a minute before asking again.",
-      };
-    }
+  // No password here — a resend has no way to know it. `sendConfirmationMail`
+  // supplies a throwaway, which is safe because re-issuing a signup link for
+  // an unconfirmed account leaves the stored password untouched (verified
+  // against the live project; see the note on that function).
+  const site = await requestOrigin();
+  const result = await sendConfirmationMail(email, site);
+  if (result.status === "throttled") {
+    return { error: `We just sent one — try again in ${result.seconds} seconds.` };
+  }
+  if (result.status === "error") {
     return { error: "Could not send it again. Please try in a moment." };
   }
-  // An address that is already confirmed also comes back clean here (Supabase
-  // answers 200 and sends nothing, so the form can't be used to find out which
-  // addresses exist). "Already confirmed? Log in" on the screen is the way out
-  // of that, and it is shown to everyone rather than only to that case.
+  // An address that is already confirmed comes back `taken`, and is reported
+  // here as success with nothing sent — the form must not become a way to find
+  // out which addresses exist. "Already confirmed? Log in" on the screen is the
+  // way out of that, and it is shown to everyone rather than only to that case.
   return { sent: true, email };
 }
 
@@ -197,14 +198,12 @@ export async function requestPasswordResetAction(_prev: AuthState, formData: For
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!emailOk(email)) return { error: "Please enter a valid email address." };
 
-  const supabase = await createClient();
   const origin = await requestOrigin();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/confirm?next=/reset-password`,
-  });
-  if (error && error.status === 429) {
-    return { error: "Too many requests — please wait a few minutes and try again." };
+  const result = await sendRecoveryMail(email, origin);
+  if (result.status === "throttled") {
+    return { error: `We just sent one — try again in ${result.seconds} seconds.` };
   }
+  // An address with no account also comes back "sent", with nothing sent.
   return { sent: true };
 }
 
