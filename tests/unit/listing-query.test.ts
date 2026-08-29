@@ -7,7 +7,7 @@ type Call = [string, ...unknown[]];
 function fakeQuery() {
   const calls: Call[] = [];
   const q: Record<string, (...args: unknown[]) => unknown> = {};
-  for (const m of ["eq", "neq", "gte", "lte", "order", "range"]) {
+  for (const m of ["eq", "gte", "lte", "order", "range"]) {
     q[m] = (...args: unknown[]) => {
       calls.push([m, ...args]);
       return q;
@@ -32,23 +32,23 @@ describe("applyListingFilters", () => {
     expect(calls).toContainEqual(["range", 10, 19]); // page 2, size 10
   });
 
-  test("mamad: 'has one' is anywhere in the building, the rest are that exact place", () => {
-    const any = fakeQuery();
-    applyListingFilters(any.q, listingFiltersSchema.parse({ safe_room: "has" }));
-    expect(any.calls).toContainEqual(["neq", "safe_room", "none"]);
-
-    const flat = fakeQuery();
-    applyListingFilters(flat.q, listingFiltersSchema.parse({ safe_room: "apartment" }));
-    expect(flat.calls).toContainEqual(["eq", "safe_room", "apartment"]);
+  test("mamad: the two places, and nothing else", () => {
+    for (const where of ["apartment", "building"] as const) {
+      const q = fakeQuery();
+      applyListingFilters(q.q, listingFiltersSchema.parse({ safe_room: where }));
+      expect(q.calls).toContainEqual(["eq", "safe_room", where]);
+    }
 
     // Nothing chosen, and nothing asked of the query.
     const none = fakeQuery();
     applyListingFilters(none.q, listingFiltersSchema.parse({}));
     expect(none.calls.some(([, col]) => col === "safe_room")).toBe(false);
 
-    // "none" is a listing's answer, not a search: nobody looks for no mamad.
-    expect(listingFiltersSchema.parse({ safe_room: "none" }).safe_room).toBeUndefined();
-    expect(listingFiltersSchema.parse({ safe_room: "" }).safe_room).toBeUndefined();
+    // "none" is a listing's answer, not a search; "has" was dropped, and an
+    // old link carrying it falls back to no filter rather than erroring.
+    for (const junk of ["none", "has", ""]) {
+      expect(listingFiltersSchema.parse({ safe_room: junk }).safe_room).toBeUndefined();
+    }
   });
 
   test("'for how long' filters on the exact lease term and drops junk values", () => {

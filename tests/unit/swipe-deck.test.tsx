@@ -106,6 +106,11 @@ test("information panel has three pages with address, home details and roommates
   expect(property.compareDocumentPosition(rules) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(rules.compareDocumentPosition(amenities) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(screen.getByText("Flexible term")).toBeInTheDocument();
+  // The mamad sits in Property, with the shield.
+  const mamad = screen.getByText("Mamad in the apartment");
+  expect(property.compareDocumentPosition(mamad) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(rules.compareDocumentPosition(mamad) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  expect(mamad.closest("li,div")?.querySelector("svg")).toBeTruthy();
 
   await userEvent.click(screen.getByRole("tab", { name: "Roommates" }));
   expect(screen.getByRole("link", { name: "Dana's profile" })).toHaveAttribute("href", "/people/o1?listing=11111111-1111-4111-8111-111111111111");

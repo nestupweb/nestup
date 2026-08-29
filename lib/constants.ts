@@ -178,9 +178,15 @@ export function prefSafeRoomLabel(key: PrefSafeRoom): string {
   return PREF_SAFE_ROOMS.find((o) => o.key === key)?.label ?? "No preference";
 }
 
-/** Browse's version, which can also ask for the building specifically. */
+/**
+ * Browse's version: the two places a mamad can be, and nothing else.
+ *
+ * A third "has one" option covering both was dropped on 2026-08-29 at the
+ * user's request — a room's mamad is in the flat or in the building, and
+ * offering a choice that means "either" only made the list longer to read.
+ * "Any" is the empty value the select starts on.
+ */
 export const SAFE_ROOM_FILTERS = [
-  { key: "has", label: "Has one" },
   { key: "apartment", label: "In the apartment" },
   { key: "building", label: "In the building" },
 ] as const;
