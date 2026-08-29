@@ -45,8 +45,8 @@ describe("profileSchema", () => {
   test("defaults the mamad to no preference and keeps a chosen one", () => {
     const blank = profileSchema.safeParse(validProfile);
     expect(blank.success && blank.data.pref_safe_room).toBe("any");
-    const picked = profileSchema.safeParse({ ...validProfile, pref_safe_room: "apartment" });
-    expect(picked.success && picked.data.pref_safe_room).toBe("apartment");
+    const picked = profileSchema.safeParse({ ...validProfile, pref_safe_room: "building" });
+    expect(picked.success && picked.data.pref_safe_room).toBe("building");
     // "none" belongs to a listing, not to what someone is looking for.
     expect(profileSchema.safeParse({ ...validProfile, pref_safe_room: "none" }).success).toBe(false);
   });

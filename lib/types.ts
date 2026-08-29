@@ -16,8 +16,8 @@ export type ListerResponse = "pending" | "liked" | "skipped";
 export type SafeRoom = "none" | "apartment" | "building";
 /** The extras a room can have, and a member can ask for (constants FEATURES). */
 export type Amenity = "balcony" | "air_conditioning" | "parking" | "elevator" | "furnished";
-/** The seeker's side of it: "any" = no preference, "has" = one anywhere in the building. */
-export type PrefSafeRoom = "any" | "has" | "apartment";
+/** The seeker's side of it: "any" = no preference, "has" = one anywhere. */
+export type PrefSafeRoom = "any" | "has" | "building";
 /** Where a listing's map point came from; see migration 0026. */
 export type CoordsSource = "none" | "city" | "geocoded" | "owner";
 /** How long the room is offered for — a rough duration, never an end date. */

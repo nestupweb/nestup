@@ -42,13 +42,13 @@ test("what was ticked is what gets sent", async () => {
   await userEvent.type(screen.getByLabelText(/occupation/i), "Nurse");
   await userEvent.type(document.querySelector<HTMLInputElement>('input[name="bio"]')!, "Plant person.");
 
-  await userEvent.selectOptions(screen.getByLabelText(/mamad/i), "apartment");
+  await userEvent.selectOptions(screen.getByLabelText(/mamad/i), "building");
   await userEvent.click(screen.getByRole("checkbox", { name: "Balcony" }));
   await userEvent.click(screen.getByRole("checkbox", { name: "Parking" }));
   await userEvent.click(screen.getByRole("button", { name: "Save profile" }));
 
   await waitFor(() => expect(save).toHaveBeenCalled(), { timeout: 8000 });
   const data = save.mock.calls.at(-1)![1];
-  expect(data.get("pref_safe_room")).toBe("apartment");
+  expect(data.get("pref_safe_room")).toBe("building");
   expect(data.getAll("pref_amenities")).toEqual(["balcony", "parking"]);
 });

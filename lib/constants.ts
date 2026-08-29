@@ -160,18 +160,18 @@ export function safeRoomLabel(key: SafeRoom): string {
 }
 
 /**
- * The same thing from the seeker's side, on Browse and in a profile.
+ * The same thing from the seeker's side, in a profile.
  *
- * "Has one" rather than a straight copy of `SAFE_ROOM_OPTIONS`: someone who
- * wants a mamad will take it in the building, and asking them to tick two
- * boxes to say so would be the filter getting in their way. Listing a room
- * with no mamad at all isn't something anyone searches for, so "none" has no
- * seeker-side twin.
+ * Not a straight copy of `SAFE_ROOM_OPTIONS`: listing a room with no mamad at
+ * all isn't something anyone searches for, so "none" has no seeker-side twin.
+ * "In the building" replaced "In the apartment" on 2026-08-29 at the user's
+ * request — Browse still offers both places, this asks only how far someone is
+ * willing to walk to it.
  */
 export const PREF_SAFE_ROOMS = [
   { key: "any", label: "No preference" },
   { key: "has", label: "Has one" },
-  { key: "apartment", label: "In the apartment" },
+  { key: "building", label: "In the building" },
 ] as const satisfies readonly { key: PrefSafeRoom; label: string }[];
 
 export function prefSafeRoomLabel(key: PrefSafeRoom): string {

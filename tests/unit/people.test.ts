@@ -85,10 +85,10 @@ describe("profileGroups", () => {
       profileGroups(p, null).find((g) => g.title === "Looking for")?.rows.map((r) => r.label) ?? [];
     expect(rowsOf(profile())).not.toContain("Mamad");
     expect(rowsOf(profile({ pref_safe_room: "has" }))).toContain("Mamad");
-    const row = profileGroups(profile({ pref_safe_room: "apartment" }), null)
+    const row = profileGroups(profile({ pref_safe_room: "building" }), null)
       .find((g) => g.title === "Looking for")!
       .rows.find((r) => r.label === "Mamad")!;
-    expect(row.value).toBe("In the apartment");
+    expect(row.value).toBe("In the building");
   });
 
   test("lists the amenities asked for, and says nothing when none are", () => {
