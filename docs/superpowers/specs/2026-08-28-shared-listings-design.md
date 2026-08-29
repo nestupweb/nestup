@@ -338,3 +338,21 @@ Paused and taken rooms count as homes: they are still the member's to re-open,
 `getManagedListing` still returns them, and the dead end would be identical.
 With no card above it, "Shared with you" can lead the tab, so its top border is
 drawn only when something is actually above it.
+
+## Telling two members apart (migration 0036)
+
+Two accounts called "Daniel Levy" and "Daniel levy", both students, both
+without a photo, were the same row twice in the tag picker — nothing on screen
+said which was which. The e-mail address is what separates them, so it is both
+searched and shown.
+
+The name still matches anywhere inside it. The address matches from the START
+only: `%gmail.com%` would otherwise turn the picker into a way of listing every
+member on a mail host, and nobody searching for someone they know types the
+middle of their address. Wildcards stay literal, as before.
+
+`search_available_members` reads `auth.users.email` — it is SECURITY DEFINER
+already, for the same reason it can read `blocks` in both directions. The
+address reaches the browser only for members the search would offer anyway:
+signed in, ≥2 characters typed, at most 8 rows, and only members who are free
+to be tagged.
