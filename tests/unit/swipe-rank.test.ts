@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { MIN_DECK_SCORE, buildDeck, fitsHardFilters, formatMoveIn, getSwipeDeck, introMessage, sharedInterests } from "@/lib/swipe";
+import { MIN_DECK_SCORE, buildDeck, fitsHardFilters, formatMoveIn, getSwipeDeck, introMessage, passesGenderRules, sharedInterests } from "@/lib/swipe";
 import { sortKey } from "@/lib/compatibility";
 import type { Listing, Profile } from "@/lib/types";
 
@@ -10,7 +10,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     sleep_schedule: "flexible", guests_freq: "sometimes",
     interests: ["Music", "Cooking", "Travel"],
     ok_with_smoker: true, ok_with_pets: true,
-    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [],
+    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [], gender: null, pref_same_gender: false,
     budget_min: 0, budget_max: 3000, preferred_cities: ["Tel Aviv"],
     earliest_move_in: "2026-10-01", pref_lease_term: "any", pref_safe_room: "any", pref_amenities: [], notify_new_matches: false, created_at: "", updated_at: "",
     ...overrides,
@@ -22,7 +22,7 @@ function listing(overrides: Partial<Listing> = {}): Listing {
     id: "l1", owner_id: "o1", title: "Sunlit room", description: "",
     city: "Tel Aviv", neighborhood: "Florentin", address: "Florentin 12", rent: 2800,
     available_from: "2026-10-01", lease_term: "flexible", property_type: "apartment", rooms: 3, size_sqm: null,
-    roommates_count: 2, pets_allowed: true, smoking_allowed: false,
+    roommates_count: 2, pets_allowed: true, smoking_allowed: false, wanted_gender: null, household_gender: null,
     balcony: false, air_conditioning: false, parking: false, elevator: false, furnished: false,
     safe_room: "none", food_restrictions: "", street: "Florentin", house_number: "12", lat: null, lng: null, coords_source: "none",
     photo_urls: [], photo_labels: [], viewing_slots: [], is_active: true, taken_at: null, removed_at: null, created_at: "", updated_at: "",
@@ -193,5 +193,47 @@ describe("getSwipeDeck query", () => {
     await getSwipeDeck(supabase, profile({ preferred_cities: [], budget_min: 0, budget_max: 0 }));
     expect(calls.some(([m]) => m === "in")).toBe(false);
     expect(calls.some(([m]) => m === "lte" || m === "gte")).toBe(false);
+  });
+});
+
+/**
+ * Both gender rules are hard filters, not score adjustments (0037): a room
+ * that fails either one is not in the deck at all.
+ */
+describe("gender rules in the deck", () => {
+  test("'same gender as me' admits only households where everyone matches", () => {
+    const her = profile({ gender: "female", pref_same_gender: true });
+    expect(passesGenderRules(her, listing({ household_gender: "female" }))).toBe(true);
+    expect(passesGenderRules(her, listing({ household_gender: "male" }))).toBe(false);
+    // null is a mixed household, or one where somebody hasn't said. Both are
+    // "we cannot promise they all match", so both are out.
+    expect(passesGenderRules(her, listing({ household_gender: null }))).toBe(false);
+  });
+
+  test("without the box ticked, the household's gender is irrelevant", () => {
+    const her = profile({ gender: "female", pref_same_gender: false });
+    expect(passesGenderRules(her, listing({ household_gender: "male" }))).toBe(true);
+    expect(passesGenderRules(her, listing({ household_gender: null }))).toBe(true);
+  });
+
+  test("ticking it without stating a gender asks something unanswerable, so it is skipped", () => {
+    // Better than emptying their deck with no explanation; the profile form is
+    // where this gets fixed.
+    const nobody = profile({ gender: null, pref_same_gender: true });
+    expect(passesGenderRules(nobody, listing({ household_gender: "male" }))).toBe(true);
+  });
+
+  test("a room that asks for one gender reaches nobody else — including the unstated", () => {
+    const room = listing({ wanted_gender: "female" });
+    expect(passesGenderRules(profile({ gender: "female" }), room)).toBe(true);
+    expect(passesGenderRules(profile({ gender: "male" }), room)).toBe(false);
+    expect(passesGenderRules(profile({ gender: null }), room)).toBe(false);
+  });
+
+  test("the two rules both have to pass", () => {
+    const strict = profile({ gender: "male", pref_same_gender: true });
+    // Household matches him, but the room wants women.
+    expect(passesGenderRules(strict, listing({ household_gender: "male", wanted_gender: "female" }))).toBe(false);
+    expect(passesGenderRules(strict, listing({ household_gender: "male", wanted_gender: "male" }))).toBe(true);
   });
 });

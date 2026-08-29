@@ -25,7 +25,7 @@ const profile: Profile = {
   avatar_url: null, smoker: false, has_pet: true, cleanliness: 4, sleep_schedule: "early",
   guests_freq: "sometimes", interests: ["Music", "Cooking", "Yoga"], ok_with_smoker: false,
   ok_with_pets: true,
-    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [], budget_min: 3000, budget_max: 5000, preferred_cities: ["Tel Aviv"],
+    noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [], budget_min: 3000, budget_max: 5000, preferred_cities: ["Tel Aviv"], gender: null, pref_same_gender: false,
   earliest_move_in: "2026-10-01", pref_lease_term: "any", pref_safe_room: "any", pref_amenities: [], notify_new_matches: false, created_at: "", updated_at: "",
 };
 

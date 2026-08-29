@@ -8,11 +8,12 @@ import { RoommateTagPicker } from "@/components/listings/RoommateTagPicker";
 import type { TaggedMember } from "@/lib/co-posters";
 import { ViewingHoursEditor } from "@/components/listings/ViewingHoursEditor";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { Select } from "@/components/ui/Select";
 import { PinField } from "@/components/map/PinField";
 import { pointOf } from "@/lib/geo";
 import { normalizeSlots } from "@/lib/availability";
 import { useStickyForm } from "@/lib/hooks";
-import { FEATURES, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
+import { FEATURES, GENDERS, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
 const input =
@@ -39,6 +40,9 @@ export function ListingForm({
   canTagRoommates?: boolean;
 }) {
   const [state, form, pending] = useStickyForm<ListingFormState>(saveListingAction, {});
+  // Open on a room that already has a requirement, so editing shows the rule
+  // as it stands rather than as if there were none.
+  const [genderOnly, setGenderOnly] = useState(Boolean(listing?.wanted_gender));
   // Controlled, because the co-poster cap is `roommates_count - 1` and has to
   // move the moment this number does.
   const [roommatesCount, setRoommatesCount] = useState(listing?.roommates_count ?? 1);
@@ -198,6 +202,36 @@ export function ListingForm({
               <input type="checkbox" name={f.key} defaultChecked={Boolean(listing?.[f.key])} /> {f.label}
             </label>
           ))}
+        </div>
+
+        {/*
+          The toggle is a control, not a column: what gets saved is the
+          requirement itself, so switching it off submits an empty value and
+          the room goes back to being open to anyone. Same four options as
+          everywhere else — one list, in lib/constants.
+        */}
+        <div className="mt-5">
+          <label className={check}>
+            <input
+              type="checkbox"
+              checked={genderOnly}
+              onChange={(e) => setGenderOnly(e.target.checked)}
+            />
+            Looking for a specific gender only
+          </label>
+          {genderOnly ? (
+            <div className="mt-2 max-w-xs">
+              <Select name="wanted_gender" aria-label="Which gender" defaultValue={listing?.wanted_gender ?? ""}>
+                <option value="">Choose a gender</option>
+                {GENDERS.map((g) => (
+                  <option key={g.key} value={g.key}>{g.label}</option>
+                ))}
+              </Select>
+              <p className="mt-1.5 text-xs text-muted">
+                Only members of that gender will be shown this room.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <fieldset className="mt-5">

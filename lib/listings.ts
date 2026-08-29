@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import type { ListingFilters } from "@/lib/validation/filters";
+import { HOUSEHOLD_GENDER_ANY, type ListingFilters } from "@/lib/validation/filters";
 import type { Listing } from "@/lib/types";
 
 /** Minimal query surface we drive — lets unit tests fake the builder. */
 export interface FilterableQuery {
   eq(column: string, value: unknown): FilterableQuery;
+  not(column: string, operator: string, value: unknown): FilterableQuery;
   gte(column: string, value: unknown): FilterableQuery;
   lte(column: string, value: unknown): FilterableQuery;
   order(column: string, opts: { ascending: boolean }): FilterableQuery;
@@ -23,6 +24,12 @@ export function applyListingFilters<Q extends FilterableQuery>(q: Q, f: ListingF
   if (f.move_in_by) q.lte("available_from", f.move_in_by);
   if (f.lease_term) q.eq("lease_term", f.lease_term);
   if (f.safe_room) q.eq("safe_room", f.safe_room);
+  // `household_gender` was computed when the household last changed, so this
+  // is one indexed lookup rather than a subquery per row (0037). "any" asks
+  // for a single-gender household without saying which, and null means either
+  // mixed or somebody hasn't said — neither qualifies.
+  if (f.household_gender === HOUSEHOLD_GENDER_ANY) q.not("household_gender", "is", null);
+  else if (f.household_gender) q.eq("household_gender", f.household_gender);
   if (f.roommates_max !== undefined) q.lte("roommates_count", f.roommates_max);
   for (const key of BOOL_KEYS) {
     if (f[key] !== undefined) q.eq(key, f[key]);

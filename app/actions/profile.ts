@@ -27,6 +27,7 @@ export async function upsertProfileAction(
     full_name: formData.get("full_name"),
     age: formData.get("age"),
     occupation: formData.get("occupation") ?? "",
+    gender: formData.get("gender"),
     bio: formData.get("bio") ?? "",
     // Daily life is passed through raw: the schema turns a blank into null
     // ("not answered yet", 0035). Reading it as `=== "on"` here would have
@@ -51,6 +52,7 @@ export async function upsertProfileAction(
     pref_noise: formData.get("pref_noise") ?? undefined,
     pref_diet: formData.get("pref_diet") ?? undefined,
     pref_shabbat: formData.get("pref_shabbat") ?? undefined,
+    pref_same_gender: formData.get("pref_same_gender"),
     budget_min: formData.get("budget_min") || 0,
     budget_max: formData.get("budget_max") || 0,
     preferred_cities: formData.getAll("preferred_cities"),

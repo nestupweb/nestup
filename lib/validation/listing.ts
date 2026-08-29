@@ -1,11 +1,23 @@
 import { z } from "zod";
-import { CITIES, LEASE_TERMS, PHOTO_ROOMS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
-import type { LeaseTerm, PhotoRoom, PropertyType, SafeRoom } from "@/lib/types";
+import { CITIES, GENDERS, LEASE_TERMS, PHOTO_ROOMS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
+import type { Gender, LeaseTerm, PhotoRoom, PropertyType, SafeRoom } from "@/lib/types";
 
 const propertyTypeKeys = PROPERTY_TYPES.map((p) => p.key) as [PropertyType, ...PropertyType[]];
 const safeRoomKeys = SAFE_ROOM_OPTIONS.map((o) => o.key) as [SafeRoom, ...SafeRoom[]];
 const leaseTermKeys = LEASE_TERMS.map((o) => o.key) as [LeaseTerm, ...LeaseTerm[]];
 const photoRoomKeys = PHOTO_ROOMS.map((r) => r.key) as [PhotoRoom, ...PhotoRoom[]];
+const genderKeys = GENDERS.map((g) => g.key) as [Gender, ...Gender[]];
+
+/**
+ * "Looking for a specific gender only". The toggle is not stored — what is
+ * stored is the requirement or its absence, so turning the toggle off has to
+ * clear the gender rather than leave a stale one behind. The form sends an
+ * empty value when the toggle is off, and that becomes null: open to anyone.
+ */
+const wantedGender = z.preprocess(
+  (v) => (v === "" || v === undefined || v === null ? null : v),
+  z.enum(genderKeys).nullable().default(null)
+);
 
 export const listingSchema = z.object({
   description: z.string().trim().max(2000).default(""),
@@ -31,6 +43,7 @@ export const listingSchema = z.object({
   elevator: z.coerce.boolean().default(false),
   furnished: z.coerce.boolean().default(false),
   safe_room: z.enum(safeRoomKeys).default("none"),
+  wanted_gender: wantedGender,
   food_restrictions: z.string().trim().max(200).default(""),
 });
 

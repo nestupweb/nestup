@@ -7,7 +7,7 @@ type Call = [string, ...unknown[]];
 function fakeQuery() {
   const calls: Call[] = [];
   const q: Record<string, (...args: unknown[]) => unknown> = {};
-  for (const m of ["eq", "gte", "lte", "order", "range"]) {
+  for (const m of ["eq", "gte", "lte", "not", "order", "range"]) {
     q[m] = (...args: unknown[]) => {
       calls.push([m, ...args]);
       return q;
@@ -83,5 +83,35 @@ describe("sort", () => {
     const newest = fakeQuery();
     applyListingFilters(newest.q, listingFiltersSchema.parse({}));
     expect(newest.calls.filter(([m]) => m === "order")).toEqual([["order", "created_at", { ascending: false }]]);
+  });
+});
+
+/**
+ * "All roommates of the same gender" (0037). The listing carries the answer in
+ * `household_gender`, which is null when the household is mixed OR when one of
+ * them has not said — so neither can slip through a filter that asks for one.
+ */
+describe("the same-gender filter", () => {
+  test("a chosen gender becomes one equality on the derived column", () => {
+    const { q, calls } = fakeQuery();
+    applyListingFilters(q, listingFiltersSchema.parse({ household_gender: "female" }));
+    expect(calls).toContainEqual(["eq", "household_gender", "female"]);
+  });
+
+  test("'any' asks for a single-gender household without naming one", () => {
+    const { q, calls } = fakeQuery();
+    applyListingFilters(q, listingFiltersSchema.parse({ household_gender: "any" }));
+    expect(calls).toContainEqual(["not", "household_gender", "is", null]);
+    expect(calls.some((c) => c[0] === "eq" && c[1] === "household_gender")).toBe(false);
+  });
+
+  test("unticked filters nothing, and junk is ignored rather than throwing", () => {
+    const off = fakeQuery();
+    applyListingFilters(off.q, listingFiltersSchema.parse({}));
+    expect(off.calls.some((c) => c[1] === "household_gender")).toBe(false);
+
+    const junk = fakeQuery();
+    applyListingFilters(junk.q, listingFiltersSchema.parse({ household_gender: "sideways" }));
+    expect(junk.calls.some((c) => c[1] === "household_gender")).toBe(false);
   });
 });

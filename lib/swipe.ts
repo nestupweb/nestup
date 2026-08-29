@@ -25,14 +25,39 @@ export const MIN_DECK_SCORE = 60;
 
 /**
  * Hard filters before any scoring (user decision, 2026-08-26): the deck shows
- * only rooms in the seeker's preferred cities and inside their budget. A
- * preference that isn't set doesn't filter — no cities means any city, no
- * max means any rent. Rooms outside stay reachable through Browse.
+ * only rooms in the seeker's preferred cities and inside their budget, and
+ * only rooms that satisfy both gender rules (2026-08-29). A preference that
+ * isn't set doesn't filter — no cities means any city, no max means any rent.
+ * Rooms outside stay reachable through Browse.
  */
 export function fitsHardFilters(seeker: Profile, listing: Listing): boolean {
   if (seeker.preferred_cities.length > 0 && !seeker.preferred_cities.includes(listing.city)) return false;
   if (seeker.budget_max > 0 && listing.rent > seeker.budget_max) return false;
   if (seeker.budget_min > 0 && listing.rent < seeker.budget_min) return false;
+  return passesGenderRules(seeker, listing);
+}
+
+/**
+ * The two gender rules, both strict, both cutting rooms out of the deck rather
+ * than scoring them down (migration 0037).
+ *
+ *   "Same gender as me"    — the seeker's side. Ticked, they see only rooms
+ *                            where EVERY household member shares their exact
+ *                            gender. `household_gender` is already null when
+ *                            the household is mixed or when one of them hasn't
+ *                            said, and both of those are "no".
+ *   `wanted_gender`        — the room's side. "Only" has to mean only, so a
+ *                            room that asks for one gender reaches nobody else
+ *                            — including a seeker who hasn't stated one, since
+ *                            we cannot say they qualify.
+ *
+ * A seeker who ticked the box without stating their own gender has asked for
+ * something unanswerable; the preference is skipped rather than emptying their
+ * deck, and the profile form is where that gets fixed.
+ */
+export function passesGenderRules(seeker: Profile, listing: Listing): boolean {
+  if (listing.wanted_gender && seeker.gender !== listing.wanted_gender) return false;
+  if (seeker.pref_same_gender && seeker.gender && listing.household_gender !== seeker.gender) return false;
   return true;
 }
 

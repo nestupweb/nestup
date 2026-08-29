@@ -16,13 +16,13 @@ const me: Profile = {
   user_id: "u1", full_name: "Noa Peretz", age: 26, occupation: "", bio: "", avatar_url: null,
   smoker: false, has_pet: true, cleanliness: 4, sleep_schedule: "early", guests_freq: "sometimes",
   noise_level: "quiet", diet: "vegetarian", shabbat: "traditional", interests: [], chores: ["Dishes", "Laundry"],
-  ok_with_smoker: false, ok_with_pets: true, pref_cleanliness: 3, pref_sleep: "any", pref_guests: "sometimes", pref_noise: "quiet", pref_diet: "vegetarian", pref_shabbat: "traditional",
+  ok_with_smoker: false, ok_with_pets: true, pref_cleanliness: 3, pref_sleep: "any", pref_guests: "sometimes", pref_noise: "quiet", pref_diet: "vegetarian", pref_shabbat: "traditional", gender: null, pref_same_gender: false,
   budget_min: 2000, budget_max: 4500, preferred_cities: [], earliest_move_in: null, pref_lease_term: "any", pref_safe_room: "any", pref_amenities: [], notify_new_matches: false, created_at: "", updated_at: "",
 };
 
 test("dailyLifeRows puts every habit in words, my side and the roommate side", () => {
   const rows = dailyLifeRows(me);
-  expect(rows.map((r) => r.label)).toEqual(["Smoking", "Pets", "Cleanliness", "Schedule", "Guests", "Noise", "Dietary restrictions", "Shabbat"]);
+  expect(rows.map((r) => r.label)).toEqual(["Smoking", "Pets", "Cleanliness", "Schedule", "Guests", "Noise", "Dietary restrictions", "Shabbat", "Gender"]);
   expect(rows.find((r) => r.key === "smoking")).toMatchObject({ mine: "Non-smoker", wants: "Non-smokers only" });
   expect(rows.find((r) => r.key === "cleanliness")).toMatchObject({ mine: "4 · Neat", wants: "At least 3 · Tidy enough" });
   expect(rows.find((r) => r.key === "diet")).toMatchObject({ mine: "Vegetarian", wants: "Vegetarian or vegan" });
@@ -98,7 +98,7 @@ test("the Daily life table submits one control per cell under the names the acti
   expect(data.get("shabbat")).toBe("traditional");
   expect(data.get("pref_shabbat")).toBe("traditional");
   expect(screen.getByRole("table", { name: "Daily life" })).toBeInTheDocument();
-  expect(screen.getAllByRole("row")).toHaveLength(9); // header + 8 habits
+  expect(screen.getAllByRole("row")).toHaveLength(10); // header + 9 habits
 });
 
 test("both tables head the answer columns only: nothing above the habit names", () => {
@@ -218,4 +218,43 @@ test("scoring reads an unanswered row as the value the column used to hold", () 
   expect(filled.shabbat).toBe("");
   // A real answer is never overwritten.
   expect(withDailyLifeDefaults({ ...me, cleanliness: 5 } as Profile).cleanliness).toBe(5);
+});
+
+/**
+ * Gender is the one row asked for on one side only: the member states it once,
+ * up beside their age, and the table carries the requirement rather than a
+ * second copy of the fact.
+ */
+test("the Gender row asks nothing on the left and offers one checkbox on the right", () => {
+  render(
+    <form aria-label="g">
+      <DailyLifeFields profile={me} />
+    </form>
+  );
+  const form = screen.getByRole("form", { name: "g" }) as HTMLFormElement;
+
+  // Exactly one control named for the preference, and it is a checkbox.
+  const box = form.querySelector('input[name="pref_same_gender"]') as HTMLInputElement;
+  expect(box).toBeInTheDocument();
+  expect(box.type).toBe("checkbox");
+  expect(screen.getByText("Same gender as me")).toBeInTheDocument();
+
+  // …and no gender input in the "About me" column of this table.
+  expect(form.querySelector('[name="gender"]')).toBeNull();
+  expect(screen.getByText(/set above, beside your age/i)).toBeInTheDocument();
+});
+
+test("the checkbox round-trips: ticked profiles open ticked", () => {
+  const { container } = render(<DailyLifeFields profile={{ ...me, pref_same_gender: true } as Profile} />);
+  expect(container.querySelector('input[name="pref_same_gender"]')).toBeChecked();
+  cleanup();
+  const plain = render(<DailyLifeFields profile={me} />);
+  expect(plain.container.querySelector('input[name="pref_same_gender"]')).not.toBeChecked();
+});
+
+test("the read-only table words the gender row from both sides", () => {
+  expect(dailyLifeRows({ ...me, gender: "female", pref_same_gender: true }).find((r) => r.key === "gender"))
+    .toMatchObject({ mine: "Female", wants: "Roommates of my gender" });
+  expect(dailyLifeRows({ ...me, gender: null, pref_same_gender: false }).find((r) => r.key === "gender"))
+    .toMatchObject({ mine: "—", wants: "Any gender" });
 });

@@ -1,6 +1,19 @@
 import { z } from "zod";
-import { CITIES, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants";
-import type { LeaseTerm } from "@/lib/types";
+import { CITIES, GENDERS, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants";
+import type { Gender, LeaseTerm } from "@/lib/types";
+
+/**
+ * The filter takes the four options, plus `any` for "they are all the same,
+ * and I don't mind which" — which is what ticking the box without choosing
+ * means, and it is a different query: `household_gender is not null` rather
+ * than an equality.
+ */
+export const HOUSEHOLD_GENDER_ANY = "any";
+type HouseholdGenderFilter = Gender | typeof HOUSEHOLD_GENDER_ANY;
+const householdGenderKeys: [HouseholdGenderFilter, ...HouseholdGenderFilter[]] = [
+  HOUSEHOLD_GENDER_ANY,
+  ...GENDERS.map((g) => g.key),
+];
 
 const optionalInt = z.preprocess((v) => {
   if (v === undefined || v === null || v === "") return undefined;
@@ -34,6 +47,13 @@ export const listingFiltersSchema = z.object({
   lease_term: z.enum(leaseTermKeys).optional().catch(undefined), // "for how long" — exact term
   // Mamad: "has" is any of them, the other two are the exact place.
   safe_room: z.enum(safeRoomKeys).optional().catch(undefined),
+  /**
+   * "All roommates of the same gender", and which one. Matched against the
+   * listing's derived `household_gender` (0037), which is null unless every
+   * member of the household stated the same gender — so this never returns a
+   * room where somebody simply hasn't said.
+   */
+  household_gender: z.enum(householdGenderKeys).optional().catch(undefined),
   roommates_max: optionalInt.catch(undefined),
   pets_allowed: optionalBool.catch(undefined),
   smoking_allowed: optionalBool.catch(undefined),

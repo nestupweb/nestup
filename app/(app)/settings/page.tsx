@@ -5,6 +5,7 @@ import { NotificationsSection } from "@/components/settings/NotificationsSection
 import { DangerZone } from "@/components/settings/DangerZone";
 import { BlockedSection } from "@/components/settings/BlockedSection";
 import { getBlockedProfiles } from "@/lib/moderation";
+import { queryListingHeirs } from "@/lib/handover";
 import type { Listing, ProfileDetails } from "@/lib/types";
 
 /**
@@ -28,6 +29,10 @@ export default async function SettingsPage() {
       .maybeSingle(),
     getBlockedProfiles(supabase, userId),
   ]);
+  // Who could take the listing on if this member closes their account, so the
+  // warning in Danger zone is right on the first paint rather than after a
+  // round trip (migration 0040).
+  const heirs = await queryListingHeirs();
   // Owner-only read: the privacy flags decide what OTHER members get from
   // `public_profile_details()`, never what the owner sees of their own row.
   const details = (detailsRes.data as ProfileDetails | null) ?? null;
@@ -58,7 +63,7 @@ export default async function SettingsPage() {
 
       <BlockedSection blocked={blocked} />
 
-      <DangerZone email={authEmail} />
+      <DangerZone email={authEmail} heirs={heirs} />
     </main>
   );
 }

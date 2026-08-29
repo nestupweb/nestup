@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FEATURES, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants";
+import { FEATURES, GENDERS, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
@@ -21,6 +21,10 @@ export function FilterBar() {
   const router = useRouter();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
+  // "All roommates of the same gender" is two controls that mean one thing:
+  // the tick decides whether to filter at all, the dropdown says which gender.
+  // The URL carries only the gender, so the tick is derived from it.
+  const [sameGender, setSameGender] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -136,6 +140,31 @@ export function FilterBar() {
             <label className={label}>Max roommates
               <input name="roommates_max" type="number" min={0} max={10} defaultValue={params.get("roommates_max") ?? ""} className={input} />
             </label>
+          </div>
+
+          <div className="mt-4 lg:mt-5">
+            <label className="flex items-center gap-2 text-sm lg:text-base">
+              <input
+                type="checkbox"
+                checked={sameGender || Boolean(params.get("household_gender"))}
+                onChange={(e) => setSameGender(e.target.checked)}
+              />
+              All roommates of the same gender
+            </label>
+            {sameGender || params.get("household_gender") ? (
+              <Select
+                key={params.get("household_gender") ?? ""}
+                name="household_gender"
+                aria-label="Which gender"
+                defaultValue={params.get("household_gender") ?? "any"}
+                className="mt-2"
+              >
+                <option value="any">Any gender, as long as they all match</option>
+                {GENDERS.map((g) => (
+                  <option key={g.key} value={g.key}>{g.label}</option>
+                ))}
+              </Select>
+            ) : null}
           </div>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm lg:mt-5 lg:flex-col lg:items-start lg:gap-y-3.5 lg:border-t lg:border-hairline lg:pb-4 lg:pt-5 lg:text-base">
             <label className="flex items-center gap-1.5 lg:gap-2.5">

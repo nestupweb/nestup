@@ -136,6 +136,22 @@ export function DailyLifeFields({ profile: p }: { profile: Profile | null }) {
         mine={<Choice name="dietary" value={p?.diet ?? null} options={DIETS} />}
         wants={<Choice name="pref_diet" value={p?.pref_diet ?? null} options={PREF_DIET} />}
       />
+      {/*
+        Gender is the one row with nothing on the left. The member states their
+        gender once, up beside their age, and repeating it here as a second
+        input would give them two places to change one fact. What belongs in
+        this table is the requirement, so that is all this row carries.
+      */}
+      <Row
+        label="Gender"
+        mine={<p className="text-xs text-muted">Set above, beside your age.</p>}
+        wants={
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="pref_same_gender" defaultChecked={p?.pref_same_gender ?? false} />
+            Same gender as me
+          </label>
+        }
+      />
       <Row
         label="Shabbat"
         mine={<ShabbatChoice value={p?.shabbat ?? null} />}

@@ -130,6 +130,9 @@ export async function saveListingAction(
     elevator: formData.get("elevator") === "on",
     furnished: formData.get("furnished") === "on",
     safe_room: formData.get("safe_room") ?? "none",
+    // Empty when the "specific gender only" toggle is off — the schema reads
+    // that as null, i.e. open to anyone.
+    wanted_gender: formData.get("wanted_gender") ?? "",
     food_restrictions: formData.get("food_restrictions") ?? "",
   });
   if (!parsed.success) {

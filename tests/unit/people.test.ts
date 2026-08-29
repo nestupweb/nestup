@@ -9,7 +9,7 @@ function profile(overrides: Partial<Profile> = {}): Profile {
     sleep_schedule: "early", guests_freq: "sometimes",
     interests: ["Cooking"], ok_with_smoker: false, ok_with_pets: true,
     noise_level: "moderate", diet: "none", pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any", pref_diet: "any",
-    shabbat: "traditional", pref_shabbat: "any", chores: ["Dishes"],
+    shabbat: "traditional", pref_shabbat: "any", chores: ["Dishes"], gender: null, pref_same_gender: false,
     budget_min: 2500, budget_max: 4000, preferred_cities: ["Tel Aviv", "Haifa"],
     earliest_move_in: "2026-10-01", pref_lease_term: "any", pref_safe_room: "any", pref_amenities: [], notify_new_matches: false, created_at: "", updated_at: "",
     ...overrides,

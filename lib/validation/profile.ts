@@ -1,6 +1,8 @@
 import { z } from "zod";
-import { BUDGET_CAP, CHORES, CITIES, INTERESTS, MAX_INTERESTS, MIN_INTERESTS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS } from "@/lib/constants";
-import type { Amenity, PrefLeaseTerm, PrefSafeRoom } from "@/lib/types";
+import { BUDGET_CAP, CHORES, CITIES, GENDERS, INTERESTS, MAX_INTERESTS, MIN_INTERESTS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS } from "@/lib/constants";
+import type { Amenity, Gender, PrefLeaseTerm, PrefSafeRoom } from "@/lib/types";
+
+const genderKeys = GENDERS.map((g) => g.key) as [Gender, ...Gender[]];
 
 const prefLeaseTermKeys = PREF_LEASE_TERMS.map((o) => o.key) as [PrefLeaseTerm, ...PrefLeaseTerm[]];
 const prefSafeRoomKeys = PREF_SAFE_ROOMS.map((o) => o.key) as [PrefSafeRoom, ...PrefSafeRoom[]];
@@ -36,6 +38,8 @@ export const profileSchema = z
   .object({
     full_name: z.string().trim().min(2).max(60),
     age: z.coerce.number().int().min(18).max(120),
+    // One of four, or blank for "not answered" — never guessed for someone.
+    gender: blank(z.enum(genderKeys)),
     occupation: z.string().trim().max(80).default(""),
     bio: z.string().trim().max(500).default(""),
     // --- Daily life: how I live (blank = not answered yet, 0035) ---
@@ -67,6 +71,9 @@ export const profileSchema = z
     pref_noise: blank(z.enum(["any", "quiet", "moderate"])),
     pref_diet: blank(z.enum(["any", "kosher", "vegetarian", "vegan"])),
     pref_shabbat: blank(z.enum(["any", "observant", "traditional", "not_observant"])),
+    // A checkbox, so unticked is a real answer and it is never null: it is the
+    // one Daily life row that cannot be left unanswered.
+    pref_same_gender: z.preprocess((v) => v === "on" || v === true, z.boolean()),
     // --- Apartment preferences ---
     budget_min: z.coerce.number().int().min(0).max(BUDGET_CAP).default(0),
     budget_max: z.coerce.number().int().min(0).max(BUDGET_CAP).default(0), // 0 = no max

@@ -1,6 +1,7 @@
 import type {
   Amenity,
   Diet,
+  Gender,
   GuestsFreq,
   LeaseTerm,
   NoiseLevel,
@@ -29,6 +30,22 @@ export const INTERESTS = [
   "Gaming", "Board games", "Chess", "Anime", "Movies & TV", "Podcasts", "Theatre", "Live music", "Nightlife",
   "Reading", "Writing", "Art", "Photography", "Crafts & DIY", "Fashion", "Design", "Plants", "Pets & animals",
 ] as const;
+
+/**
+ * The four gender options, in one place. Every screen that asks — the profile
+ * form, the Listings filter, the listing's house rules — renders this list, so
+ * they cannot drift apart. Mirrored by the `gender` enum in migration 0037.
+ */
+export const GENDERS = [
+  { key: "male", label: "Male" },
+  { key: "female", label: "Female" },
+  { key: "other", label: "Other" },
+  { key: "prefer_not_to_say", label: "Prefer not to say" },
+] as const satisfies readonly { key: Gender; label: string }[];
+
+export function genderLabel(key: Gender | null | undefined): string {
+  return GENDERS.find((g) => g.key === key)?.label ?? "";
+}
 
 export const MIN_INTERESTS = 3;
 export const MAX_INTERESTS = 12;

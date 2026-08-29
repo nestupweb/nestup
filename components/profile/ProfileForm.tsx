@@ -13,7 +13,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import { hourChoices, nearestHour } from "@/lib/clock";
 import { useStickyForm } from "@/lib/hooks";
-import { BED_TIMES, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
+import { BED_TIMES, GENDERS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
 import type { Profile, ProfileDetails } from "@/lib/types";
@@ -108,11 +108,21 @@ export function ProfileForm({
           <label className={label}>Full name
             <input name="full_name" required minLength={2} maxLength={60} defaultValue={profile?.full_name ?? ""} className={input} />
           </label>
-          <div className="mt-3 grid grid-cols-[6rem_1fr] gap-3">
+          {/* Gender sits beside Age: both are the plain facts under a name,
+              and both are asked once, here, for registration and for editing. */}
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-[6rem_1fr_1fr]">
             <label className={label}>Age
               <input name="age" type="number" required min={18} max={120} defaultValue={profile?.age ?? ""} className={input} />
             </label>
-            <label className={label}>Occupation
+            <label className={label}>Gender
+              <Select name="gender" defaultValue={profile?.gender ?? ""}>
+                <option value="">— Not answered</option>
+                {GENDERS.map((g) => (
+                  <option key={g.key} value={g.key}>{g.label}</option>
+                ))}
+              </Select>
+            </label>
+            <label className={`${label} col-span-2 sm:col-span-1`}>Occupation
               <input name="occupation" maxLength={80} defaultValue={profile?.occupation ?? ""} className={input} />
             </label>
           </div>

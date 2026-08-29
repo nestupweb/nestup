@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { FEATURES, leaseTermLabel, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
+import { FEATURES, genderLabel, leaseTermLabel, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
 import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { SaveButton } from "@/components/listings/SaveButton";
@@ -177,6 +177,12 @@ export default async function ListingDetailPage({
               <DetailIcon name={listing.smoking_allowed ? "smoking" : "no-smoking"} />
               {listing.smoking_allowed ? "Smoking OK" : "No smoking"}
             </span>
+            {listing.wanted_gender ? (
+              <span className={item}>
+                <DetailIcon name="users" />
+                {genderLabel(listing.wanted_gender)} roommates only
+              </span>
+            ) : null}
             {listing.food_restrictions ? (
               <span className={item}>
                 <DetailIcon name="food" />

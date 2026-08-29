@@ -33,10 +33,19 @@ export type PropertyType =
   | "duplex"
   | "private_house";
 
+/**
+ * The four options, everywhere (migration 0037). `null` on a profile means
+ * "not answered yet" — not a fifth option, and never guessed on someone's
+ * behalf.
+ */
+export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+
 export interface Profile {
   user_id: string;
   full_name: string;
   age: number;
+  /** null until the member says. See `Gender`. */
+  gender: Gender | null;
   occupation: string;
   bio: string;
   avatar_url: string | null;
@@ -63,6 +72,12 @@ export interface Profile {
   pref_noise: PrefNoise | null;
   pref_diet: PrefDiet | null;
   pref_shabbat: PrefShabbat | null;
+  /**
+   * "Same gender as me" — the only checkbox in the Daily life table, so
+   * unticked is a complete answer and it never holds the swipe deck shut.
+   * Enforced strictly in the deck; see `passesGenderRules`.
+   */
+  pref_same_gender: boolean;
   budget_min: number;
   budget_max: number; // 0 = not set
   preferred_cities: string[];
@@ -123,6 +138,14 @@ export interface Listing {
   roommates_count: number;
   pets_allowed: boolean;
   smoking_allowed: boolean;
+  /** House rules: the room is open to one gender only. null = anyone. */
+  wanted_gender: Gender | null;
+  /**
+   * Derived, never written by hand (0037): the gender every household member
+   * shares, or null when they differ OR when one of them hasn't said. Both are
+   * "no" to "are they all the same gender?".
+   */
+  household_gender: Gender | null;
   balcony: boolean;
   air_conditioning: boolean;
   parking: boolean;

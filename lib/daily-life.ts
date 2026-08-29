@@ -11,6 +11,7 @@ import {
   PREF_SLEEP,
   SHABBAT_LEVELS,
   SLEEP_SCHEDULES,
+  genderLabel,
   optionLabel,
 } from "@/lib/constants";
 import type { Profile } from "@/lib/types";
@@ -113,5 +114,14 @@ export function dailyLifeRows(p: Profile): DailyLifeRow[] {
     { key: "noise", label: "Noise", mine: pick(NOISE_LEVELS, p.noise_level), wants: pick(PREF_NOISE, p.pref_noise) },
     { key: "diet", label: "Dietary restrictions", mine: pick(DIETS, p.diet), wants: pick(PREF_DIET, p.pref_diet) },
     { key: "shabbat", label: "Shabbat", mine: pick(SHABBAT_LEVELS, p.shabbat), wants: pick(PREF_SHABBAT, p.pref_shabbat) },
+    // Read-only, so the left cell can show the gender the member stated on
+    // their profile — in the editor that cell is a note, because gender is
+    // asked once, beside their age.
+    {
+      key: "gender",
+      label: "Gender",
+      mine: p.gender ? genderLabel(p.gender) : UNANSWERED,
+      wants: p.pref_same_gender ? "Roommates of my gender" : "Any gender",
+    },
   ];
 }
