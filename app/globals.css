@@ -85,6 +85,17 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
+/* Native checkboxes and radios (House rules & features, the Listings filters,
+   About you) paint themselves the browser's blue, which belongs to no theme we
+   have. `accent-color` is the one property that recolours the control itself,
+   and pointing it at --accent makes it follow the app: green on light, gold on
+   dark. The tick is left to the browser, which picks black or white against
+   whichever accent is showing. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
+}
+
 /* ===== Swipe deck motion ===== */
 @keyframes swipe-in {
   from { opacity: 0; transform: translateY(18px) scale(0.985); }
