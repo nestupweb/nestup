@@ -6,7 +6,7 @@ import { CoPosterInvites } from "@/components/profile/CoPosterInvites";
 import { SharedListingSync } from "@/components/profile/SharedListingSync";
 import { PencilIcon } from "@/components/ui/PencilIcon";
 import { photoRoomLabel } from "@/lib/constants";
-import type { PendingInvite } from "@/lib/co-posters";
+import { canAddListing, type PendingInvite } from "@/lib/co-posters";
 import type { Listing } from "@/lib/types";
 
 const GRID = "grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-5";
@@ -28,6 +28,11 @@ export const EDIT_PHOTOS_HREF = "/listing#photos";
  *   2. the room they host, with the buttons that manage it;
  *   3. the rooms they co-post — shared listings they confirmed.
  *
+ * "+ Add listing" replaces the hosted room only for a member who has no home
+ * at all — see `canAddListing`. With a co-posted room or an unanswered
+ * invitation the card led nowhere useful, so it stays hidden until the member
+ * declines.
+ *
  * A co-posted room carries the SAME buttons as one they host (0033): a
  * confirmed roommate edits, closes, re-opens and deletes the room exactly as its
  * creator does, because it is one record and they co-own it. The "Co-poster"
@@ -47,13 +52,19 @@ export function MyListing({
 }) {
   // Every room this member co-owns, so a change by any of them lands here live.
   const managedIds = [...listings, ...shared].map((l) => l.id);
+  // A home in any shape — hosted, co-posted, or still an open question —
+  // means there is nothing for "+ Add listing" to do.
+  const showAdd = canAddListing({ own: listings.length, shared: shared.length, invites: invites.length });
+  // The rule above can leave "Shared with you" first on the tab; its divider
+  // only divides when something is actually above it.
+  const dividedShared = listings.length > 0 || invites.length > 0;
 
   return (
     <div className="space-y-8">
       <SharedListingSync listingIds={managedIds} />
       <CoPosterInvites invites={invites} />
 
-      {listings.length === 0 ? (
+      {showAdd ? (
         <div className={GRID}>
           <Link href="/listing" className={DASHED}>
             <span className="text-3xl font-light leading-none">+</span>
@@ -65,7 +76,7 @@ export function MyListing({
       )}
 
       {shared.length > 0 ? (
-        <section className="border-t border-hairline pt-6">
+        <section className={dividedShared ? "border-t border-hairline pt-6" : undefined}>
           <h3 className="text-[12px] font-semibold uppercase tracking-[0.18em] text-muted">Shared with you</h3>
           <div className="mt-5 space-y-8">
             {shared.map((listing) => (

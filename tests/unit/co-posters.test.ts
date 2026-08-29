@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  canAddListing,
   cleanIds,
   invitePrompt,
   inviteErrorMessage,
@@ -112,5 +113,19 @@ describe("tagStatusLabel", () => {
     expect(tagStatusLabel("pending")).toBe("Waiting for their answer");
     // Just picked in the form and not yet saved — nobody has been asked.
     expect(tagStatusLabel(undefined)).toBe("Will be asked when you publish");
+  });
+});
+
+describe("canAddListing", () => {
+  test("only a member with no home at all is offered it", () => {
+    expect(canAddListing({ own: 0, shared: 0, invites: 0 })).toBe(true);
+  });
+
+  test("a hosted room, a co-posted room or an open invitation all hide it", () => {
+    expect(canAddListing({ own: 1, shared: 0, invites: 0 })).toBe(false);
+    expect(canAddListing({ own: 0, shared: 1, invites: 0 })).toBe(false);
+    // The card led to the shared room's edit form while this was unanswered.
+    expect(canAddListing({ own: 0, shared: 0, invites: 1 })).toBe(false);
+    expect(canAddListing({ own: 1, shared: 2, invites: 3 })).toBe(false);
   });
 });

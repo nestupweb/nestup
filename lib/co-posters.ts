@@ -143,3 +143,24 @@ export function tagStatusLabel(status: TaggedMember["status"]): string {
   if (status === "pending") return "Waiting for their answer";
   return "Will be asked when you publish";
 }
+
+/**
+ * Whether My Listings offers the "+ Add listing" card.
+ *
+ * Only a member with no home at all, in any of its three shapes: a room they
+ * host, a room they co-post, or an invitation they have not answered yet.
+ *
+ * The invitation counts because the card was a dead end while one was open.
+ * `getManagedListing` hands `/listing` the room a member co-posts when they
+ * host none, so "+ Add listing" opened the shared room's edit form instead of a
+ * blank one — and a member who accepted after starting a listing of their own
+ * would be turned away by `respond_to_listing_invite` ("you already have an
+ * active listing", 0033). Answering the invitation first is the only path that
+ * goes anywhere, so it is the only one offered; declining brings the card back.
+ *
+ * Paused and taken rooms count as homes here. They are still yours to re-open,
+ * `getManagedListing` still returns them, and the dead end would be identical.
+ */
+export function canAddListing(state: { own: number; shared: number; invites: number }): boolean {
+  return state.own === 0 && state.shared === 0 && state.invites === 0;
+}

@@ -73,10 +73,39 @@ describe("MyListing — shared listings", () => {
     expect(screen.getByRole("button", { name: /yes, join as co-poster/i })).toBeInTheDocument();
   });
 
-  test("a member with no room of their own still gets 'Add listing' alongside an invitation", () => {
+  /**
+   * "+ Add listing" led nowhere while an invitation was open: `/listing` shows
+   * the co-posted room's edit form, and accepting after starting a listing of
+   * your own is refused outright (0033). So the invitation is the only thing
+   * offered until it is answered.
+   */
+  test("an unanswered invitation hides 'Add listing' — the invitation is the only move", () => {
     render(<MyListing listings={[]} invites={[invite]} />);
-    expect(screen.getByRole("link", { name: /add listing/i })).toHaveAttribute("href", "/listing");
+    expect(screen.queryByRole("link", { name: /add listing/i })).toBeNull();
     expect(screen.getByRole("button", { name: /no, thanks/i })).toBeInTheDocument();
+  });
+
+  test("declining the last invitation brings 'Add listing' back", () => {
+    const { rerender } = render(<MyListing listings={[]} invites={[invite]} />);
+    expect(screen.queryByRole("link", { name: /add listing/i })).toBeNull();
+
+    // What the member sees after "No, thanks": the action revalidates /profile
+    // and the tab re-renders with the invitation gone.
+    rerender(<MyListing listings={[]} invites={[]} />);
+    expect(screen.getByRole("link", { name: /add listing/i })).toHaveAttribute("href", "/listing");
+  });
+
+  test("a co-posted room hides 'Add listing' even with no room of their own", () => {
+    const co = { ...listing, id: "l2", title: "Room in Haifa" } as Listing;
+    render(<MyListing listings={[]} shared={[co]} />);
+    expect(screen.queryByRole("link", { name: /add listing/i })).toBeNull();
+    expect(screen.getByText("Shared with you")).toBeInTheDocument();
+  });
+
+  test("a paused co-posted room hides it too — it is still a home to re-open", () => {
+    const co = { ...listing, id: "l2", title: "Room in Haifa", is_active: false } as Listing;
+    render(<MyListing listings={[]} shared={[co]} />);
+    expect(screen.queryByRole("link", { name: /add listing/i })).toBeNull();
   });
 
   test("a confirmed co-posted room appears under 'Shared with you', badged", () => {
