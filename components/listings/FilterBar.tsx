@@ -12,6 +12,15 @@ const input =
 const label = "block text-[11px] font-semibold uppercase tracking-widest text-muted";
 
 /**
+ * Filters where the option literally called "any" means "don't filter", so it
+ * is dropped from the URL rather than sent. `household_gender` is deliberately
+ * NOT one of them: there "any" means "all the same, and I don't mind which",
+ * which is a narrower search than no filter at all — a blanket skip silently
+ * threw it away.
+ */
+const ANY_MEANS_UNSET = new Set(["lease_term", "safe_room"]);
+
+/**
  * GET-style filters: submits the chosen filters into /browse?… search params
  * (the server re-queries; no client-side filtering). Vertical sidebar card on
  * lg+; below lg it collapses behind a "Filters" button that opens a bottom
@@ -44,7 +53,7 @@ export function FilterBar() {
     if (view) next.set("view", view);
     for (const [key, value] of formData.entries()) {
       const v = String(value);
-      if (v === "" || v === "any") continue;
+      if (v === "" || (v === "any" && ANY_MEANS_UNSET.has(key))) continue;
       next.set(key, v === "on" ? "true" : v);
     }
     setOpen(false);
