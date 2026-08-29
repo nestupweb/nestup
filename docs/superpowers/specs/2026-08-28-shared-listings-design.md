@@ -318,3 +318,23 @@ any change. The token must reach the socket before the channel joins, exactly as
   sessions: over-cap refused, non-owner refused, stranger's answer refused,
   accept writes membership, double answer refused, decline writes none, re-save
   preserves answers, un-tagging removes membership.
+
+## When "+ Add listing" appears
+
+My Listings offered the card whenever the member hosted no room, which read as
+an invitation to post one while they already had a home. It was also a dead end:
+`getManagedListing` hands `/listing` the room a member co-posts when they host
+none, so the card opened the shared room's edit form rather than a blank one,
+and a member who started their own listing with an invitation still open would
+be turned away at Yes ("you already have an active listing", 0033).
+
+`canAddListing({ own, shared, invites })` in `lib/co-posters.ts` now answers it:
+the card appears only for a member with no home in any of its three shapes — no
+hosted room, no co-posted room, no unanswered invitation. Declining the last
+invitation brings it back, since `respond_to_listing_invite` deletes the row at
+No and the action revalidates `/profile`.
+
+Paused and taken rooms count as homes: they are still the member's to re-open,
+`getManagedListing` still returns them, and the dead end would be identical.
+With no card above it, "Shared with you" can lead the tab, so its top border is
+drawn only when something is actually above it.
