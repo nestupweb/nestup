@@ -133,7 +133,8 @@ describe("geocodeAddress", () => {
 
   test("an address that doesn't exist is 'missing', never the city centre", async () => {
     // The old version answered with the middle of Tel Aviv and called it
-    // approximate. Now the owner gets asked to place the pin instead.
+    // approximate. Now the save is refused: no room is published at an
+    // address that does not exist.
     answers([]);
     await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "missing" });
   });
@@ -149,6 +150,32 @@ describe("geocodeAddress", () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error("network"));
     vi.stubGlobal("fetch", fetchMock);
     await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "unavailable" });
+  });
+
+  /**
+   * The distinction the whole feature rests on: a listing is refused when its
+   * address is fake, so "fake" must never mean "the server was busy".
+   */
+  test("a 503 is 'unavailable', not 'there is no such address'", async () => {
+    answers([], false);
+    await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "unavailable" });
+  });
+
+  test("one failed attempt is retried before giving up", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("timeout"))
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ lat: "32.0578", lon: "34.7686" }] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "found", lat: 32.0578, lng: 34.7686 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test("an empty answer is not retried — it is an answer", async () => {
+    const fetchMock = answers([]);
+    await expect(geocodeAddress(ADDRESS)).resolves.toEqual({ status: "missing" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   test("asks once, for the full address only", async () => {

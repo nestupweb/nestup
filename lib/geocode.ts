@@ -14,10 +14,9 @@ import { distanceM, type LatLng } from "@/lib/geo";
  * called it approximate; the user ruled that out on 2026-08-28. Now:
  *
  *   found        — the address is real, and this is where it is
- *   missing      — we asked, and there is no such address: the owner is asked
- *                  to drop the pin themselves
- *   unavailable  — nobody answered. Not the owner's fault, so the listing
- *                  saves with no coordinates and no complaint
+ *   missing      — we asked, twice, and there is no such address
+ *   unavailable  — nobody answered, twice. We know nothing about the address,
+ *                  least of all that it is fake
  */
 
 const UA = "NestUp/1.0 (student project; https://nestup-kappa.vercel.app)";
@@ -57,18 +56,40 @@ export function nearCity(hit: LatLng, city: string): boolean {
   return distanceM(hit, centre) <= MAX_KM_FROM_CITY;
 }
 
-async function lookup(query: string): Promise<LatLng | null> {
+/** Nominatim asks for at most one request a second; a retry waits that out. */
+const RETRY_MS = 1100;
+
+/**
+ * One question to Nominatim, answered three ways.
+ *
+ * `answered: false` and "no such address" must not be confused: a 503 or a
+ * timeout used to come back as `null`, indistinguishable from an empty result,
+ * and the owner of a perfectly real address was told it did not exist.
+ */
+async function lookup(query: string): Promise<{ answered: boolean; hit: LatLng | null }> {
   const url = new URL(ENDPOINT);
   url.searchParams.set("q", query);
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "1");
   url.searchParams.set("countrycodes", "il");
-  const res = await fetch(url, {
-    headers: { "User-Agent": UA, "Accept-Language": "en" },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  if (!res.ok) return null;
-  return parseNominatim(await res.json());
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, "Accept-Language": "en" },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) return { answered: false, hit: null };
+    return { answered: true, hit: parseNominatim(await res.json()) };
+  } catch {
+    return { answered: false, hit: null };
+  }
+}
+
+/** Ask twice before giving up: one timeout shouldn't cost someone their listing. */
+async function lookupTwice(query: string): Promise<{ answered: boolean; hit: LatLng | null }> {
+  const first = await lookup(query);
+  if (first.answered) return first;
+  await new Promise((r) => setTimeout(r, RETRY_MS));
+  return lookup(query);
 }
 
 /**
@@ -85,13 +106,12 @@ export async function geocodeAddress(input: {
   city: string;
 }): Promise<GeocodeOutcome> {
   const { street, house_number, city } = input;
-  try {
-    const hit = await lookup(`${street} ${house_number}, ${city}, Israel`.trim());
-    if (hit && nearCity(hit, city)) return { status: "found", ...hit };
-    // A hit at the wrong end of the country is the same as no hit: we still
-    // don't know where this room is.
-    return { status: "missing" };
-  } catch {
-    return { status: "unavailable" };
-  }
+  const { answered, hit } = await lookupTwice(`${street} ${house_number}, ${city}, Israel`.trim());
+  // Nobody answered, twice. We know nothing about this address — least of all
+  // that it is fake.
+  if (!answered) return { status: "unavailable" };
+  if (hit && nearCity(hit, city)) return { status: "found", ...hit };
+  // A hit at the wrong end of the country is the same as no hit: we still
+  // don't know where this room is.
+  return { status: "missing" };
 }

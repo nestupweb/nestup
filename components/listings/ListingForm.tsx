@@ -100,7 +100,6 @@ export function ListingForm({
             initial={pointOf({ lat: listing?.lat ?? null, lng: listing?.lng ?? null })}
             city={listing?.city ?? ""}
             hasPoint={Boolean(listing?.lat && listing?.lng)}
-            askForPin={Boolean(state.placePin)}
           />
         </div>
       </section>

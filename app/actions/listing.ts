@@ -21,16 +21,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ListingFormState = {
   error?: string;
-  /** Ask the form to open its map: the address couldn't be found. */
-  placePin?: boolean;
 };
 
 /** What the room's coordinates should become, or a request for the owner's help. */
 type Coords =
   | { columns: { lat: number; lng: number; coords_source: CoordsSource } }
-  | { columns: { lat: null; lng: null; coords_source: CoordsSource } }
   | { columns: Record<string, never> }
-  | { needsPin: true };
+  | { unknownAddress: "missing" | "unavailable" };
 
 /**
  * Where the room's pin goes.
@@ -40,13 +37,22 @@ type Coords =
  * point yet) — so re-saving a listing to fix a typo in the description doesn't
  * make a network call.
  *
- * What happens when the lookup doesn't find the address changed on 2026-08-28.
- * It used to store the city centre and label the pin "approximate", which put
- * the room on a street it isn't on. Now the owner is asked to place it: the
- * save stops, the form opens its map, and nothing is written until there is a
- * real point. The one exception is the geocoder being unreachable — that is
- * not the owner's fault, so the listing saves with no coordinates at all and
- * simply has no map until it is edited again.
+ * Every published room has a real address and a pin (user decision,
+ * 2026-08-29). The lookup runs on its own and its answer is final:
+ *
+ *   found        — the pin is stored, and the room is on the map. Nothing is
+ *                  asked of the owner; this is the whole point.
+ *   missing      — the address does not exist. The save is refused, the same
+ *                  way a missing rent would be. It used to open the map and
+ *                  ask the owner to place the room by hand.
+ *   unavailable  — we could not check. Also refused, because saving here would
+ *                  publish a room that is on no map and whose address nobody
+ *                  verified. `geocodeAddress` already retried, so this is rare
+ *                  and clears on its own.
+ *
+ * A pin the owner dragged still wins outright: that is a deliberate correction
+ * of a lookup, not a demand made of them, and it is the way a real address
+ * Nominatim happens not to know still gets published.
  */
 async function resolveCoords(
   supabase: SupabaseClient,
@@ -83,11 +89,7 @@ async function resolveCoords(
   if (hit.status === "found") {
     return { columns: { lat: hit.lat, lng: hit.lng, coords_source: "geocoded" } };
   }
-  if (hit.status === "missing") return { needsPin: true };
-  // Unreachable: keep the room placeable later rather than pinning it wrongly
-  // now. An address that changed leaves no point behind, because the old one
-  // belonged to the old address.
-  return { columns: { lat: null, lng: null, coords_source: "none" } };
+  return { unknownAddress: hit.status };
 }
 
 const FIELD_NAMES: Record<string, string> = {
@@ -242,10 +244,14 @@ export async function saveListingAction(
   const address = `${parsed.data.street} ${parsed.data.house_number}`.trim();
   const title = buildListingTitle(parsed.data);
   const coords = await resolveCoords(supabase, listingId, user.id, parsed.data, formData);
-  if ("needsPin" in coords) {
+  if ("unknownAddress" in coords) {
+    // Not `placePin`: the map is no longer opened to demand work. It stays
+    // where it always was, for an owner who wants to correct a pin.
     return {
-      error: `We couldn't find ${address}, ${parsed.data.city}. Drag the pin on the map to where the room is, then save again.`,
-      placePin: true,
+      error:
+        coords.unknownAddress === "missing"
+          ? `We couldn't find ${address}, ${parsed.data.city}. Check the street name and house number — or place the pin yourself on the map below.`
+          : "We couldn't check that address just now. Please save again in a moment.",
     };
   }
   // `owner_id` is deliberately absent: it is set once, on insert. Since 0033 a
