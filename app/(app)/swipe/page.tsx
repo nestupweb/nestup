@@ -39,9 +39,11 @@ export default async function SwipePage() {
       <main className="mx-auto w-full max-w-2xl pb-4 sm:px-6 sm:pt-5">
         <SwipeGate
           heading="No suggested listings yet."
-          body={`Rooms here are ranked against your apartment preferences, and ${listLabels(missing)} ${
-            missing.length > 1 ? "are" : "is"
-          } still empty. Fill ${missing.length > 1 ? "them" : "it"} in and the deck opens — amenities stay optional.`}
+          body={`Rooms here are ranked against your apartment preferences, and your ${listLabels(
+            missing
+          ).toLowerCase()} ${missing.length > 1 ? "are" : "is"} still empty. Fill ${
+            missing.length > 1 ? "them" : "it"
+          } in and the deck opens — amenities stay optional.`}
           ctaHref={FINISH_APARTMENT_PREFS}
           ctaLabel="Finish preferences"
         />

@@ -121,7 +121,7 @@ export function ProfileForm({
       ) : null}
       {needsApartmentPrefs && missingPrefs.length ? (
         <p className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent" role="status">
-          Swiping ranks every room against your apartment preferences, and{" "}
+          Swiping ranks every room against your apartment preferences, and your{" "}
           {listLabels(missingPrefs).toLowerCase()} {missingPrefs.length > 1 ? "are" : "is"} still
           empty. Fill {missingPrefs.length > 1 ? "them" : "it"} in below and the deck opens —
           amenities are optional.
