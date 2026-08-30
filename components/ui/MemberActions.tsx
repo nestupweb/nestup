@@ -16,7 +16,9 @@ export function MemberActions() {
     <>
       <SettingsLink />
       <form action={signOutAction}>
-        <button className="rounded-full border border-hairline px-3 py-1.5 text-xs font-medium text-muted hover:text-ink">
+        {/* Hover matches the gear beside it and Edit Profile: border and label
+            both go to --accent (green on light, gold on dark). */}
+        <button className="rounded-full border border-hairline px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent">
           Log out
         </button>
       </form>
