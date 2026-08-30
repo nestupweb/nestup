@@ -32,40 +32,34 @@ type Coords =
 /**
  * Where the room's pin goes.
  *
- * Order of authority: a pin the owner dragged wins outright; otherwise the
- * address is looked up, but only when it actually changed (or there is no
+ * The address is looked up, but only when it actually changed (or there is no
  * point yet) — so re-saving a listing to fix a typo in the description doesn't
  * make a network call.
  *
  * Every published room has a real address and a pin (user decision,
- * 2026-08-29). The lookup runs on its own and its answer is final:
+ * 2026-08-29), and the lookup is the only way to it — there is no longer a
+ * manual pin an owner can drag into place (user decision, 2026-08-30: a
+ * draggable pin risked a member nudging a real room to the wrong address by
+ * accident, and the map is a preview of the lookup now, not an editor).
+ * `coords_source: "owner"` can still appear on a listing saved before that
+ * change; `shouldGeocode` still leaves those alone. The lookup's answer is
+ * final:
  *
  *   found        — the pin is stored, and the room is on the map. Nothing is
  *                  asked of the owner; this is the whole point.
  *   missing      — the address does not exist. The save is refused, the same
- *                  way a missing rent would be. It used to open the map and
- *                  ask the owner to place the room by hand.
+ *                  way a missing rent would be.
  *   unavailable  — we could not check. Also refused, because saving here would
  *                  publish a room that is on no map and whose address nobody
  *                  verified. `geocodeAddress` already retried, so this is rare
  *                  and clears on its own.
- *
- * A pin the owner dragged still wins outright: that is a deliberate correction
- * of a lookup, not a demand made of them, and it is the way a real address
- * Nominatim happens not to know still gets published.
  */
 async function resolveCoords(
   supabase: SupabaseClient,
   listingId: string,
   userId: string,
-  data: { street: string; house_number: string; city: string },
-  formData: FormData
+  data: { street: string; house_number: string; city: string }
 ): Promise<Coords> {
-  const pinLat = Number(formData.get("pin_lat"));
-  const pinLng = Number(formData.get("pin_lng"));
-  const pinned = formData.get("pin_moved") === "1" && Number.isFinite(pinLat) && Number.isFinite(pinLng);
-  if (pinned) return { columns: { lat: pinLat, lng: pinLng, coords_source: "owner" } };
-
   let current: CoordsSource = "none";
   let addressChanged = true;
   if (listingId) {
@@ -260,14 +254,12 @@ export async function saveListingAction(
   const is_active = formData.get("is_active") !== null ? formData.get("is_active") === "on" : true;
   const address = `${parsed.data.street} ${parsed.data.house_number}`.trim();
   const title = buildListingTitle(parsed.data);
-  const coords = await resolveCoords(supabase, listingId, user.id, parsed.data, formData);
+  const coords = await resolveCoords(supabase, listingId, user.id, parsed.data);
   if ("unknownAddress" in coords) {
-    // Not `placePin`: the map is no longer opened to demand work. It stays
-    // where it always was, for an owner who wants to correct a pin.
     return {
       error:
         coords.unknownAddress === "missing"
-          ? `This address doesn't exist: we couldn't find ${address}, ${parsed.data.city}. Check the street name and house number, or place the pin yourself on the map below.`
+          ? `This address doesn't exist: we couldn't find ${address}, ${parsed.data.city}. Check the street name and house number.`
           : "We couldn't check that address just now. Please save again in a moment.",
     };
   }

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { previewAddressAction } from "@/app/actions/listing";
 import type { LatLng } from "@/lib/geo";
 
-const PinPicker = dynamic(() => import("@/components/map/PinPicker"), {
+const AddressPreviewMap = dynamic(() => import("@/components/map/AddressPreviewMap"), {
   ssr: false,
   loading: () => <div className="h-56 w-full animate-pulse rounded-2xl border border-hairline bg-surface sm:h-64" />,
 });
@@ -17,15 +17,13 @@ const DEBOUNCE_MS = 700;
 
 /**
  * The listing form's map row: shows where the room will be placed as the
- * address is typed — not only after Publish is pressed — and lets the owner
- * drag the pin to correct it.
+ * address is typed — not only after Publish is pressed.
  *
- * The address is looked up again at save time regardless (`resolveCoords` in
- * `app/actions/listing.ts`); this is a preview of that lookup, not a
- * replacement for it, so a fake address still gets refused on save even if
- * this preview never runs. Once the owner drags the pin, later previews stop
- * moving it — a placement they made on purpose outranks a lookup, exactly as
- * it does on save (2026-08-29).
+ * Read-only (2026-08-30): there is no pin to drag any more, so a mistyped
+ * address can't be quietly "corrected" past the check. The address is looked
+ * up again at save time regardless (`resolveCoords` in `app/actions/listing.ts`)
+ * and a bad one is refused there too — this preview just surfaces the same
+ * answer immediately, instead of only once Publish is pressed.
  */
 export function PinField({
   initial,
@@ -42,7 +40,6 @@ export function PinField({
   hasPoint: boolean;
 }) {
   const [point, setPoint] = useState<LatLng | null>(initial);
-  const [moved, setMoved] = useState(false);
   const [status, setStatus] = useState<PreviewStatus>(hasPoint ? "found" : "idle");
   const requestId = useRef(0);
   const settledFor = useRef(hasPoint ? `${street.trim()}|${houseNumber.trim()}|${city.trim()}` : null);
@@ -53,7 +50,7 @@ export function PinField({
   const complete = s.length >= 2 && h.length > 0 && c.length > 0;
 
   useEffect(() => {
-    if (moved || !complete) return; // the owner's own placement is never overwritten by a later lookup
+    if (!complete) return;
     const key = `${s}|${h}|${c}`;
     if (key === settledFor.current) return;
 
@@ -64,47 +61,35 @@ export function PinField({
       if (id !== requestId.current) return; // a newer address was typed meanwhile
       settledFor.current = key;
       setStatus(outcome.status);
-      if (outcome.status === "found") setPoint({ lat: outcome.lat, lng: outcome.lng });
+      setPoint(outcome.status === "found" ? { lat: outcome.lat, lng: outcome.lng } : null);
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [s, h, c, moved, complete]);
+  }, [s, h, c, complete]);
 
   const displayStatus: PreviewStatus = complete ? status : "idle";
 
   return (
     <div>
-      <p className="text-xs text-muted">
-        {moved
-          ? "Pin set — this is where the room will show."
-          : displayStatus === "loading"
+      {displayStatus === "missing" ? (
+        <p role="alert" className="text-sm text-danger">
+          This address doesn&rsquo;t exist. Check the street name and house number.
+        </p>
+      ) : (
+        <p className="text-xs text-muted">
+          {displayStatus === "loading"
             ? "Locating…"
             : displayStatus === "found"
-              ? "This is where the room will show. Drag the pin if it's off."
-              : displayStatus === "missing"
-                ? "We couldn't find this address — check the spelling, or drop the pin yourself."
-                : displayStatus === "unavailable"
-                  ? "Couldn't check the address just now — it's checked again when you save."
-                  : "Fill in the street and house number to see it on the map, or place the pin yourself."}
-      </p>
+              ? "This is where the room will show."
+              : displayStatus === "unavailable"
+                ? "Couldn't check the address just now — it's checked again when you save."
+                : "Fill in the street and house number to see it on the map."}
+        </p>
+      )}
 
-      <div className="mt-3">
-        <PinPicker
-          initial={point}
-          city={city}
-          onMove={(p) => {
-            setPoint(p);
-            setMoved(true);
-          }}
-        />
-        <p className="mt-2 text-xs text-muted">Drag the pin, or tap the map, to set the exact spot.</p>
-      </div>
-
-      {moved && point ? (
-        <>
-          <input type="hidden" name="pin_lat" value={point.lat} />
-          <input type="hidden" name="pin_lng" value={point.lng} />
-          <input type="hidden" name="pin_moved" value="1" />
-        </>
+      {point ? (
+        <div className="mt-3">
+          <AddressPreviewMap point={point} />
+        </div>
       ) : null}
     </div>
   );
