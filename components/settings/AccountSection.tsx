@@ -25,12 +25,15 @@ const submit =
 function Row({
   title,
   value,
+  note,
   open,
   onToggle,
   children,
 }: {
   title: string;
   value: string;
+  /** Shown under the value whether the row is open or shut — for a result the member should still see after the form folds away. */
+  note?: React.ReactNode;
   open: boolean;
   onToggle: () => void;
   children: React.ReactNode;
@@ -46,6 +49,7 @@ function Row({
           {open ? "Cancel" : "Change"}
         </button>
       </div>
+      {note ? <div className="mt-1.5">{note}</div> : null}
       {open ? <div className="mt-4">{children}</div> : null}
     </div>
   );
@@ -59,17 +63,32 @@ function Row({
  */
 export function AccountSection({ email }: { email: string }) {
   const [openRow, setOpenRow] = useState<"email" | "password" | null>(null);
-  const [emailState, emailForm, emailPending] = useStickyForm<AccountState>(changeEmailAction, {});
+  // The e-mail row's own step, independent of the action states below: those
+  // persist their last result for as long as this component is mounted (they
+  // are `useActionState`, not something that resets itself), so without this
+  // the row would keep re-showing a finished code screen forever. Reopening
+  // after "done" is what puts this back to "address" — see the row's onToggle.
+  const [emailStep, setEmailStep] = useState<"address" | "code" | "done">("address");
+  const [emailState, emailForm, emailPending] = useStickyForm<AccountState>(async (prev, formData) => {
+    const result = await changeEmailAction(prev, formData);
+    if (result.sent) setEmailStep("code");
+    return result;
+  }, {});
   // Kept apart from `emailState`: a resend that gets throttled must not blank
   // out the code screen `emailState.sent` is what's keeping on-screen (the
-  // same reason sign-up's resend has its own state — see VerifyForm).
+  // same reason sign-up's resend has its own state — see VerifyForm). Guarded
+  // against `emailState.email` below so a stale resend from a previous e-mail
+  // change can't bleed into a new one.
   const [resent, resendForm, resending] = useStickyForm<AccountState>(resendEmailChangeCodeAction, {});
-  // A finished email or password change has nothing more to say, so the row
-  // folds itself away — done inside the action rather than in an effect, so
-  // there is no second render pass to close it.
+  // The code box closes the instant the code is right — both the step and the
+  // row are set here rather than in an effect, so there is no extra render
+  // where the (now stale) code screen is still on view.
   const [codeState, codeForm, codePending] = useStickyForm<AccountState>(async (prev, formData) => {
     const result = await verifyEmailChangeCodeAction(prev, formData);
-    if (result.done) setOpenRow(null);
+    if (result.done) {
+      setEmailStep("done");
+      setOpenRow(null);
+    }
     return result;
   }, {});
   const [pwState, pwForm, pwPending] = useStickyForm<AccountState>(async (prev, formData) => {
@@ -83,10 +102,23 @@ export function AccountSection({ email }: { email: string }) {
       <Row
         title="E-mail address"
         value={email}
+        note={
+          emailStep === "done" ? (
+            <p role="status" className="text-[13px] font-medium text-accent">
+              Your email address has been updated.
+            </p>
+          ) : null
+        }
         open={openRow === "email"}
-        onToggle={() => setOpenRow((r) => (r === "email" ? null : "email"))}
+        onToggle={() => {
+          // Either half of the toggle starts the flow over: Cancel abandons a
+          // half-finished verification, and Change after a completed one opens
+          // on the address form. Neither may land back on the old code boxes.
+          setEmailStep("address");
+          setOpenRow((r) => (r === "email" ? null : "email"));
+        }}
       >
-        {emailState.sent ? (
+        {emailStep === "code" ? (
           <>
             <p className="text-[13px] text-muted">
               We sent a 6-digit code to <strong className="font-medium text-ink">{emailState.email}</strong>. It
@@ -95,7 +127,9 @@ export function AccountSection({ email }: { email: string }) {
             <form {...codeForm} className="mt-4">
               <input type="hidden" name="email" value={emailState.email ?? ""} />
               <CodeInput disabled={codePending} invalid={Boolean(codeState.error)} />
-              {codeState.error ? <p role="alert" className="mt-2 text-center text-sm text-danger">{codeState.error}</p> : null}
+              {codeState.error && codeState.email === emailState.email ? (
+                <p role="alert" className="mt-2 text-center text-sm text-danger">{codeState.error}</p>
+              ) : null}
               <div className="mt-4 flex items-center justify-center gap-3">
                 <button type="submit" disabled={codePending} className={submit}>
                   {codePending ? "Checking…" : "Confirm"}
@@ -107,8 +141,12 @@ export function AccountSection({ email }: { email: string }) {
               <button type="submit" disabled={resending} className="text-[13px] font-semibold text-accent underline disabled:opacity-60">
                 {resending ? "Sending…" : "Send a new code"}
               </button>
-              {resent.error ? <p role="alert" className="mt-2 text-sm text-danger">{resent.error}</p> : null}
-              {resent.sent ? <p role="status" className="mt-2 text-sm text-accent">A new code is on its way.</p> : null}
+              {resent.error && resent.email === emailState.email ? (
+                <p role="alert" className="mt-2 text-sm text-danger">{resent.error}</p>
+              ) : null}
+              {resent.sent && resent.email === emailState.email ? (
+                <p role="status" className="mt-2 text-sm text-accent">A new code is on its way.</p>
+              ) : null}
             </form>
           </>
         ) : (
