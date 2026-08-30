@@ -37,8 +37,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      {/* pt-4: a breath between the header's hairline and whatever the page starts with. */}
-      <div className="mx-auto w-full max-w-6xl pt-4">
+      {/* pt-6: a breath between the header's hairline and whatever the page starts with. */}
+      <div className="mx-auto w-full max-w-6xl pt-6">
         <BackButton />
         {children}
       </div>
