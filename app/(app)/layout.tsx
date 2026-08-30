@@ -3,9 +3,6 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { SettingsLink } from "@/components/ui/GearIcon";
-import { Suspense } from "react";
-import { BottomNav } from "@/components/ui/BottomNav";
-import { UnreadBadge } from "@/components/ui/UnreadBadge";
 import { signOutAction } from "@/app/actions/auth";
 
 /**
@@ -44,13 +41,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <BackButton />
         {children}
       </div>
-      <BottomNav
-        unreadSlot={
-          <Suspense fallback={null}>
-            <UnreadBadge />
-          </Suspense>
-        }
-      />
     </div>
   );
 }

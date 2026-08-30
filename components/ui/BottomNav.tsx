@@ -7,6 +7,9 @@ import { navTransitionTypes } from "@/lib/nav-direction";
 
 type IconName = "swipe" | "listings" | "chat" | "profile";
 
+/** The `(auth)` group — the one place the nav must not appear. */
+const AUTH_ROUTES = /^\/(login|signup|forgot-password|reset-password|verify)(\/|$)/;
+
 const ITEMS: readonly { href: string; label: string; icon: IconName }[] = [
   { href: "/swipe", label: "Swipe", icon: "swipe" },
   { href: "/browse", label: "Listings", icon: "listings" },
@@ -57,6 +60,11 @@ const ICONS: Record<IconName, JSX.Element> = {
 export function BottomNav({ unreadSlot }: { unreadSlot?: ReactNode }) {
   const pathname = usePathname();
   const inThread = /^\/chat\/[^/]+/.test(pathname);
+  // Mounted from the root layout, so it reaches the (auth) pages too. Those
+  // have no nav — and no `pb-28` to keep it off their content. `/reset-password`
+  // and `/verify` are the ones that matter: they run with a session, so the
+  // signed-in check in SiteNav lets them through.
+  if (AUTH_ROUTES.test(pathname)) return null;
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (

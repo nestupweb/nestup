@@ -6,7 +6,11 @@
 export const MAX_EDGE = 1600;
 export const JPEG_QUALITY = 0.84;
 
-async function decode(file: File): Promise<ImageBitmap | HTMLImageElement> {
+/** Apple's camera format. Safari decodes it; nothing else does. */
+export const isHeic = (file: File) => /^image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+
+/** Decode with what the browser has built in. */
+async function decodeNative(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
   if (typeof createImageBitmap === "function") {
     try {
       return await createImageBitmap(file);
@@ -24,6 +28,31 @@ async function decode(file: File): Promise<ImageBitmap | HTMLImageElement> {
     });
   } finally {
     URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * Last resort for an iPhone photo: decode the HEIC ourselves.
+ *
+ * Imported here rather than at the top of the file on purpose — it is ~1.3 MB
+ * of wasm, and it is only ever fetched when someone actually picks a HEIC on a
+ * browser that cannot read one. Safari decodes HEIC natively, so it never
+ * reaches this; sending from a phone never reaches it either. It exists for the
+ * desktop case, where the photo used to upload as an unviewable .heic and land
+ * in the thread as a download link.
+ */
+async function decodeHeic(file: File): Promise<Blob> {
+  const { default: heic2any } = await import("heic2any");
+  const out = await heic2any({ blob: file, toType: "image/jpeg", quality: JPEG_QUALITY });
+  return Array.isArray(out) ? out[0] : out; // a live photo / burst decodes to several frames
+}
+
+async function decode(file: File): Promise<ImageBitmap | HTMLImageElement> {
+  try {
+    return await decodeNative(file);
+  } catch (err) {
+    if (!isHeic(file)) throw err;
+    return decodeNative(await decodeHeic(file));
   }
 }
 

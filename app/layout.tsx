@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { HideLinkPreview } from "@/components/ui/HideLinkPreview";
+import { SiteNav } from "@/components/ui/SiteNav";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -41,6 +43,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} antialiased`}>
         <HideLinkPreview />
         <PageTransition>{children}</PageTransition>
+        {/* Outside the transition, and above both route groups, so crossing
+            between them never unmounts it. See SiteNav. */}
+        <Suspense fallback={null}>
+          <SiteNav />
+        </Suspense>
       </body>
     </html>
   );

@@ -3,8 +3,6 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Suspense } from "react";
-import { BottomNav } from "@/components/ui/BottomNav";
-import { UnreadBadge } from "@/components/ui/UnreadBadge";
 import { getAuthContext } from "@/lib/auth";
 
 /**
@@ -12,15 +10,18 @@ import { getAuthContext } from "@/lib/auth";
  *
  * `/browse` is the app's public front door, so it is the page most worth
  * prerendering — and awaiting `auth.getUser()` here meant none of it could be.
- * Only two spots actually differ by session: the Log in / Sign up pills, and
- * whether the bottom nav is there at all. Both now sit behind their own
- * `<Suspense>` and stream in, so the wordmark, the theme toggle and the page
- * itself ship in the static shell.
+ * Only one spot here differs by session — the Log in / Sign up pills — and it
+ * sits behind its own `<Suspense>`, so the wordmark, the theme toggle and the
+ * page itself ship in the static shell.
  *
- * The bottom padding that used to depend on `user` is now unconditional: it is
- * the height of the floating nav, and reserving it for signed-out visitors too
- * costs one empty strip at the foot of the page but keeps the shell static and
- * stops the layout jumping when the nav streams in.
+ * The bottom nav is no longer one of them. It used to stream in here behind a
+ * `fallback={null}`, which is what made it blink out for a `getUser()`
+ * round-trip every time someone came over from Swipe or Chat. It is mounted
+ * once from the root layout now — see `SiteNav`.
+ *
+ * The bottom padding stays unconditional: it is the height of the floating nav,
+ * and reserving it for signed-out visitors too costs one empty strip at the
+ * foot of the page but keeps the shell static and stops the layout jumping.
  */
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -42,9 +43,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <BackButton />
         {children}
       </div>
-      <Suspense fallback={null}>
-        <SignedInNav />
-      </Suspense>
     </div>
   );
 }
@@ -67,17 +65,3 @@ async function SignedOutActions() {
   );
 }
 
-/** The floating nav, which only means anything once there is an account behind it. */
-async function SignedInNav() {
-  const { user } = await getAuthContext();
-  if (!user) return null;
-  return (
-    <BottomNav
-      unreadSlot={
-        <Suspense fallback={null}>
-          <UnreadBadge />
-        </Suspense>
-      }
-    />
-  );
-}
