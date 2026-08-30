@@ -35,7 +35,12 @@ export default function BrowsePage({
       </p>
 
       <div className="mt-5 lg:mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
-        <div className="lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)]">
+        {/* The sidebar scrolls inside itself, so it has to fit the viewport from
+            wherever it starts — and it starts below the header and the title
+            block (~11rem), not at the top. Sizing it for the sticky offset alone
+            hung its footer, and with it "Apply filters", below the fold until
+            the page had been scrolled. */}
+        <div className="lg:sticky lg:top-6 lg:h-[calc(100dvh-11.5rem)]">
           <FilterBar />
         </div>
         <Suspense fallback={<ResultsSkeleton />}>
