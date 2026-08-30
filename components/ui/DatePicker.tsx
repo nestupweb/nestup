@@ -1,9 +1,21 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Keep this much clear of the viewport edges. */
+const GUTTER = 12;
+/** The floating bottom nav paints over the popover, so leave it this strip. */
+const NAV_SAFE = 88;
+/** Narrowest the month grid stays readable, and the design width (19rem). */
+const MIN_W = 224;
+const MAX_W = 304;
+
+// useLayoutEffect warns when rendered on the server; the popover only ever
+// measures itself on the client, so fall back to useEffect there.
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function toISODate(y: number, m: number, d: number): string {
   return `${y}-${pad(m)}-${pad(d)}`;
@@ -25,6 +37,32 @@ export function formatISODate(iso: string, opts: Intl.DateTimeFormatOptions = { 
   const p = parseISODate(iso);
   if (!p) return "";
   return new Date(p.y, p.m - 1, p.d).toLocaleDateString("en-GB", opts);
+}
+
+/** "01/10/2026" — an ISO date in the form people type it. */
+export function toDMY(iso: string): string {
+  const p = parseISODate(iso);
+  return p ? `${pad(p.d)}/${pad(p.m)}/${p.y}` : "";
+}
+
+/**
+ * Parse a typed dd/mm/yyyy into an ISO date, or null if it isn't a real date.
+ *
+ * Strict on purpose. `new Date(2011, 12, 45)` happily rolls forward into 2012,
+ * so the month is range-checked and the day is checked against that month's
+ * real length: 45/13/2011, 31/04/2026 and 29/02/2025 are all rejected, while
+ * 29/02/2024 (a leap year) is accepted. Single-digit day and month are fine.
+ */
+export function parseDMY(input: string): string | null {
+  const m = /^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*$/.exec(input);
+  if (!m) return null;
+  const d = Number(m[1]);
+  const mo = Number(m[2]);
+  const y = Number(m[3]);
+  if (mo < 1 || mo > 12 || y < 1900 || y > 2199) return null;
+  const daysInMonth = new Date(y, mo, 0).getDate(); // day 0 of the next month
+  if (d < 1 || d > daysInMonth) return null;
+  return toISODate(y, mo, d);
 }
 
 export interface DatePickerProps {
