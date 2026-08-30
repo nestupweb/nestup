@@ -3,6 +3,10 @@ import { signInAction } from "@/app/actions/auth";
 
 import { SUSPENDED_MESSAGE } from "@/lib/moderation";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 // A confirmation link is single-use, so the commonest way to land here is
 // opening one that already did its job — in which case the account is fine and
 // logging in is the answer, not signing up again.

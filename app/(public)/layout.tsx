@@ -2,13 +2,17 @@ import Link from "next/link";
 import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Suspense } from "react";
 import { BottomNav } from "@/components/ui/BottomNav";
+import { UnreadBadge } from "@/components/ui/UnreadBadge";
 import { getAuthContext } from "@/lib/auth";
-import { getUnreadCount } from "@/lib/chat";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const { user } = await getAuthContext();
-  const unread = user ? await getUnreadCount() : 0;
 
   return (
     <div className={`min-h-dvh ${user ? "pb-28" : ""}`}>
@@ -38,7 +42,15 @@ export default async function PublicLayout({ children }: { children: React.React
         <BackButton />
         {children}
       </div>
-      {user ? <BottomNav unread={unread} /> : null}
+      {user ? (
+        <BottomNav
+          unreadSlot={
+            <Suspense fallback={null}>
+              <UnreadBadge />
+            </Suspense>
+          }
+        />
+      ) : null}
     </div>
   );
 }

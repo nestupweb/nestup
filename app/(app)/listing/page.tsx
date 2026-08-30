@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { ListingForm } from "@/components/listings/ListingForm";
 import { getManagedListing, getTaggedMembers } from "@/lib/invites";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export default async function MyListingPage() {
   const { userId } = await requireProfile("/listing");
   const supabase = await createClient();

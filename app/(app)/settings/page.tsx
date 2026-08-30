@@ -8,6 +8,10 @@ import { getBlockedProfiles } from "@/lib/moderation";
 import { queryListingHeirs } from "@/lib/handover";
 import type { Listing, ProfileDetails } from "@/lib/types";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * Everything technical about the account, reached from the gear in the header:
  * the address you sign in with, what other members may see, the one e-mail we

@@ -3,16 +3,9 @@ import { getAuthContext, getOwnProfile } from "@/lib/auth";
 import { ContactRow } from "@/components/profile/ContactRow";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
-import { ProfileTabs, type ProfileTabItem } from "@/components/profile/ProfileTabs";
+import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { PROFILE_EDIT_ON_PENCIL_PAGE } from "@/lib/feature-flags";
-import { getCoPostedListings, getPendingInvites } from "@/lib/invites";
-import type { Listing, ProfileDetails } from "@/lib/types";
-
-type JoinedRow<K extends string> = { [P in K]: string } & { listings: Listing | null };
-
-function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
+import { getProfileTabData } from "@/lib/profile-data";
 
 export default async function ProfilePage({
   searchParams,
@@ -33,47 +26,9 @@ export default async function ProfilePage({
     );
   }
 
-  const { supabase, user } = await getAuthContext();
-  const [mineRes, likedRes, historyRes, detailsRes, invites, shared] = await Promise.all([
-    supabase
-      .from("listings")
-      .select("*")
-      .eq("owner_id", userId)
-      .is("removed_at", null)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("saved_listings")
-      .select("created_at, listings(*)")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("listing_views")
-      .select("viewed_at, listings(*)")
-      .eq("user_id", userId)
-      .order("viewed_at", { ascending: false })
-      .limit(30),
-    supabase.from("profile_details").select("*").eq("user_id", userId).maybeSingle(),
-    // Shared listings: what is waiting on an answer, and what they already
-    // said yes to (migration 0032).
-    getPendingInvites(supabase, userId),
-    getCoPostedListings(supabase, userId),
-  ]);
-  const details = (detailsRes.data as ProfileDetails | null) ?? null;
-
-  const mine: ProfileTabItem[] = ((mineRes.data as Listing[] | null) ?? []).map((listing) => ({ listing }));
-  // A room its owner deleted leaves Liked and History too — the chats about it
-  // survive, the room itself does not.
-  const liked: ProfileTabItem[] = ((likedRes.data as unknown as JoinedRow<"created_at">[] | null) ?? [])
-    .filter((r) => r.listings && !(r.listings as Listing).removed_at)
-    .map((r) => ({ listing: r.listings as Listing, caption: `Liked ${shortDate(r.created_at)}` }));
-  const likedIds = new Set(liked.map((i) => i.listing.id));
-  const history: ProfileTabItem[] = ((historyRes.data as unknown as JoinedRow<"viewed_at">[] | null) ?? [])
-    .filter((r) => r.listings && !(r.listings as Listing).removed_at)
-    .map((r) => ({
-      listing: r.listings as Listing,
-      caption: `Viewed ${shortDate(r.viewed_at)}`,
-      saved: likedIds.has((r.listings as Listing).id),
-    }));
+  const { user } = await getAuthContext();
+  // One cached, tagged read for the whole tab set — see `lib/profile-data.ts`.
+  const { mine, liked, history, details, invites, shared } = await getProfileTabData(userId);
 
   const initial = tab === "liked" || tab === "history" || tab === "listings" ? tab : "about";
 

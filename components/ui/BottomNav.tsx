@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 import { navTransitionTypes } from "@/lib/nav-direction";
 
 type IconName = "swipe" | "listings" | "chat" | "profile";
@@ -48,8 +48,13 @@ const ICONS: Record<IconName, JSX.Element> = {
  * page slides the matching way; the active highlight is a named element so
  * the browser glides it between tabs. The nav itself is anchored in place
  * during transitions (see `bottom-nav` in globals.css).
+ *
+ * `unreadSlot` is a node, not a number: the count comes from an extra RPC, and
+ * awaiting it in the layout held the entire signed-in shell behind it. The
+ * layout now passes `<Suspense><UnreadBadge /></Suspense>`, so the nav paints
+ * immediately and the pill drops in when the count lands.
  */
-export function BottomNav({ unread = 0 }: { unread?: number }) {
+export function BottomNav({ unreadSlot }: { unreadSlot?: ReactNode }) {
   const pathname = usePathname();
   const inThread = /^\/chat\/[^/]+/.test(pathname);
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -96,14 +101,7 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
                 {ICONS[item.icon]}
               </svg>
               {item.label}
-              {item.href === "/chat" && unread > 0 ? (
-                <span
-                  aria-label={`${unread} unread`}
-                  className="absolute right-2.5 top-1 min-w-[1.15rem] rounded-full bg-accent px-1 text-center text-[11px] font-bold leading-[1.15rem] tracking-normal text-accent-contrast"
-                >
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              ) : null}
+              {item.href === "/chat" ? unreadSlot : null}
             </Link>
           );
         })}

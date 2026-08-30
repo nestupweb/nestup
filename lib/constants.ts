@@ -181,13 +181,15 @@ export function safeRoomLabel(key: SafeRoom): string {
  *
  * Not a straight copy of `SAFE_ROOM_OPTIONS`: listing a room with no mamad at
  * all isn't something anyone searches for, so "none" has no seeker-side twin.
- * "In the building" replaced "In the apartment" on 2026-08-29 at the user's
- * request — Browse still offers both places, this asks only how far someone is
- * willing to walk to it.
+ * The two choices are the two places the mamad can be — this asks only how far
+ * someone is willing to walk to it. The "has" key is what 0039 left behind from
+ * when that option read "Has one"; it is stored, never shown, and the label
+ * went back to "In the apartment" on 2026-08-30 at the user's request, so
+ * renaming the key would cost a migration for nothing.
  */
 export const PREF_SAFE_ROOMS = [
   { key: "any", label: "No preference" },
-  { key: "has", label: "Has one" },
+  { key: "has", label: "In the apartment" },
   { key: "building", label: "In the building" },
 ] as const satisfies readonly { key: PrefSafeRoom; label: string }[];
 

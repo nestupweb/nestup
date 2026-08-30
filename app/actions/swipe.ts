@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { updateTag } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { deckTag, profileTag, savedTag } from "@/lib/cache-tags";
 import { findOrCreateConversation, markConversationRead } from "@/lib/chat";
 import { messageSchema } from "@/lib/validation/message";
 import type { SwipeDirection } from "@/lib/types";
@@ -27,9 +29,15 @@ export async function recordSwipeAction(
     await supabase
       .from("saved_listings")
       .upsert({ user_id: user.id, listing_id: listingId }, { onConflict: "user_id,listing_id" });
-    // No revalidatePath here: /profile is rendered on demand anyway, and a
-    // revalidation would refresh /swipe's props mid-deck.
+    updateTag(savedTag(user.id));
+    updateTag(profileTag(user.id));
   }
+  // The deck is cached now, and a swiped room must not come back on the next
+  // visit. Dropping the tag is safe mid-deck in a way the old `revalidatePath`
+  // would not have been: `SwipeDeck` holds the entries it was given in client
+  // state and advances through them locally, so this only affects what the
+  // *next* render builds — never the cards under the member's thumb.
+  updateTag(deckTag(user.id));
   return { ok: true };
 }
 

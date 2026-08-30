@@ -9,6 +9,10 @@ import { hasReported } from "@/lib/moderation";
 import type { PublicDetails } from "@/lib/people";
 import type { Listing, Profile } from "@/lib/types";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**

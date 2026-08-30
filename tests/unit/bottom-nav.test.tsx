@@ -38,12 +38,26 @@ test("nested routes keep their tab active", () => {
   expect(screen.getByRole("link", { name: "Listings" })).toHaveAttribute("aria-current", "page");
 });
 
-test("shows the unread badge on Chat only when there is something unread", () => {
-  const { unmount } = render(<BottomNav unread={0} />);
-  expect(screen.queryByLabelText(/unread/)).toBeNull();
-  unmount();
-  render(<BottomNav unread={3} />);
+const badge = (n: number) => <span aria-label={`${n} unread`}>{n}</span>;
+
+test("renders the unread slot inside the Chat link and nowhere else", () => {
+  render(<BottomNav unreadSlot={badge(3)} />);
+  const chat = screen.getByRole("link", { name: /Chat/ });
   expect(screen.getByLabelText("3 unread")).toHaveTextContent("3");
+  expect(chat).toContainElement(screen.getByLabelText("3 unread"));
+});
+
+/**
+ * The count comes from an extra RPC the layout no longer awaits — it passes a
+ * suspended slot instead, so the nav has to be complete and usable while that
+ * slot is still empty. This is the regression guard for that: no slot, still
+ * four working links.
+ */
+test("the nav is complete while the unread slot is still pending", () => {
+  render(<BottomNav />);
+  expect(screen.getAllByRole("link")).toHaveLength(4);
+  expect(screen.queryByLabelText(/unread/)).toBeNull();
+  expect(screen.getByRole("link", { name: /Chat/ })).toHaveAttribute("href", "/chat");
 });
 
 test("hides itself on small screens inside an open chat thread", () => {

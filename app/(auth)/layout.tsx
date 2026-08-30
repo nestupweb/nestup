@@ -2,6 +2,10 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /** Login / signup / password screens: the wordmark and the light–dark switch up top, nothing else. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (

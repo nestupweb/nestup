@@ -1,4 +1,7 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { LISTINGS_TAG, savedTag } from "@/lib/cache-tags";
 import { HOUSEHOLD_GENDER_ANY, type ListingFilters } from "@/lib/validation/filters";
 import type { Listing } from "@/lib/types";
 
@@ -166,11 +169,28 @@ function toPins(data: unknown): ListingPin[] {
     }));
 }
 
-/** Public browse query — RLS exposes only active listings to anon. */
+/**
+ * Public browse query — RLS exposes only active listings to anon.
+ *
+ * Cached in the SHARED store, not the per-browser one: the result depends only
+ * on `filters`, never on who is asking, so one fetch can serve every visitor
+ * and the common filter combinations can be prerendered. That is only true
+ * because it goes through the cookie-free `createPublicClient()` — swapping in
+ * the session client would make the output member-specific and this cache a
+ * cross-user leak. The hearts on the cards are per-member and are fetched
+ * separately (see `getSavedListingIds`).
+ *
+ * Invalidated by `LISTINGS_TAG` whenever a room is published, edited, paused
+ * or removed.
+ */
 export async function queryListings(
   filters: ListingFilters
 ): Promise<{ listings: Listing[]; total: number }> {
-  const supabase = await createClient();
+  "use cache";
+  cacheTag(LISTINGS_TAG);
+  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
+
+  const supabase = createPublicClient();
   const query = supabase
     .from("listings")
     .select("*", { count: "exact" })
@@ -179,4 +199,19 @@ export async function queryListings(
   const { data, count, error } = await query;
   if (error) return { listings: [], total: 0 };
   return { listings: (data as Listing[]) ?? [], total: count ?? 0 };
+}
+
+/**
+ * The member's saved ("liked") room ids, for the hearts on the Listings cards.
+ * Private cache: it is one member's data and must never be shared, so it lives
+ * in their browser's memory only and is keyed by their id.
+ */
+export async function getSavedListingIds(userId: string): Promise<Set<string>> {
+  "use cache: private";
+  cacheTag(savedTag(userId));
+  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
+
+  const supabase = await createClient();
+  const { data } = await supabase.from("saved_listings").select("listing_id").eq("user_id", userId);
+  return new Set(((data as { listing_id: string }[] | null) ?? []).map((r) => r.listing_id));
 }

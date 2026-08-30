@@ -1,4 +1,8 @@
 // Desktop-only placeholder for the right pane; on phones the layout shows the list instead.
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export default function ChatIndexPage() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">

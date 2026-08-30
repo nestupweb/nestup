@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { profileTag, savedTag } from "@/lib/cache-tags";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,6 +22,9 @@ export async function setSavedAction(listingId: string, saved: boolean): Promise
         .eq("listing_id", listingId);
 
   if (error) return { ok: false };
-  revalidatePath("/profile");
+  // Only this member's own two caches: the hearts on Listings and their Liked
+  // tab. The public room list is unchanged — a heart is not a change to the room.
+  updateTag(savedTag(user.id));
+  updateTag(profileTag(user.id));
   return { ok: true };
 }

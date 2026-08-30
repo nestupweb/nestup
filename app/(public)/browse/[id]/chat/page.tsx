@@ -3,6 +3,10 @@ import { getAuthContext, getOwnProfile } from "@/lib/auth";
 import { findOrCreateConversation } from "@/lib/chat";
 import { EmptyState } from "@/components/ui/EmptyState";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * "Message the owner" entry point. Resolves (or starts) the seeker's thread for
  * this listing and hands off to the inbox at /chat/[conversationId].

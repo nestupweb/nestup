@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { getAuthContext, getOwnProfile } from "@/lib/auth";
+import { getOwnProfile } from "@/lib/auth";
 import { isDailyLifeComplete } from "@/lib/daily-life";
-import { getPersonalisedDeck } from "@/lib/swipe";
+import { getCachedDeck } from "@/lib/swipe-deck";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 
 /** Where an unfinished Daily life table sends a member, and why. */
@@ -47,18 +47,27 @@ export default async function SwipePage() {
     );
   }
 
-  const { supabase } = await getAuthContext();
-  const [deck, { data: details }] = await Promise.all([
-    getPersonalisedDeck(supabase, profile),
-    supabase.from("profile_details").select("intro_template").eq("user_id", profile.user_id).maybeSingle(),
-  ]);
+  // Cached and tagged per member — see `getCachedDeck`.
+  const deck = await getCachedDeck(profile.user_id);
+  if (!deck) {
+    return (
+      <main className="mx-auto w-full max-w-2xl pb-4 sm:px-6 sm:pt-5">
+        <SwipeGate
+          heading="Finish your profile to start swiping."
+          body="Rooms are matched against your profile, and yours isn’t set up yet."
+          ctaHref="/profile/edit"
+          ctaLabel="Complete profile"
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-2xl pb-4 sm:px-6 sm:pt-5">
       <SwipeDeck
         entries={deck.entries}
         seeker={profile}
-        introTemplate={details?.intro_template ?? ""}
+        introTemplate={deck.introTemplate}
         interest={deck.interest}
         events={deck.events}
       />

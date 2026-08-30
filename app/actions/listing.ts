@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
@@ -16,6 +16,7 @@ import { inviteRoommates } from "@/lib/invites";
 import { auditPhotos, isPhotoCheckEnabled, photoCheckSecret } from "@/lib/photo-check";
 import { geocodeAddress, type GeocodeOutcome } from "@/lib/geocode";
 import { shouldGeocode } from "@/lib/geo";
+import { LISTINGS_TAG, deckTag, listingTag, profileTag } from "@/lib/cache-tags";
 import type { CoordsSource, PhotoRoom } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -319,10 +320,12 @@ export async function saveListingAction(
   // its own failures — mail must never turn a successful publish into an error.
   if (publishedId && is_active) after(() => notifyNewListing(publishedId));
 
-  revalidatePath("/listing");
-  revalidatePath("/browse");
-  revalidatePath("/profile");
-  revalidatePath("/swipe");
+  // Only what a saved room actually changes: the public list, this room, and
+  // the owner's profile and deck. Not Chat, which this cannot affect.
+  updateTag(LISTINGS_TAG);
+  if (savedId) updateTag(listingTag(savedId));
+  updateTag(profileTag(user.id));
+  updateTag(deckTag(user.id));
   // Saving is silent: no confirmation line — the form hands the member back to
   // their profile, on the My-listing tab, where the saved room is on screen.
   if (listingId) redirect("/profile?tab=listings");
@@ -359,7 +362,7 @@ export async function deleteListingAction(
   const listingId = String(formData.get("listing_id") ?? "").trim();
   if (!listingId) return { error: "Could not tell which listing to delete." };
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   // The notice names the room, so read the title before it goes.
   const { data: row } = await supabase
     .from("listings")
@@ -376,10 +379,13 @@ export async function deleteListingAction(
   if (error) return { error: "Could not delete the listing. Please try again." };
   if (data === -1) return { error: "That listing is already gone." };
 
-  revalidatePath("/listing");
-  revalidatePath("/browse");
-  revalidatePath("/profile");
-  revalidatePath("/swipe");
-  revalidatePath("/chat");
+  // Tag-scoped: the room list, this room, and the owner's own profile and deck.
+  // Chat is deliberately untouched — deleting a room does not change a single
+  // message, and rebuilding the inbox here is what used to make an unrelated
+  // tab reload.
+  updateTag(LISTINGS_TAG);
+  updateTag(listingTag(listingId));
+  updateTag(profileTag(user.id));
+  updateTag(deckTag(user.id));
   redirect("/profile?tab=listings");
 }

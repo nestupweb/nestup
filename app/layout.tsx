@@ -2,6 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { HideLinkPreview } from "@/components/ui/HideLinkPreview";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 // One typeface everywhere: Inter for headings, body and UI alike.
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -34,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.variable} antialiased`}>
+        <HideLinkPreview />
         <PageTransition>{children}</PageTransition>
       </body>
     </html>

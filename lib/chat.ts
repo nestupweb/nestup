@@ -29,11 +29,21 @@ export function visibleConversations(rows: ConversationSummary[]): ConversationS
   return rows.filter((c) => !c.cleared_at || c.last_message_at);
 }
 
+/**
+ * The badge on the Chat tab. Never rejects: the layouts hand this promise
+ * straight to `BottomNav` without awaiting it (so the shell paints first), and
+ * an unawaited rejection would take down the whole page for a number that is
+ * decoration. A failure just means no badge.
+ */
 export async function getUnreadCount(): Promise<number> {
-  const { supabase, user } = await getAuthContext();
-  if (!user) return 0;
-  const { data } = await supabase.rpc("my_unread_count");
-  return Number(data ?? 0);
+  try {
+    const { supabase, user } = await getAuthContext();
+    if (!user) return 0;
+    const { data } = await supabase.rpc("my_unread_count");
+    return Number(data ?? 0);
+  } catch {
+    return 0;
+  }
 }
 
 /**

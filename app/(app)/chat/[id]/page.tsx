@@ -1,9 +1,13 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getConversations, markConversationRead } from "@/lib/chat";
+import { getConversations } from "@/lib/chat";
 import { isGoogleConfigured } from "@/lib/google";
 import { ChatThread } from "@/components/chat/ChatThread";
 import type { Message, Viewing } from "@/lib/types";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** "Nothing was ever deleted here" — matches `coalesce(cleared_at, 'epoch')` in SQL. */
@@ -36,7 +40,11 @@ export default async function ChatThreadPage({
     supabase.from("viewings").select("*").eq("conversation_id", id).gt("created_at", since).order("created_at", { ascending: true }),
     supabase.from("google_tokens").select("email").eq("user_id", user.id).maybeSingle(),
   ]);
-  await markConversationRead(supabase, id);
+  // Marking the thread read is deliberately NOT done here. It is a write, and a
+  // render that writes cannot be cached: the write would be skipped on a cache
+  // hit (the badge would never clear) or repeated on every replay. `ChatThread`
+  // calls `markReadAction` on mount instead, which stamps the read and
+  // invalidates the inbox tag.
 
   // Photos live in a private bucket; hand the client short-lived signed URLs.
   const messages = (messageRows as Message[] | null) ?? [];

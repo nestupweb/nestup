@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { LISTINGS_TAG, deckTag, listingTag, profileTag } from "@/lib/cache-tags";
 import { checkTakenMessage, takenMessageError } from "@/lib/listing-taken";
 
 export type TakenState = { error?: string; told?: number };
@@ -9,13 +10,16 @@ export type TakenState = { error?: string; told?: number };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const GENERIC = "Could not close the listing. Please try again.";
 
-function refreshEverywhere(listingId: string): void {
-  revalidatePath("/profile");
-  revalidatePath("/settings");
-  revalidatePath("/browse");
-  revalidatePath(`/browse/${listingId}`);
-  revalidatePath("/swipe");
-  revalidatePath("/chat");
+/**
+ * Pausing or closing a room changes where it appears, so the public list, the
+ * room itself, and the owner's profile and deck all go — and nothing else.
+ * This used to sweep `/chat` and `/settings` too, which pausing cannot affect.
+ */
+function refreshListing(listingId: string, userId: string): void {
+  updateTag(LISTINGS_TAG);
+  updateTag(listingTag(listingId));
+  updateTag(profileTag(userId));
+  updateTag(deckTag(userId));
 }
 
 /**
@@ -57,7 +61,7 @@ export async function markListingTakenAction(_prev: TakenState, formData: FormDa
   const problem = checkTakenMessage(message);
   if (problem) return { error: takenMessageError(problem) };
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const { data, error } = await supabase.rpc("mark_listing_taken", {
     p_listing: listingId,
     p_message: message.trim(),
@@ -69,14 +73,14 @@ export async function markListingTakenAction(_prev: TakenState, formData: FormDa
     return { error: "This room is already marked as taken." };
   }
 
-  refreshEverywhere(listingId);
+  refreshListing(listingId, user.id);
   return { told: data };
 }
 
 /** A deal that fell through: the room goes back up and stays out of the notice path. */
 export async function reopenListingAction(listingId: string): Promise<TakenState> {
   if (!UUID_RE.test(String(listingId ?? ""))) return { error: GENERIC };
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
 
   // No owner_id filter: "the household updates their listing" (0033) decides,
   // and a row it refuses returns zero rows rather than an error — so ask which
@@ -89,6 +93,6 @@ export async function reopenListingAction(listingId: string): Promise<TakenState
   if (error) return { error: "Could not re-open the listing. Please try again." };
   if (!data || data.length === 0) return { error: "You can no longer manage this listing." };
 
-  refreshEverywhere(listingId);
+  refreshListing(listingId, user.id);
   return {};
 }

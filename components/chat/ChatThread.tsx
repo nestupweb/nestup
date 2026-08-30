@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { sendMessageAction } from "@/app/actions/chat";
+import { markReadAction, sendMessageAction } from "@/app/actions/chat";
 import { MessageComposer, type SendPayload } from "@/components/chat/MessageComposer";
 import { ScheduleViewing, type GoogleState } from "@/components/chat/ScheduleViewing";
 import { ViewingCard } from "@/components/chat/ViewingCard";
@@ -183,9 +183,12 @@ export function ChatThread({
     if (el) el.scrollTop = el.scrollHeight;
   }, [timeline.length, mounted]);
 
-  // The page marked this thread read on the server; refresh so the inbox badge agrees.
+  // Opening a thread is what marks it read. This used to happen while the page
+  // rendered, which a cached render cannot do — a write must not be skipped on a
+  // cache hit or replayed on every miss. The action stamps the read and
+  // revalidates the inbox tag, so the badge and the list update themselves.
   useEffect(() => {
-    if (conversation.unread_count > 0) router.refresh();
+    if (conversation.unread_count > 0) void markReadAction(conversation.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

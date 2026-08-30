@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAuthContext } from "@/lib/auth";
 import { listingFiltersSchema } from "@/lib/validation/filters";
-import { queryListings } from "@/lib/listings";
+import { getSavedListingIds, queryListings } from "@/lib/listings";
 import { FilterBar } from "@/components/listings/FilterBar";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SortMenu } from "@/components/listings/SortMenu";
@@ -14,22 +15,73 @@ const FILTER_KEYS = [
   "parking", "elevator", "furnished",
 ] as const;
 
-export default async function BrowsePage({
+/**
+ * The page itself never awaits: the heading, the filter sidebar and the results
+ * skeleton are all static, so they ship in the prerendered shell and paint the
+ * moment the tab is tapped. Only `<Results>` depends on the URL's filters, and
+ * it streams in behind the boundary — or arrives already resolved, because
+ * `queryListings` is a shared `use cache` that a prefetch can fill in.
+ */
+export default function BrowsePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string>>;
 }) {
+  return (
+    <main className="px-4 pb-16 sm:px-6">
+      <h1 className="text-3xl font-bold">Find a room</h1>
+      <p className="mt-1 text-sm text-muted">
+        Rooms in shared apartments — browse openly, match when you&rsquo;re ready.
+      </p>
+
+      <div className="mt-5 lg:mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
+        <div className="lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)]">
+          <FilterBar />
+        </div>
+        <Suspense fallback={<ResultsSkeleton />}>
+          <Results searchParams={searchParams} />
+        </Suspense>
+      </div>
+    </main>
+  );
+}
+
+/** Mirrors the results column so the swap in is a fill, not a jump. */
+function ResultsSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading rooms">
+      <div className="mt-4 h-4 w-36 animate-pulse rounded bg-hairline lg:mt-0" />
+      <div className="mt-4 flex flex-col gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex min-h-36 overflow-hidden rounded-2xl border border-hairline bg-surface sm:min-h-44 md:min-h-52"
+          >
+            <div className="w-32 shrink-0 animate-pulse bg-hairline sm:w-56 md:w-72 lg:w-80" />
+            <div className="flex-1 p-4 sm:p-5">
+              <div className="h-7 w-28 animate-pulse rounded bg-hairline lg:h-5 lg:w-3/5" />
+              <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-hairline" />
+              <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-hairline" />
+              <div className="mt-4 h-3 w-2/3 animate-pulse rounded bg-hairline" />
+            </div>
+            <div className="hidden w-44 shrink-0 border-l border-hairline p-5 lg:block">
+              <div className="ml-auto h-7 w-24 animate-pulse rounded bg-hairline" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function Results({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const filters = listingFiltersSchema.parse(await searchParams);
-  const [{ listings, total }, { supabase, user }] = await Promise.all([
+  const [{ listings, total }, { user }] = await Promise.all([
     queryListings(filters),
     getAuthContext(),
   ]);
   // Signed-in hearts come from the account (Profile › Liked); visitors use localStorage.
-  const savedIds = new Set<string>();
-  if (user) {
-    const { data } = await supabase.from("saved_listings").select("listing_id").eq("user_id", user.id);
-    for (const row of (data as { listing_id: string }[] | null) ?? []) savedIds.add(row.listing_id);
-  }
+  const savedIds = user ? await getSavedListingIds(user.id) : new Set<string>();
   const filtersActive = FILTER_KEYS.some((k) => filters[k] !== undefined);
   const lastPage = Math.max(1, Math.ceil(total / filters.page_size));
 
@@ -47,17 +99,6 @@ export default async function BrowsePage({
   };
 
   return (
-    <main className="px-4 pb-16 sm:px-6">
-      <h1 className="text-3xl font-bold">Find a room</h1>
-      <p className="mt-1 text-sm text-muted">
-        Rooms in shared apartments — browse openly, match when you&rsquo;re ready.
-      </p>
-
-      <div className="mt-5 lg:mt-6 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-8">
-        <div className="lg:sticky lg:top-6 lg:h-[calc(100dvh-3rem)]">
-          <FilterBar />
-        </div>
-
         <div>
           <div className="mt-4 flex items-center justify-between gap-3 text-sm lg:mt-0">
             <p className="min-w-0 text-muted">
@@ -118,7 +159,5 @@ export default async function BrowsePage({
             </div>
           ) : null}
         </div>
-      </div>
-    </main>
   );
 }

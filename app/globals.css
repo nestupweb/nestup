@@ -267,3 +267,7 @@ input[type="radio"] {
 @media (prefers-reduced-motion: reduce) {
   .map-open { animation-duration: 1ms; }
 }
+
+/* A link parked by <HideLinkPreview> has no href for as long as the pointer is
+   on it — which is exactly when the UA's own `cursor: pointer` would go missing. */
+a[data-parked-href] { cursor: pointer; }
