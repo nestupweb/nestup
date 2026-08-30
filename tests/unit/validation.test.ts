@@ -106,6 +106,39 @@ describe("messageSchema", () => {
     expect(messageSchema.safeParse({ content: "", image_path: "11111111-1111-4111-8111-111111111111/x.jpg" }).success).toBe(false);
     expect(messageSchema.safeParse({ content: "x".repeat(2001) }).success).toBe(false);
   });
+
+  // The extension allow-list here used to be jpg|png|webp, which refused the
+  // message *after* the browser had already uploaded the file — an orphan in
+  // the bucket and a "failed to send" bubble for every clip.
+  test("takes a video from the video/ folder, in any container", () => {
+    const conv = "11111111-1111-4111-8111-111111111111";
+    const file = "22222222-2222-4222-8222-222222222222";
+    for (const ext of ["mp4", "mov", "webm", "mkv", "3gp", "m4v"]) {
+      const r = messageSchema.safeParse({ content: "", image_path: `${conv}/video/${file}.${ext}` });
+      expect(r.success, `video/${file}.${ext}`).toBe(true);
+    }
+    // ...and a photo in a format the canvas could not re-encode, sent as-is.
+    for (const ext of ["heic", "gif", "avif"]) {
+      expect(messageSchema.safeParse({ content: "", image_path: `${conv}/${file}.${ext}` }).success).toBe(true);
+    }
+  });
+
+  test("still pins the path to one conversation folder and a uuid name", () => {
+    const conv = "11111111-1111-4111-8111-111111111111";
+    const file = "22222222-2222-4222-8222-222222222222";
+    for (const bad of [
+      `${conv}/video/../../etc/passwd`,
+      `${conv}/video/${file}.mp4/../../x`,
+      `${conv}/audio/${file}.mp3`, // only video/ is a permitted subfolder
+      `${conv}/video/video/${file}.mp4`,
+      `${conv}/video/notauuid.mp4`,
+      `${conv}/${file}.verylongext`,
+      `${conv}/${file}`, // no extension at all
+      `/${conv}/${file}.jpg`,
+    ]) {
+      expect(messageSchema.safeParse({ content: "", image_path: bad }).success, bad).toBe(false);
+    }
+  });
 });
 
 describe("listingFiltersSchema", () => {
