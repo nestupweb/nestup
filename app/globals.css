@@ -96,6 +96,33 @@ input[type="radio"] {
   accent-color: var(--accent);
 }
 
+/* ===== Pointer affordance =====
+   Tailwind v4's Preflight dropped v3's `button { cursor: pointer }`, so every
+   <button> in the app was falling back to the UA's arrow — Log out, the swipe
+   controls, the menus, all of them. The hand comes back here once, for anything
+   that can actually be pressed, rather than a `cursor-pointer` class repeated at
+   every call site (which is how the handful that already worked got theirs).
+   Disabled controls keep the arrow on purpose: they are not pressable. Links get
+   the hand from the UA already; a parked one is handled at the end of this file. */
+button:not(:disabled):not([aria-disabled="true"]),
+summary,
+label[for],
+label:has(input:is([type="checkbox"], [type="radio"], [type="file"]):not(:disabled)),
+select:not(:disabled),
+input:is([type="button"], [type="submit"], [type="reset"], [type="checkbox"], [type="radio"], [type="file"], [type="color"]):not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="menuitem"],
+[role="menuitemradio"],
+[role="menuitemcheckbox"],
+[role="checkbox"],
+[role="radio"],
+[role="link"] {
+  cursor: pointer;
+}
+
 /* ===== Swipe deck motion ===== */
 @keyframes swipe-in {
   from { opacity: 0; transform: translateY(18px) scale(0.985); }
