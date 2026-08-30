@@ -13,6 +13,15 @@ const nextConfig: NextConfig = {
    * other route carries `instant = false` until it gets the same treatment.
    */
   cacheComponents: true,
+  /**
+   * Prefetch each route's App Shell as its links come into view, rather than
+   * all-or-nothing. This is the half that makes the caches above pay off on a
+   * click: a `use cache: private` result can ride along in the prefetch and be
+   * in the browser before the tab is tapped, instead of being fetched after it.
+   * One shell per route is shared by every link pointing at it, so the bottom
+   * nav costs four prefetches for the whole app rather than one per link.
+   */
+  partialPrefetching: true,
   experimental: {
     serverActions: {
       // Listing form accepts up to 5 photos × 5MB (+ multipart overhead);

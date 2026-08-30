@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAuthContext, getOwnProfile } from "@/lib/auth";
 import { ContactRow } from "@/components/profile/ContactRow";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
@@ -7,11 +8,58 @@ import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { PROFILE_EDIT_ON_PENCIL_PAGE } from "@/lib/feature-flags";
 import { getProfileTabData } from "@/lib/profile-data";
 
-export default async function ProfilePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ onboarding?: string; next?: string; tab?: string; published?: string }>;
-}) {
+type ProfileSearch = Promise<{ onboarding?: string; next?: string; tab?: string; published?: string }>;
+
+/**
+ * The heading and the Edit Profile button are the same for everyone, so they
+ * ship in the static shell and paint on the tap. Everything below depends on
+ * the session — the member's own name, photo and tabs — and streams in behind
+ * the skeleton. Before this, the page awaited `getOwnProfile()` (three
+ * uncached round-trips: getUser, suspensions, profiles) before emitting a
+ * single byte, which is why Profile stayed the slowest tab even once its data
+ * was cached.
+ */
+export default function ProfilePage({ searchParams }: { searchParams: ProfileSearch }) {
+  return (
+    <Suspense fallback={<ProfileSkeleton />}>
+      <ProfileBody searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+const pulse = "animate-pulse rounded bg-hairline";
+
+/** Mirrors the real page's shape so the swap is a fill, not a jump. */
+function ProfileSkeleton() {
+  return (
+    <main className="px-4 pb-8 pt-2 sm:px-6" aria-busy="true" aria-label="Loading profile">
+      <div className="flex items-start justify-between gap-4">
+        <div className={`h-10 w-36 ${pulse}`} />
+        <div className="h-10 w-32 animate-pulse rounded-full border border-hairline" />
+      </div>
+      <div className="mt-5 flex items-center gap-4">
+        <div className="h-28 w-28 shrink-0 animate-pulse rounded-full bg-hairline" />
+        <div className="min-w-0 flex-1">
+          <div className={`h-6 w-44 ${pulse}`} />
+          <div className={`mt-2 h-4 w-28 ${pulse}`} />
+          <div className={`mt-3 h-4 w-3/4 ${pulse}`} />
+        </div>
+      </div>
+      <div className="mt-8 flex gap-6 border-b border-hairline pb-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className={`h-3 w-16 ${pulse}`} />
+        ))}
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-7 w-20 animate-pulse rounded-full border border-hairline" />
+        ))}
+      </div>
+    </main>
+  );
+}
+
+async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
   const { profile, userId } = await getOwnProfile();
   const { onboarding, next, tab, published } = await searchParams;
 
