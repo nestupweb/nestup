@@ -35,20 +35,26 @@ export interface SendPayload {
  * The "Write a message" box. Sending hands the payload to the thread (which
  * shows it immediately) and clears the field without remounting it, so the
  * cursor stays put and the user can keep typing.
+ *
+ * `initialText` seeds the field once, on mount: it is a starting point, never a
+ * value the box is held to, so every keystroke after that is the member's.
  */
 export function MessageComposer({
   conversationId,
   onSend,
   onSchedule,
   scheduleBlocked = false,
+  initialText = "",
 }: {
   conversationId: string;
   onSend: (payload: SendPayload) => void;
   onSchedule?: () => void;
   /** A viewing is already open in this chat — the button explains instead of opening the sheet. */
   scheduleBlocked?: boolean;
+  /** Pre-filled draft, editable — used for the default hello when reaching out about a room. */
+  initialText?: string;
 }) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [image, setImage] = useState<Attachment | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);

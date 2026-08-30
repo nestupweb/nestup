@@ -127,7 +127,7 @@ export function AboutFields({
         </label>
       </Section>
 
-      <Section title="Swipe">
+      <Section title="Default Message">
         <label className={`${label} sm:col-span-2`}>Default hello message
           <textarea
             name="intro_template"
@@ -138,7 +138,8 @@ export function AboutFields({
             className={`${input} text-[16px] leading-6`}
           />
           <span className="mt-1.5 block text-xs font-normal normal-case tracking-normal text-muted">
-            Offered every time you like a room — you can still edit it before sending. Leave empty for the standard text.
+            Fills the message box when you reach out about a listing and when you like a room in
+            Swipe — always editable before you send. Leave empty for the standard text.
           </span>
         </label>
       </Section>

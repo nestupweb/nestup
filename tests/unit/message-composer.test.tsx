@@ -98,3 +98,29 @@ test("a HEIC preview is swapped for the re-encoded JPEG, so the thumbnail is nev
   expect(revoked).toEqual(expect.arrayContaining([created[0], created[1]]));
   spy.mockRestore();
 });
+
+test("a default hello arrives in the box, editable, and is gone once sent", () => {
+  const onSend = vi.fn();
+  render(
+    <MessageComposer
+      conversationId={CONVERSATION}
+      onSend={onSend}
+      initialText="Hi, I liked the room — can we schedule a viewing?"
+    />
+  );
+  const box = screen.getByRole("textbox", { name: "Message" }) as HTMLTextAreaElement;
+  expect(box.value).toBe("Hi, I liked the room — can we schedule a viewing?");
+
+  // It is a starting point, not a fixed value: the member owns every keystroke.
+  fireEvent.change(box, { target: { value: "Hi! Is the room still free next month?" } });
+  expect(box.value).toBe("Hi! Is the room still free next month?");
+
+  fireEvent.keyDown(box, { key: "Enter" });
+  expect(onSend).toHaveBeenCalledWith({
+    content: "Hi! Is the room still free next month?",
+    imagePath: null,
+    imagePreview: null,
+  });
+  // Sending clears it — the template is not re-offered inside the same thread.
+  expect(box.value).toBe("");
+});

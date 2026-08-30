@@ -74,6 +74,7 @@ export function ChatThread({
   viewings,
   google,
   calendarNotice,
+  initialDraft = "",
 }: {
   meId: string;
   conversation: ConversationSummary;
@@ -81,6 +82,8 @@ export function ChatThread({
   viewings: Viewing[];
   google: GoogleState;
   calendarNotice?: string;
+  /** Text the composer opens with — the seeker's default hello, coming in from a listing. */
+  initialDraft?: string;
 }) {
   const router = useRouter();
   const mounted = useMounted();
@@ -328,7 +331,16 @@ export function ChatThread({
       </div>
 
       <div className="border-t border-hairline bg-paper px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:px-5">
-        <MessageComposer conversationId={conversation.id} onSend={send} onSchedule={requestViewing} scheduleBlocked={Boolean(blocking)} />
+        {/* Keyed by thread: switching chats gives a fresh box (and re-applies
+            the intro draft) rather than carrying the last one's half-typed text. */}
+        <MessageComposer
+          key={conversation.id}
+          conversationId={conversation.id}
+          initialText={initialDraft}
+          onSend={send}
+          onSchedule={requestViewing}
+          scheduleBlocked={Boolean(blocking)}
+        />
       </div>
 
       {sheetOpen ? <ScheduleViewing conversation={conversation} meId={meId} google={google} onClose={closeSheet} /> : null}

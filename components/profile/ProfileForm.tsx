@@ -100,7 +100,7 @@ export function ProfileForm({
   });
   const wake = nearestHour(d?.wake_time ?? "");
   const bed = nearestHour(d?.bed_time ?? "");
-  // Sections are numbered in reading order; the Contact and Swipe sections exist on the pencil page only.
+  // Sections are numbered in reading order; the Contact and Default Message sections exist on the pencil page only.
   let step = 0;
   const stepNo = () => ++step;
 
@@ -326,7 +326,11 @@ export function ProfileForm({
       </Section>
 
       {about ? (
-        <Section step={stepNo()} title="Swipe" hint="Your default hello when you like a room — you can still edit it before sending.">
+        <Section
+          step={stepNo()}
+          title="Default Message"
+          hint="Your opening line, ready to edit: it fills the message box when you reach out from a listing and when you like a room in Swipe — you can always change it before sending."
+        >
           <label className={label}>Default hello message
             <textarea
               name="intro_template"

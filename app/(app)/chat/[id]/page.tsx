@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { getConversations } from "@/lib/chat";
 import { isGoogleConfigured } from "@/lib/google";
 import { ChatThread } from "@/components/chat/ChatThread";
+import { renderIntro } from "@/lib/swipe-intro";
 import type { Message, Viewing } from "@/lib/types";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -18,11 +19,11 @@ export default async function ChatThreadPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ calendar?: string }>;
+  searchParams: Promise<{ calendar?: string; intro?: string }>;
 }) {
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();
-  const { calendar } = await searchParams;
+  const { calendar, intro } = await searchParams;
   const { supabase, user } = await requireUser();
 
   // RLS-scoped: only conversations the user participates in come back.
@@ -35,10 +36,18 @@ export default async function ChatThreadPage({
   // Re-opening a deleted chat therefore lands on an empty thread.
   const since = conversation.cleared_at ?? EPOCH;
 
-  const [{ data: messageRows }, { data: viewingRows }, { data: googleRow }] = await Promise.all([
+  // A thread opened from a listing's "Message the owner" arrives with ?intro=1.
+  // The owner never does (that route sends them to the inbox), so only the
+  // seeker's own template is ever loaded here.
+  const wantsIntro = intro === "1" && conversation.seeker_id === user.id;
+
+  const [{ data: messageRows }, { data: viewingRows }, { data: googleRow }, { data: introRow }] = await Promise.all([
     supabase.from("messages").select("*").eq("conversation_id", id).gt("created_at", since).order("created_at", { ascending: true }),
     supabase.from("viewings").select("*").eq("conversation_id", id).gt("created_at", since).order("created_at", { ascending: true }),
     supabase.from("google_tokens").select("email").eq("user_id", user.id).maybeSingle(),
+    wantsIntro
+      ? supabase.from("profile_details").select("intro_template").eq("user_id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
   // Marking the thread read is deliberately NOT done here. It is a write, and a
   // render that writes cannot be cached: the write would be skipped on a cache
@@ -56,6 +65,18 @@ export default async function ChatThreadPage({
     for (const m of messages) if (m.image_path) m.image_url = byPath.get(m.image_path);
   }
 
+  // Same offer the swipe sheet makes after a like: the seeker's saved hello
+  // (or the standard one) sitting in the composer, theirs to edit or replace
+  // before it goes. Only on a thread with nothing in it yet — an existing
+  // conversation is never overwritten with a canned opener.
+  const draft =
+    wantsIntro && messages.length === 0
+      ? renderIntro(
+          (introRow as { intro_template: string } | null)?.intro_template ?? "",
+          conversation.other_name ?? ""
+        )
+      : "";
+
   return (
     <ChatThread
       meId={user.id}
@@ -68,6 +89,7 @@ export default async function ChatThreadPage({
         email: (googleRow as { email: string } | null)?.email ?? "",
       }}
       calendarNotice={typeof calendar === "string" ? calendar : undefined}
+      initialDraft={draft}
     />
   );
 }

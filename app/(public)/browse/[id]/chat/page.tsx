@@ -9,7 +9,9 @@ export const instant = false;
 
 /**
  * "Message the owner" entry point. Resolves (or starts) the seeker's thread for
- * this listing and hands off to the inbox at /chat/[conversationId].
+ * this listing and hands off to the inbox at /chat/[conversationId]. `intro=1`
+ * asks that thread to open with the seeker's default hello already in the
+ * composer — the same offer the swipe sheet makes after a like.
  */
 export default async function ListingChatPage({
   params,
@@ -40,5 +42,5 @@ export default async function ListingChatPage({
       </main>
     );
   }
-  redirect(`/chat/${conversation.id}`);
+  redirect(`/chat/${conversation.id}?intro=1`);
 }
