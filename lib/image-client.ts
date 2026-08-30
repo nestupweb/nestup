@@ -1,7 +1,8 @@
 /**
  * Browser-side image preparation for uploads. Phones hand us 4–12 MB HEIC/JPEG
  * files; we re-encode to a ≤1600px JPEG (~150–400 KB) before they leave the
- * device, which also turns HEIC into something every browser can show.
+ * device, which also turns HEIC into something every browser can show — using a
+ * wasm decoder when the browser itself cannot read the HEIC (see `decodeHeic`).
  */
 export const MAX_EDGE = 1600;
 export const JPEG_QUALITY = 0.84;

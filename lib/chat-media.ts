@@ -41,11 +41,13 @@ export type PreparedMedia = {
  * Turns a picked file into something uploadable.
  *
  * Photos still go through the canvas re-encoder (≤1600px JPEG), which is what
- * turns an iPhone HEIC into something every browser can show. When the canvas
- * cannot decode the file at all we now upload the original instead of refusing
- * it — an exotic format that only some browsers render still beats losing the
- * message. Videos are never re-encoded: the browser has no cheap way to do it,
- * and a phone clip is already H.264.
+ * turns an iPhone HEIC into something every browser can show — including on a
+ * desktop browser that cannot decode HEIC itself, which is where a photo used to
+ * upload as a raw .heic and arrive in the thread as a download link. When even
+ * that fails we upload the original instead of refusing it: an exotic format
+ * that only some browsers render still beats losing the message. Videos are
+ * never re-encoded: the browser has no cheap way to do it, and a phone clip is
+ * already H.264.
  */
 export async function prepareChatMedia(file: File, conversationId: string): Promise<PreparedMedia> {
   const id = crypto.randomUUID();

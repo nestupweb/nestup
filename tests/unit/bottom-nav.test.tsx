@@ -65,3 +65,20 @@ test("hides itself on small screens inside an open chat thread", () => {
   render(<BottomNav />);
   expect(screen.getByRole("navigation", { name: "Primary" }).className).toContain("hidden lg:flex");
 });
+
+// Mounted from the root layout now, so it renders on every route — including
+// the (auth) pages, which have no bottom padding to keep it off their content.
+test("stays off the auth pages, and on every page that is not one", () => {
+  for (const p of ["/login", "/signup", "/forgot-password", "/reset-password", "/verify"]) {
+    cleanup();
+    pathname.value = p;
+    render(<BottomNav />);
+    expect(screen.queryByRole("navigation"), p).toBeNull();
+  }
+  for (const p of ["/browse", "/browse/l1", "/swipe", "/chat", "/profile", "/settings", "/listing", "/"]) {
+    cleanup();
+    pathname.value = p;
+    render(<BottomNav />);
+    expect(screen.queryByRole("navigation"), p).not.toBeNull();
+  }
+});
