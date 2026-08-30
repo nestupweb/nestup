@@ -10,13 +10,22 @@ import { uploadImage } from "@/lib/storage";
 import { profileSchema } from "@/lib/validation/profile";
 import { aboutDetailsFromForm, aboutDetailsSchema } from "@/lib/validation/about";
 
-export type ProfileFormState = { error?: string };
+export type ProfileFormState = {
+  error?: string;
+  /** Field name → message, so the form can highlight each one that failed. */
+  fieldErrors?: Record<string, string>;
+  /** Saved, but the Daily life table is still short of answers (a warning, not a block). */
+  savedWithDailyLifeGaps?: boolean;
+};
 
 const ABOUT_LABELS: Record<string, string> = {
   contact_email: "Email",
   wake_time: "Wake-up time",
   bed_time: "Bedtime",
 };
+
+/** The four the form will not save without — each highlighted where it sits. */
+const REQUIRED_BASICS = ["full_name", "age", "gender", "occupation"] as const;
 
 export async function upsertProfileAction(
   _prev: ProfileFormState,
@@ -63,8 +72,23 @@ export async function upsertProfileAction(
     pref_amenities: formData.getAll("pref_amenities"),
   });
   if (!parsed.success) {
+    // Every failing field, not just the first: the form marks each one where it
+    // sits, so a member fixing three blanks sees all three at once.
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path.length ? String(issue.path[0]) : "";
+      if (field && !fieldErrors[field]) fieldErrors[field] = issue.message;
+    }
+    const missingBasics = REQUIRED_BASICS.filter((f) => fieldErrors[f]);
     const issue = parsed.error.issues[0];
-    return { error: issue ? (issue.path.length ? String(issue.path[0]) + ": " + issue.message : issue.message) : "Please check the form." };
+    const error = missingBasics.length
+      ? "Some required details are missing — check the highlighted fields below."
+      : issue
+        ? issue.path.length
+          ? String(issue.path[0]) + ": " + issue.message
+          : issue.message
+        : "Please check the form.";
+    return { error, fieldErrors };
   }
 
   // The pencil page carries the About-me details in the same form
@@ -110,8 +134,12 @@ export async function upsertProfileAction(
   updateTag(deckTag(user.id));
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
   const target = sanitizeNextPath(String(formData.get("next") ?? ""));
-  // …except when the Daily life table is still short of answers: /swipe would
-  // bounce them straight back here (0035). Saving is allowed, so the save must
-  // land somewhere that works.
-  redirect(target === "/swipe" && !isDailyLifeComplete(parsed.data) ? "/profile" : target);
+  // An unfinished Daily life table no longer blocks anything (2026-08-30) — but
+  // the member is told what it costs them, and the only place that message can
+  // be read is the form they just submitted. So an ordinary Save stays put and
+  // renders the warning above the button; a save that was on its way somewhere
+  // specific (finishing onboarding into a chat) still goes there as promised.
+  const goingOn = target !== "/profile" && target !== "/swipe";
+  if (!isDailyLifeComplete(parsed.data) && !goingOn) return { savedWithDailyLifeGaps: true };
+  redirect(target);
 }

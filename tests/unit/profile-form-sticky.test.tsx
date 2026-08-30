@@ -22,6 +22,7 @@ test("a rejected onboarding save leaves everything already filled in place", asy
 
   await userEvent.type(screen.getByLabelText(/full name/i), "Dana Levi");
   await userEvent.type(screen.getByLabelText(/^age/i), "27");
+  await userEvent.selectOptions(screen.getByLabelText(/^gender/i), "female");
   await userEvent.type(screen.getByLabelText(/occupation/i), "Nurse");
   const bio = document.querySelector<HTMLInputElement>('input[name="bio"]')!;
   await userEvent.type(bio, "Early riser, plant person.");

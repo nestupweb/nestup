@@ -5,7 +5,7 @@ import { messageSchema } from "@/lib/validation/message";
 import { listingFiltersSchema } from "@/lib/validation/filters";
 
 const validProfile = {
-  full_name: "Dana Levi", age: 26, occupation: "Student", bio: "Hi!",
+  full_name: "Dana Levi", age: 26, gender: "female", occupation: "Student", bio: "Hi!",
   smoker: false, has_pet: false, cleanliness: 4,
   sleep_schedule: "early", guests_freq: "sometimes",
   interests: ["Music", "Cooking", "Travel"],
@@ -20,6 +20,35 @@ describe("profileSchema", () => {
   });
   test("rejects age under 18", () => {
     expect(profileSchema.safeParse({ ...validProfile, age: 17 }).success).toBe(false);
+  });
+  /**
+   * Name, age, gender and occupation are the four a profile cannot be saved
+   * without — each rejected with a message the form puts under the field.
+   */
+  test.each([
+    ["full_name", ""],
+    ["full_name", "D"],
+    ["age", ""],
+    ["gender", ""],
+    ["gender", null],
+    ["occupation", ""],
+    ["occupation", "   "],
+  ])("rejects a blank %s (%j) with a message", (field, value) => {
+    const res = profileSchema.safeParse({ ...validProfile, [field]: value });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      const issue = res.error.issues.find((i) => i.path[0] === field);
+      expect(issue?.message).toBeTruthy();
+      expect(issue?.message).not.toMatch(/invalid|expected/i);
+    }
+  });
+  test("names every missing basic at once, not just the first", () => {
+    const res = profileSchema.safeParse({ ...validProfile, full_name: "", gender: "", occupation: "" });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      const fields = res.error.issues.map((i) => String(i.path[0]));
+      expect(fields).toEqual(expect.arrayContaining(["full_name", "gender", "occupation"]));
+    }
   });
   test("rejects fewer than 3 interests", () => {
     expect(profileSchema.safeParse({ ...validProfile, interests: ["Music"] }).success).toBe(false);

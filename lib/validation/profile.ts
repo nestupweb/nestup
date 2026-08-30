@@ -11,7 +11,9 @@ const amenityKeys = PREF_AMENITIES.map((o) => o.key) as [Amenity, ...Amenity[]];
 /**
  * The Daily life table may be saved half-finished (migration 0035): a blank
  * select is `null`, "not answered yet", and saving is never blocked by one.
- * /swipe is what requires the full table — see `isDailyLifeComplete`.
+ * Nothing is gated on it any more either — an unfinished table only earns a
+ * warning above the Save button (2026-08-30). What /swipe requires is the
+ * Apartment preferences — see `isApartmentPrefsComplete`.
  */
 const blank = <T extends z.ZodTypeAny>(answer: T) =>
   z.preprocess((v) => (v === "" || v === undefined ? null : v), answer.nullable().default(null));
@@ -36,11 +38,17 @@ const shabbatAnswer = z.preprocess(
 
 export const profileSchema = z
   .object({
-    full_name: z.string().trim().min(2).max(60),
-    age: z.coerce.number().int().min(18).max(120),
-    // One of four, or blank for "not answered" — never guessed for someone.
-    gender: blank(z.enum(genderKeys)),
-    occupation: z.string().trim().max(80).default(""),
+    // --- The basics. None of the four may be left blank: a profile without
+    // them is not saved, and the form highlights whichever is missing. ---
+    full_name: z.string().trim().min(2, "Enter your full name.").max(60, "Keep your name under 60 characters."),
+    age: z.coerce
+      .number({ error: "Enter your age." })
+      .int("Enter your age as a whole number.")
+      .min(18, "You must be 18 or over to use NestUp.")
+      .max(120, "Enter a real age."),
+    // One of four, and never guessed for someone — so it has to be asked.
+    gender: z.enum(genderKeys, { error: "Choose your gender." }),
+    occupation: z.string().trim().min(2, "Tell us what you do.").max(80, "Keep your occupation under 80 characters."),
     bio: z.string().trim().max(500).default(""),
     // --- Daily life: how I live (blank = not answered yet, 0035) ---
     smoker: yesNo,

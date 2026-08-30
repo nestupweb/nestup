@@ -52,7 +52,8 @@ export interface Profile {
   // The Daily life table. `null` is "not answered yet" (migration 0035) — the
   // column used to be NOT NULL with a default, which put words in the member's
   // mouth. Read these through `withDailyLifeDefaults` (lib/daily-life.ts)
-  // before scoring; `isDailyLifeComplete` is what /swipe requires.
+  // before scoring. Nothing is gated on a finished table (2026-08-30): what
+  // /swipe requires is `isApartmentPrefsComplete`.
   smoker: boolean | null;
   has_pet: boolean | null;
   cleanliness: number | null; // 1..5

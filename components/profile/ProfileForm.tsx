@@ -16,12 +16,28 @@ import { useStickyForm } from "@/lib/hooks";
 import { BED_TIMES, GENDERS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
+import { listLabels, missingApartmentPrefs } from "@/lib/apartment-prefs";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
 const label = "block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted";
 const note = "font-normal normal-case tracking-normal";
+
+/** The mark on a label the form will not save without. */
+function Req() {
+  return <span aria-hidden="true" className="text-danger"> *</span>;
+}
+
+/** The message under the field that failed, and what points `aria-describedby` at it. */
+function FieldError({ name, message }: { name: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={`${name}-error`} role="alert" className={`mt-1 text-xs text-danger ${note}`}>
+      {message}
+    </p>
+  );
+}
 
 function Section({
   step,
@@ -58,20 +74,30 @@ export function ProfileForm({
   onboarding,
   next = "",
   about,
-  needsDailyLife = false,
+  needsApartmentPrefs = false,
 }: {
   profile: Profile | null;
   onboarding: boolean;
   next?: string;
   /** Present on the pencil page: the About-me details ride along in this form. */
   about?: { details: ProfileDetails | null; email: string };
-  /** Arrived here from /swipe, which needs the whole Daily life table. */
-  needsDailyLife?: boolean;
+  /** Arrived here from /swipe, which needs the Apartment preferences filled in. */
+  needsApartmentPrefs?: boolean;
 }) {
   const [state, form, pending] = useStickyForm<ProfileFormState>(upsertProfileAction, {});
   const d = about?.details ?? null;
-  // The table may be saved half-answered; only the swipe deck insists on it.
+  // The table may be saved half-answered and nothing is gated on it; what an
+  // unfinished one costs is the quality of the matches.
   const dailyLifeLeft = isDailyLifeComplete(profile) ? 0 : unansweredCount(profile);
+  // What /swipe is waiting for, named where the member can fix it.
+  const missingPrefs = missingApartmentPrefs(profile);
+  const err = (name: string) => state.fieldErrors?.[name];
+  /** The field's classes, its error id and `aria-invalid`, in one go. */
+  const field = (name: string) => ({
+    className: `${input} ${err(name) ? "border-danger" : ""}`,
+    "aria-invalid": err(name) ? true : undefined,
+    "aria-describedby": err(name) ? `${name}-error` : undefined,
+  });
   const wake = nearestHour(d?.wake_time ?? "");
   const bed = nearestHour(d?.bed_time ?? "");
   // Sections are numbered in reading order; the Contact and Swipe sections exist on the pencil page only.
@@ -93,38 +119,61 @@ export function ProfileForm({
           writing. Save it and you&rsquo;ll continue straight to your chat.
         </p>
       ) : null}
-      {needsDailyLife ? (
+      {needsApartmentPrefs && missingPrefs.length ? (
         <p className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent" role="status">
-          Swiping ranks every room against your Daily life answers, so fill the
-          table in below and the deck opens. You can save without it — the rest
-          of NestUp works either way.
+          Swiping ranks every room against your apartment preferences, and{" "}
+          {listLabels(missingPrefs).toLowerCase()} {missingPrefs.length > 1 ? "are" : "is"} still
+          empty. Fill {missingPrefs.length > 1 ? "them" : "it"} in below and the deck opens —
+          amenities are optional.
         </p>
       ) : null}
 
       {/* Basics: the photo and the line under it everywhere in the app. */}
       <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start">
         <ProfilePhotos name={profile?.full_name || "Your photo"} avatarUrl={profile?.avatar_url ?? null} />
+        {/* Name, age, gender and occupation are the four the form will not save
+            without: they are what every other member sees first, and a profile
+            missing any of them cannot be introduced to anyone. */}
         <div className="min-w-0 flex-1 sm:mt-5">
-          <label className={label}>Full name
-            <input name="full_name" required minLength={2} maxLength={60} defaultValue={profile?.full_name ?? ""} className={input} />
+          <label className={label}>Full name<Req />
+            <input name="full_name" required minLength={2} maxLength={60} defaultValue={profile?.full_name ?? ""} {...field("full_name")} />
           </label>
+          <FieldError name="full_name" message={err("full_name")} />
           {/* Gender sits beside Age: both are the plain facts under a name,
               and both are asked once, here, for registration and for editing. */}
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-[6rem_1fr_1fr]">
-            <label className={label}>Age
-              <input name="age" type="number" required min={18} max={120} defaultValue={profile?.age ?? ""} className={input} />
-            </label>
-            <label className={label}>Gender
-              <Select name="gender" defaultValue={profile?.gender ?? ""}>
-                <option value="">— Not answered</option>
-                {GENDERS.map((g) => (
-                  <option key={g.key} value={g.key}>{g.label}</option>
-                ))}
-              </Select>
-            </label>
-            <label className={`${label} col-span-2 sm:col-span-1`}>Occupation
-              <input name="occupation" maxLength={80} defaultValue={profile?.occupation ?? ""} className={input} />
-            </label>
+            <div>
+              <label className={label}>Age<Req />
+                <input name="age" type="number" required min={18} max={120} defaultValue={profile?.age ?? ""} {...field("age")} />
+              </label>
+              <FieldError name="age" message={err("age")} />
+            </div>
+            <div>
+              <label className={label}>Gender<Req />
+                <Select
+                  name="gender"
+                  required
+                  defaultValue={profile?.gender ?? ""}
+                  aria-invalid={err("gender") ? true : undefined}
+                  aria-describedby={err("gender") ? "gender-error" : undefined}
+                  // The Select styles its own <select>, so the error shows as a
+                  // ring on the wrapper rather than a border class it would win.
+                  className={`mt-1 ${err("gender") ? "rounded-xl ring-1 ring-danger" : ""}`}
+                >
+                  <option value="" disabled>— Choose one</option>
+                  {GENDERS.map((g) => (
+                    <option key={g.key} value={g.key}>{g.label}</option>
+                  ))}
+                </Select>
+              </label>
+              <FieldError name="gender" message={err("gender")} />
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <label className={label}>Occupation<Req />
+                <input name="occupation" required minLength={2} maxLength={80} defaultValue={profile?.occupation ?? ""} {...field("occupation")} />
+              </label>
+              <FieldError name="occupation" message={err("occupation")} />
+            </div>
           </div>
         </div>
       </div>
@@ -161,7 +210,17 @@ export function ProfileForm({
         </Section>
       ) : null}
 
-      <Section step={stepNo()} title="Apartment preferences" hint="Powers the budget, city and move-in parts of your Lifestyle match. Amenities are what the room itself should have.">
+      <Section
+        step={stepNo()}
+        title="Apartment preferences"
+        hint={
+          missingPrefs.length
+            ? `Swipe ranks rooms against your budget, preferred cities and earliest move-in — ${listLabels(
+                missingPrefs
+              ).toLowerCase()} still to fill in before it can suggest anything. Amenities are optional.`
+            : "Powers the budget, city and move-in parts of your Lifestyle match. Amenities are what the room itself should have."
+        }
+      >
         <div className="rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5">
           <p className={label}>Monthly budget</p>
           <div className="mt-2">
@@ -226,7 +285,7 @@ export function ProfileForm({
         title="Daily life"
         hint={
           dailyLifeLeft > 0
-            ? `How you live on the left, what you're looking for in roommates on the right. ${dailyLifeLeft} still to answer — the swipe deck opens once they all are.`
+            ? `How you live on the left, what you're looking for in roommates on the right. ${dailyLifeLeft} still to answer — optional, but every answer sharpens your matches.`
             : "How you live on the left, what you're looking for in roommates on the right — both count toward the Lifestyle match."
         }
       >
@@ -285,6 +344,14 @@ export function ProfileForm({
       ) : null}
 
       {state.error ? <p role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
+
+      {/* Saved, not blocked: the Daily life table is optional, and this says
+          what leaving it unfinished costs. It stays up until the table is. */}
+      {state.savedWithDailyLifeGaps ? (
+        <p role="status" className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
+          Your profile was saved, but completing the Daily Life section will improve the quality of your matches.
+        </p>
+      ) : null}
 
       <button type="submit" disabled={pending}
         className="mt-8 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-contrast disabled:opacity-60 sm:w-auto sm:px-10">

@@ -39,6 +39,7 @@ test("what was ticked is what gets sent", async () => {
   // The browser won't submit until the required fields are filled.
   await userEvent.type(screen.getByLabelText(/full name/i), "Dana Levi");
   await userEvent.type(screen.getByLabelText(/^age/i), "27");
+  await userEvent.selectOptions(screen.getByLabelText(/^gender/i), "female");
   await userEvent.type(screen.getByLabelText(/occupation/i), "Nurse");
   await userEvent.type(document.querySelector<HTMLInputElement>('input[name="bio"]')!, "Plant person.");
 

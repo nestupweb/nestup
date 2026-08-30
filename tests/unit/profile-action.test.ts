@@ -35,6 +35,7 @@ function validForm(extra: Record<string, string> = {}, table = WHOLE_TABLE): For
   const fd = new FormData();
   fd.set("full_name", "Noa Peretz");
   fd.set("age", "26");
+  fd.set("gender", "female");
   fd.set("occupation", "Designer");
   fd.set("bio", "Plants and shakshuka.");
   for (const [k, v] of Object.entries(table)) fd.set(k, v);
@@ -96,15 +97,17 @@ test("without About-me fields the form saves only the profile (old layout)", asy
 });
 
 /**
- * The table may be left half-answered — saving is never blocked by it. What it
- * costs is the swipe deck, so the save must not land there: /swipe would send
- * them straight back to the form they just submitted.
+ * The table may be left half-answered — saving is never blocked by it, and
+ * since 2026-08-30 nothing is gated on it either. The save stays on the form
+ * so the warning above the button can be read.
  */
-test("a half-answered table still saves, and lands somewhere that works", async () => {
+test("a half-answered table still saves, and stays put to warn", async () => {
   vi.resetModules();
   const { upsertProfileAction } = await import("@/app/actions/profile");
   const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
-  await expect(upsertProfileAction({}, validForm({}, half))).rejects.toThrow("REDIRECT:/profile");
+  const res = await upsertProfileAction({}, validForm({}, half));
+  expect(res.savedWithDailyLifeGaps).toBe(true);
+  expect(res.error).toBeUndefined();
 
   expect(upsert).toHaveBeenCalledTimes(1);
   const [, row] = upsert.mock.calls[0] as unknown as [string, Record<string, unknown>];
@@ -113,6 +116,36 @@ test("a half-answered table still saves, and lands somewhere that works", async 
   expect(row.ok_with_pets).toBeNull();
   expect(row.pref_noise).toBeNull();
   expect(row.cleanliness).toBe(4);
+});
+
+/** …unless the save was on its way somewhere: onboarding into a chat still lands there. */
+test("a half-answered table does not strand a member finishing onboarding into a chat", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  const half = { cleanliness: "4" };
+  await expect(
+    upsertProfileAction({}, validForm({ next: "/browse/abc/chat" }, half))
+  ).rejects.toThrow("REDIRECT:/browse/abc/chat");
+  expect(upsert).toHaveBeenCalledTimes(1);
+});
+
+/**
+ * The four basics are enforced here as well as in the browser: a request that
+ * skips the form's own checks is rejected, and every missing field is named.
+ */
+test("a save missing the required basics is refused, with a message per field", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  const fd = validForm();
+  fd.set("gender", "");
+  fd.set("occupation", "");
+  const res = await upsertProfileAction({}, fd);
+
+  expect(upsert).not.toHaveBeenCalled();
+  expect(res.error).toMatch(/required details are missing/i);
+  expect(res.fieldErrors?.gender).toBeTruthy();
+  expect(res.fieldErrors?.occupation).toBeTruthy();
+  expect(res.fieldErrors?.full_name).toBeUndefined();
 });
 
 test("Shabbat's 'prefer not to say' is stored as the empty string, not as null", async () => {

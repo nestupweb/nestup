@@ -1,19 +1,18 @@
 import Link from "next/link";
 import { getOwnProfile } from "@/lib/auth";
-import { isDailyLifeComplete } from "@/lib/daily-life";
+import { isApartmentPrefsComplete, listLabels, missingApartmentPrefs } from "@/lib/apartment-prefs";
 import { getCachedDeck } from "@/lib/swipe-deck";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
 
-/** Where an unfinished Daily life table sends a member, and why. */
-export const FINISH_DAILY_LIFE = "/profile/edit?needs=daily-life";
+/** Where unfinished Apartment preferences send a member, and why. */
+export const FINISH_APARTMENT_PREFS = "/profile/edit?needs=apartment-prefs";
 
 /**
  * Signing in always lands here — this is the one page, not a redirect chain
- * through Edit Profile. Whatever's missing (no profile row yet, or an
- * unfinished Daily life table) is said on this page instead (2026-08-30): a
- * member used to be bounced to Edit Profile on every login until they
- * finished the questionnaire, which reads as "swipe is broken" rather than
- * "one thing left to do."
+ * through Edit Profile. Whatever's missing (no profile row yet, or Apartment
+ * preferences with nothing in them) is said on this page instead (2026-08-30):
+ * a member used to be bounced to Edit Profile on every login, which reads as
+ * "swipe is broken" rather than "one thing left to do."
  */
 export default async function SwipePage() {
   const { profile } = await getOwnProfile();
@@ -31,17 +30,20 @@ export default async function SwipePage() {
     );
   }
 
-  // Scores come from the Daily life questionnaire, so a deck built without it
-  // is ordered by nothing the member said. Saving a half-filled table is
-  // fine; swiping on one is not.
-  if (!isDailyLifeComplete(profile)) {
+  // Budget, cities and move-in date are what a room is ranked against; without
+  // them every listing scores the same and the deck is a guess. Saving a
+  // profile without them is fine — being recommended rooms is not.
+  if (!isApartmentPrefsComplete(profile)) {
+    const missing = missingApartmentPrefs(profile);
     return (
       <main className="mx-auto w-full max-w-2xl pb-4 sm:px-6 sm:pt-5">
         <SwipeGate
           heading="No suggested listings yet."
-          body="Every room here is ranked against your Daily life answers, and those aren’t filled in yet — so there’s nothing to suggest until they are."
-          ctaHref={FINISH_DAILY_LIFE}
-          ctaLabel="Finish Daily life"
+          body={`Rooms here are ranked against your apartment preferences, and ${listLabels(missing)} ${
+            missing.length > 1 ? "are" : "is"
+          } still empty. Fill ${missing.length > 1 ? "them" : "it"} in and the deck opens — amenities stay optional.`}
+          ctaHref={FINISH_APARTMENT_PREFS}
+          ctaLabel="Finish preferences"
         />
       </main>
     );

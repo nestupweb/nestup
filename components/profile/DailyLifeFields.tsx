@@ -92,9 +92,10 @@ function ShabbatChoice({ value }: { value: Profile["shabbat"] }) {
  * table submits with the profile form; the scores in lib/compatibility.ts
  * read both columns.
  *
- * Nothing here is required — the form saves half-answered. What the table
- * gates is the swipe deck, which ranks rooms by these answers and stays shut
- * until they are all in (`isDailyLifeComplete`).
+ * Nothing here is required — the form saves half-answered, and no part of the
+ * app is closed off by an unfinished table (2026-08-30). Saving one only earns
+ * a warning above the button: the answers sharpen the match scores, so the
+ * fuller the table, the better the deck is ordered.
  */
 export function DailyLifeFields({ profile: p }: { profile: Profile | null }) {
   return (

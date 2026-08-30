@@ -32,7 +32,7 @@ export default async function ProfileEditPage({
       onboarding={!profile}
       next="/profile"
       about={about}
-      needsDailyLife={needs === "daily-life"}
+      needsApartmentPrefs={needs === "apartment-prefs"}
     />
   );
 }
