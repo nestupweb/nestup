@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { deckTag, profileTag } from "@/lib/cache-tags";
 import { isDailyLifeComplete } from "@/lib/daily-life";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { uploadImage } from "@/lib/storage";
@@ -101,7 +102,12 @@ export async function upsertProfileAction(
     if (aboutError) return { error: "Your profile was saved, but the About me section could not be. Please try again." };
   }
 
-  revalidatePath("/profile");
+  // This member's own two caches. The deck matters as much as the profile here:
+  // every Daily-life answer and preference on this form is an input to the match
+  // score the deck is ranked and gated on, so a saved profile that left a stale
+  // deck in place would show rooms picked for the old answers.
+  updateTag(profileTag(user.id));
+  updateTag(deckTag(user.id));
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
   const target = sanitizeNextPath(String(formData.get("next") ?? ""));
   // …except when the Daily life table is still short of answers: /swipe would

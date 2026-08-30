@@ -8,6 +8,7 @@ import { RoommateTagPicker } from "@/components/listings/RoommateTagPicker";
 import type { TaggedMember } from "@/lib/co-posters";
 import { ViewingHoursEditor } from "@/components/listings/ViewingHoursEditor";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { Select } from "@/components/ui/Select";
 import { PinField } from "@/components/map/PinField";
 import { pointOf } from "@/lib/geo";
@@ -164,7 +165,7 @@ export function ListingForm({
           </label>
           <label className={label}>
             Rent (₪ / month)
-            <input name="rent" type="number" required min={1} defaultValue={listing?.rent ?? ""} className={input} />
+            <AmountInput name="rent" required defaultValue={listing?.rent ?? ""} className={input} />
           </label>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">

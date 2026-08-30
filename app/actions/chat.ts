@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { clearConversation, markConversationRead } from "@/lib/chat";
 import { messageSchema } from "@/lib/validation/message";
@@ -72,8 +72,13 @@ export async function sendMessageAction(input: SendMessageInput): Promise<SendMe
   if (!message) return { ok: false, error: GENERIC };
 
   await markConversationRead(supabase, conversationId);
-  revalidatePath(`/chat/${conversationId}`);
-  revalidatePath("/chat");
+  // `refresh`, not `revalidatePath`. Chat's reads are deliberately uncached, so
+  // there was never a cache entry here to clear — but `revalidatePath` inside a
+  // Server Action also makes every previously visited page re-fetch on its next
+  // visit, so every message sent threw away the Swipe, Listings and Profile
+  // payloads the member had already paid for. `refresh` reruns the dynamic reads
+  // for the route in view and leaves those alone.
+  refresh();
   return { ok: true, message };
 }
 
@@ -92,7 +97,9 @@ export async function deleteConversationAction(
   // RLS: the cutoff only inserts for a conversation this member takes part in.
   const ok = await clearConversation(supabase, conversationId);
   if (!ok) return { ok: false, error: "Could not delete this chat. Please try again." };
-  revalidatePath("/chat", "layout");
+  // The inbox lives in the chat layout and is read fresh on every render, so
+  // rerunning the current route is enough to drop the thread from the list.
+  refresh();
   return { ok: true };
 }
 
@@ -101,5 +108,8 @@ export async function markReadAction(conversationId: string): Promise<void> {
   if (!UUID_RE.test(conversationId)) return;
   const { supabase } = await requireUser();
   await markConversationRead(supabase, conversationId);
-  revalidatePath("/chat");
+  // The badge and the inbox row are both uncached reads in the tree currently
+  // on screen, so this is the one rerun that has to happen — and now it costs
+  // only that, instead of the whole session's caches.
+  refresh();
 }

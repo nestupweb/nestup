@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { listingTag, profileTag } from "@/lib/cache-tags";
 import { respondToInvite, searchAvailableMembers } from "@/lib/invites";
 import { MIN_MEMBER_QUERY, type TaggedMember } from "@/lib/co-posters";
 
@@ -15,13 +16,26 @@ import { MIN_MEMBER_QUERY, type TaggedMember } from "@/lib/co-posters";
  * than trusting anything in the FormData.
  */
 
-/** Everywhere a co-poster changing their mind changes what is on screen. */
-function refreshEverywhere(listingId?: string): void {
-  revalidatePath("/profile");
-  revalidatePath("/browse");
-  if (listingId) revalidatePath(`/browse/${listingId}`);
-  revalidatePath("/swipe");
-  revalidatePath("/chat");
+/**
+ * What answering an invite actually changes: this member's own Profile tabs
+ * (the pending card leaves, the room joins or doesn't join Shared) and the
+ * room's household.
+ *
+ * This replaces a `refreshEverywhere` that swept /profile, /browse,
+ * /browse/[id], /swipe and /chat. In a Server Action `revalidatePath` does not
+ * stop at the path it names — it also makes every previously visited page
+ * re-fetch on the next visit — so answering one invite threw away the member's
+ * whole session cache, Chat included. An invite answer changes no message and
+ * no other room, and now says so.
+ *
+ * The room's owner sees the new co-poster on their own Profile a moment later
+ * rather than at once: their tab data is a `use cache: private` entry living in
+ * *their* browser, which no other member's action can reach into. It expires on
+ * its own, and that is the trade for the isolation.
+ */
+function refreshAfterAnswer(userId: string, listingId?: string): void {
+  updateTag(profileTag(userId));
+  if (listingId) updateTag(listingTag(listingId));
 }
 
 /**
@@ -61,10 +75,10 @@ export async function respondToInviteAction(
   const answer = String(formData.get("answer") ?? "");
   if (answer !== "yes" && answer !== "no") return { error: "Could not tell which answer that was." };
 
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const { listingId, error } = await respondToInvite(supabase, inviteId, answer === "yes");
   if (error) return { error };
 
-  refreshEverywhere(listingId);
+  refreshAfterAnswer(user.id, listingId);
   return { answered: answer };
 }

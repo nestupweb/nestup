@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { deckTag, profileTag } from "@/lib/cache-tags";
 import { aboutDetailsFromForm, aboutSchema } from "@/lib/validation/about";
 
 export type AboutFormState = { error?: string };
@@ -47,7 +48,12 @@ export async function saveAboutAction(_prev: AboutFormState, formData: FormData)
   ]);
   if (detailsRes.error || profileRes.error) return { error: "Could not save. Please try again." };
 
-  revalidatePath("/profile");
+  // `updateTag`, not `revalidatePath`: this member's own Profile tabs and deck,
+  // and nothing else. The budget and move-in date are two of the inputs the deck
+  // is ranked on, so it has to be rebuilt — but Chat and every other member's
+  // cache are untouched.
+  updateTag(profileTag(user.id));
+  updateTag(deckTag(user.id));
   // No confirmation line — a save drops the member straight back on their profile.
   redirect("/profile");
 }

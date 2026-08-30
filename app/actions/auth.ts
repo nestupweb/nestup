@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendConfirmationMail, sendEmailChangeMail, sendRecoveryMail } from "@/lib/auth-mail";
 import { requireUser } from "@/lib/auth";
@@ -290,7 +290,9 @@ export async function verifyEmailChangeCodeAction(_prev: AccountState, formData:
     }
     return { error: "That code is wrong or has expired. Send a new one.", email };
   }
-  revalidatePath("/settings");
+  // Settings reads the session's address fresh on every render, so rerunning
+  // this route shows the new one. Nothing cached carries the e-mail address.
+  refresh();
   return { done: true };
 }
 

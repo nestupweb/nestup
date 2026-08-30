@@ -6,6 +6,7 @@ import { FEATURES, GENDERS, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constan
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent";
@@ -120,10 +121,10 @@ export function FilterBar() {
               <CityCombobox id="filter-city" name="city" defaultValue={params.get("city") ?? ""} placeholder="Any city" className={input} />
             </label>
             <label className={label}>Min rent (₪)
-              <input name="rent_min" type="number" min={0} defaultValue={params.get("rent_min") ?? ""} className={input} />
+              <AmountInput name="rent_min" defaultValue={params.get("rent_min") ?? ""} className={input} />
             </label>
             <label className={label}>Max rent (₪)
-              <input name="rent_max" type="number" min={0} defaultValue={params.get("rent_max") ?? ""} className={input} />
+              <AmountInput name="rent_max" defaultValue={params.get("rent_max") ?? ""} className={input} />
             </label>
             <label className={label}>Move in by
               <DatePicker name="move_in_by" defaultValue={params.get("move_in_by") ?? ""} clearable placeholder="Any date" />

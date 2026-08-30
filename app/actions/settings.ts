@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { LISTINGS_TAG, deckTag, listingTag, profileTag } from "@/lib/cache-tags";
 
 export type ToggleState = { error?: string };
 
@@ -24,8 +25,10 @@ export async function setPrivacyAction(
     .from("profile_details")
     .upsert({ user_id: user.id, [field]: value, updated_at: new Date().toISOString() });
   if (error) return { error: SAVE_FAILED };
-  revalidatePath("/settings");
-  revalidatePath("/profile");
+  // The visibility flag is part of the member's own profile details, which the
+  // Profile tabs cache. Settings itself is uncached, so the rerun covers it.
+  updateTag(profileTag(user.id));
+  refresh();
   return {};
 }
 
@@ -37,7 +40,9 @@ export async function setNotifyAction(value: boolean): Promise<ToggleState> {
     .update({ notify_new_matches: value, updated_at: new Date().toISOString() })
     .eq("user_id", user.id);
   if (error) return { error: SAVE_FAILED };
-  revalidatePath("/settings");
+  // Nothing cached reads this flag — only the mailer does. Rerunning the
+  // settings route in view is enough to move the switch.
+  refresh();
   return {};
 }
 
@@ -50,10 +55,19 @@ export async function setListingActiveAction(listingId: string, value: boolean):
     .eq("id", listingId)
     .eq("owner_id", user.id);
   if (error) return { error: SAVE_FAILED };
-  revalidatePath("/settings");
-  revalidatePath("/profile");
-  revalidatePath("/browse");
-  revalidatePath("/swipe");
+  // Same four tags the listing form uses, because this is the same change: a
+  // paused room leaves the public list and the room's own page, and the owner
+  // sees it greyed on their profile.
+  //
+  // Other members' decks keep the room for up to their own cache window. That is
+  // the deliberate cost of `use cache: private` — a deck lives in its member's
+  // browser, so no one else's action can reach it — and it self-corrects: the
+  // listing page a stale card links to is already gone by the time it is opened.
+  updateTag(LISTINGS_TAG);
+  updateTag(listingTag(listingId));
+  updateTag(profileTag(user.id));
+  updateTag(deckTag(user.id));
+  refresh();
   return {};
 }
 

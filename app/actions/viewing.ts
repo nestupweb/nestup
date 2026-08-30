@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { fitsAvailability, normalizeSlots } from "@/lib/availability";
@@ -94,8 +94,11 @@ export async function proposeViewingAction(
     };
   }
 
-  revalidatePath(`/chat/${conversationId}`);
-  revalidatePath("/chat");
+  // Viewings live inside a chat thread, and chat is read fresh rather than
+  // cached, so rerunning the route in view is the whole job. `revalidatePath`
+  // here also expired every other page the member had visited — a viewing
+  // request is no reason to throw away their deck.
+  refresh();
   return { done: Date.now() };
 }
 
@@ -176,8 +179,7 @@ export async function respondViewingAction(
     if (conv) warning = await mirrorToGoogle(supabase, user, { ...viewing, status }, conv, timeZone.slice(0, 64));
   }
 
-  revalidatePath(`/chat/${conversationId}`);
-  revalidatePath("/chat");
+  refresh();
   return { ok: true, warning };
 }
 
@@ -197,12 +199,12 @@ export async function syncViewingToGoogleAction(
   const conv = await myConversation(supabase, conversationId);
   if (!conv) return { ok: false, error: "Could not find this conversation." };
   const warning = await mirrorToGoogle(supabase, user, viewing, conv, timeZone.slice(0, 64));
-  revalidatePath(`/chat/${conversationId}`);
+  refresh();
   return warning ? { ok: false, error: warning } : { ok: true };
 }
 
 export async function disconnectGoogleAction(conversationId: string): Promise<void> {
   const { supabase, user } = await requireUser();
   await supabase.from("google_tokens").delete().eq("user_id", user.id);
-  if (UUID_RE.test(conversationId)) revalidatePath(`/chat/${conversationId}`);
+  if (UUID_RE.test(conversationId)) refresh();
 }

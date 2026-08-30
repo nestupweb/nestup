@@ -7,8 +7,6 @@ const pad = (n: number) => String(n).padStart(2, "0");
 
 /** Keep this much clear of the viewport edges. */
 const GUTTER = 12;
-/** The floating bottom nav paints over the popover, so leave it this strip. */
-const NAV_SAFE = 88;
 /** Narrowest the month grid stays readable, and the design width (19rem). */
 const MIN_W = 224;
 const MAX_W = 304;
@@ -108,8 +106,13 @@ export function DatePicker({
   const selected = controlled ? value : inner;
   const [open, setOpen] = useState(false);
   // Popover is position: fixed so scrolling panels (filters sidebar, sheets) can't clip it.
-  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number }>({});
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; width?: number }>({});
+  const [placed, setPlaced] = useState(false);
+  // What the member types into the dd/mm/yyyy box, and why it was refused.
+  const [typed, setTyped] = useState("");
+  const [typedError, setTypedError] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   const autoId = useId();
   const fieldId = id ?? `date-${autoId}`;
 
@@ -148,10 +151,91 @@ export function DatePicker({
     };
   }, [open]);
 
+  /**
+   * Place the popover once it has rendered, by measuring rather than guessing.
+   *
+   * It used to be a fixed 19rem opened at the field's left edge. In the
+   * Listings filters that column is only ~15rem wide, so the calendar spilled
+   * out of it and ran under the listing photos — the cards paint over it and
+   * the last weekday column became unreadable. It is now capped to the width of
+   * the column it belongs to (the nearest form/fieldset), so it opens beside
+   * the results instead of on top of them, and its real height decides whether
+   * it drops below the field or flips above it.
+   */
+  useIsoLayoutEffect(() => {
+    if (inline || !open) {
+      setPlaced(false);
+      return;
+    }
+    const wrap = wrapRef.current;
+    const pop = popRef.current;
+    if (!wrap || !pop) return;
+
+    const r = wrap.getBoundingClientRect();
+    const column = (wrap.closest("form, fieldset") as HTMLElement | null)?.getBoundingClientRect();
+    const leftLimit = Math.max(GUTTER, column ? column.left : GUTTER);
+    const rightLimit = Math.min(window.innerWidth - GUTTER, column ? column.right : window.innerWidth - GUTTER);
+
+    const width = Math.round(Math.max(MIN_W, Math.min(MAX_W, rightLimit - leftLimit)));
+    const left = Math.max(leftLimit, Math.min(r.left, rightLimit - width));
+
+    // The day cells are fluid, so height follows the width we just chose:
+    // apply it before measuring instead of estimating a constant.
+    pop.style.width = `${width}px`;
+    const h = pop.offsetHeight;
+
+    // Drop below the field whenever it fits, otherwise take the roomier side —
+    // flipping up in a narrow sidebar hides the filters above it, so it is the
+    // fallback rather than the first choice. (The floating nav is z-40 and the
+    // popover z-70, so there is no need to keep clear of it.)
+    const spaceBelow = window.innerHeight - GUTTER - (r.bottom + 8);
+    const spaceAbove = r.top - 8 - GUTTER;
+    const next: typeof pos = { left, width };
+    if (h <= spaceBelow || spaceBelow >= spaceAbove) {
+      next.top = Math.max(GUTTER, Math.min(r.bottom + 8, window.innerHeight - GUTTER - h));
+    } else {
+      next.bottom = window.innerHeight - r.top + 8;
+    }
+
+    setPos(next);
+    setPlaced(true);
+  }, [open, inline]);
+
   const pick = (iso: string) => {
     if (!controlled) setInner(iso);
     onChange?.(iso);
     if (!inline) setOpen(false);
+  };
+
+  /**
+   * Take what was typed into the dd/mm/yyyy box. `close` is true for Enter —
+   * mid-typing we only fill the value in so the month jumps and the day
+   * highlights, leaving the calendar open.
+   */
+  const commitTyped = (raw: string, close: boolean) => {
+    const s = raw.trim();
+    if (!s) {
+      setTypedError("");
+      return;
+    }
+    const iso = parseDMY(s);
+    if (!iso) {
+      setTypedError("Not a real date — use dd/mm/yyyy");
+      return;
+    }
+    const p = parseISODate(iso)!;
+    if (isBlocked(iso, new Date(p.y, p.m - 1, p.d).getDay())) {
+      setTypedError("That date can't be picked here");
+      return;
+    }
+    setTypedError("");
+    setView({ y: p.y, m: p.m });
+    if (close) {
+      pick(iso);
+      return;
+    }
+    if (!controlled) setInner(iso);
+    onChange?.(iso);
   };
 
   const isBlocked = (iso: string, weekday: number) =>
@@ -180,15 +264,53 @@ export function DatePicker({
 
   const calendar = (
     <div
+      ref={inline ? undefined : popRef}
       role={inline ? undefined : "dialog"}
       aria-label={inline ? undefined : "Choose a date"}
       style={inline ? undefined : pos}
       className={`font-normal normal-case tracking-normal text-ink ${
         inline
           ? "w-full"
-          : "fixed z-[70] w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-hairline bg-surface p-3 shadow-xl"
+          : `fixed z-[70] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-hairline bg-surface p-3 shadow-xl ${
+              placed ? "" : "pointer-events-none opacity-0"
+            }`
       }`}
     >
+      {!inline ? (
+        <div className="mb-2.5">
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={typed}
+            placeholder="dd/mm/yyyy"
+            aria-label="Type a date as dd/mm/yyyy"
+            aria-invalid={typedError ? true : undefined}
+            aria-describedby={typedError ? `${fieldId}-typed-error` : undefined}
+            onChange={(e) => {
+              const v = e.target.value.replace(/[^\d/]/g, "").slice(0, 10);
+              setTyped(v);
+              setTypedError("");
+              // Only judge it once it is a whole date, so half-typed input isn't scolded.
+              if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) commitTyped(v, false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault(); // never submit the surrounding filter/profile form
+              commitTyped(typed, true);
+            }}
+            className={`w-full rounded-xl border bg-surface px-3 py-1.5 text-sm tabular-nums text-ink outline-none transition-colors placeholder:text-muted ${
+              typedError ? "border-danger" : "border-hairline focus:border-accent"
+            }`}
+          />
+          {typedError ? (
+            <p id={`${fieldId}-typed-error`} role="alert" className="mt-1 text-[11px] text-danger">
+              {typedError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -213,14 +335,14 @@ export function DatePicker({
         </button>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-muted" aria-hidden="true">
+      <div className="mt-2 grid grid-cols-7 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-muted" aria-hidden="true">
         {WEEKDAYS.map((w, i) => (
           <span key={i} className="py-1">
             {w}
           </span>
         ))}
       </div>
-      <div className="mt-1 grid grid-cols-7 gap-y-1">
+      <div className="mt-1 grid grid-cols-7 gap-y-0.5">
         {cells.map((c, i) =>
           c ? (
             <DayCell
@@ -239,7 +361,7 @@ export function DatePicker({
       </div>
 
       {(clearable && selected) || !inline ? (
-        <div className="mt-2 flex items-center justify-between border-t border-hairline pt-2 text-[12px]">
+        <div className="mt-1.5 flex items-center justify-between border-t border-hairline pt-1.5 text-[12px]">
           {!inline && !isBlocked(today, new Date().getDay()) ? (
             <button type="button" onClick={() => pick(today)} className="font-semibold text-accent hover:underline">
               Today
@@ -276,18 +398,13 @@ export function DatePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
-          const r = wrapRef.current?.getBoundingClientRect();
-          if (r) {
-            const W = 19 * 16;
-            const H = 340;
-            const next: typeof pos = {};
-            if (r.left + W > window.innerWidth - 12) next.right = Math.max(12, window.innerWidth - r.right);
-            else next.left = r.left;
-            if (r.bottom + 8 + H > window.innerHeight && r.top > H + 8) next.bottom = window.innerHeight - r.top + 8;
-            else next.top = r.bottom + 8;
-            setPos(next);
+          const next = !open;
+          if (next) {
+            // Start the typing box on whatever is already chosen.
+            setTyped(toDMY(selected));
+            setTypedError("");
           }
-          setOpen((o) => !o);
+          setOpen(next);
         }}
         className={`mt-1 flex w-full items-center justify-between gap-2 rounded-xl border bg-surface px-3 py-2.5 text-left text-sm outline-none transition-colors ${
           open ? "border-accent" : "border-hairline hover:border-accent/60"
@@ -323,7 +440,7 @@ function DayCell({
       aria-label={formatISODate(iso, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
       aria-pressed={selected}
       onClick={() => onPick(iso)}
-      className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm tabular-nums transition-colors ${
+      className={`mx-auto flex aspect-square w-full max-w-9 items-center justify-center rounded-full text-sm tabular-nums transition-colors ${
         selected
           ? "bg-accent font-semibold text-accent-contrast"
           : blocked

@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { deckTag } from "@/lib/cache-tags";
 import { reportSchema, UUID_RE } from "@/lib/validation/report";
 
 /**
@@ -48,7 +49,9 @@ export async function reportUserAction(
     if (error.code === "23505") return { done: true };
     return { error: "Could not send the report. Please try again." };
   }
-  revalidatePath(`/people/${reported_id}`);
+  // The member page is an uncached read, so rerunning the route in view is all
+  // this needs — a report changes nothing on any other page.
+  refresh();
   return { done: true };
 }
 
@@ -67,10 +70,12 @@ export async function blockUserAction(
   if (error && error.code !== "23505") {
     return { error: "Could not block this member. Please try again." };
   }
-  revalidatePath("/settings");
-  revalidatePath("/swipe");
-  revalidatePath("/chat");
-  revalidatePath(`/people/${blocked}`);
+  // The deck is the one cached thing a block changes: it excludes rooms owned by
+  // anyone this member has blocked, so a stale deck would keep offering them.
+  // Settings, the member page and Chat are all uncached reads, so the rerun of
+  // whichever of them is on screen covers those.
+  updateTag(deckTag(user.id));
+  refresh();
   return { done: true };
 }
 
@@ -90,9 +95,9 @@ export async function unblockUserAction(
     .eq("blocked_id", blocked);
   if (error) return { error: "Could not unblock this member. Please try again." };
 
-  revalidatePath("/settings");
-  revalidatePath("/swipe");
-  revalidatePath("/chat");
-  revalidatePath(`/people/${blocked}`);
+  // Same pair as blocking, for the same reason in reverse: their rooms may come
+  // back into the deck.
+  updateTag(deckTag(user.id));
+  refresh();
   return { done: true };
 }
