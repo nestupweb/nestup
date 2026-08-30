@@ -51,6 +51,10 @@ export function ListingForm({
   // Controlled, because the co-poster cap is `roommates_count - 1` and has to
   // move the moment this number does.
   const [roommatesCount, setRoommatesCount] = useState(listing?.roommates_count ?? 1);
+  // The input's own text is tracked separately from roommatesCount so the field
+  // can sit empty mid-edit instead of snapping to "0" on every backspace; only
+  // onBlur forces it back to a valid number (below).
+  const [roommatesCountText, setRoommatesCountText] = useState(String(listing?.roommates_count ?? 1));
   // A validation message lands next to the button, below a long form — bring it into view.
   const alertRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
@@ -185,8 +189,20 @@ export function ListingForm({
               required
               min={0}
               max={10}
-              value={roommatesCount}
-              onChange={(e) => setRoommatesCount(e.target.value === "" ? 0 : Number(e.target.value))}
+              value={roommatesCountText}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setRoommatesCountText(raw);
+                const parsed = Number(raw);
+                if (raw !== "" && Number.isFinite(parsed) && parsed >= 0) setRoommatesCount(parsed);
+              }}
+              onFocus={(e) => e.target.select()}
+              onBlur={(e) => {
+                const parsed = Number(e.target.value);
+                const next = e.target.value === "" || !Number.isFinite(parsed) || parsed <= 0 ? 1 : parsed;
+                setRoommatesCount(next);
+                setRoommatesCountText(String(next));
+              }}
               className={input}
             />
           </label>
