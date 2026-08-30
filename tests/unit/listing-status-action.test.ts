@@ -45,7 +45,7 @@ vi.mock("@/lib/auth", () => ({
     },
   }),
 }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn(), updateTag: vi.fn() }));
 
 const LISTING = "22222222-2222-4222-8222-222222222222";
 
