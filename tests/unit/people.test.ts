@@ -39,22 +39,23 @@ describe("socialHref", () => {
     expect(socialHref("linkedin", "danalevi")).toBe("https://linkedin.com/in/danalevi");
     expect(socialHref("facebook", "https://www.facebook.com/dana")).toBe("https://www.facebook.com/dana");
   });
-  test("a typed-in name opens a people search rather than nothing", () => {
+  test("a name typed into LinkedIn opens a people search rather than nothing", () => {
     // Real data on the live site: the LinkedIn field held "guy licht", so the
     // chip rendered as a dead span while Instagram and Facebook beside it worked.
     expect(socialHref("linkedin", "guy licht")).toBe(
       "https://www.linkedin.com/search/results/people/?keywords=guy%20licht"
     );
-    expect(socialHref("facebook", "Dana Levi")).toBe("https://www.facebook.com/search/people/?q=Dana%20Levi");
     expect(socialHref("linkedin", "Dana Levi & Co")).toBe(
       "https://www.linkedin.com/search/results/people/?keywords=Dana%20Levi%20%26%20Co"
     );
   });
-  test("nothing to link stays unlinked", () => {
+  test("free text on the other networks still gets no link", () => {
+    // A name is expected input on LinkedIn and a mistake on the other two, so
+    // only LinkedIn falls back to a search (see daily-life.test's ContactRow).
+    expect(socialHref("facebook", "Dana Levi")).toBeUndefined();
+    expect(socialHref("instagram", "Dana Levi")).toBeUndefined();
     expect(socialHref("instagram", "")).toBeUndefined();
     expect(socialHref("linkedin", "   ")).toBeUndefined();
-    // Instagram has no dependable people search, so a name there stays plain text.
-    expect(socialHref("instagram", "Dana Levi")).toBeUndefined();
   });
 });
 

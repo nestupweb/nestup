@@ -12,16 +12,18 @@ export function socialHref(kind: "instagram" | "facebook" | "linkedin", raw: str
   }
 
   /*
-   * Free text — a name rather than a handle ("guy licht"). It used to get no
-   * link at all, which left a chip styled exactly like the working ones sitting
-   * dead on the profile. LinkedIn and Facebook both take a people search in the
-   * URL, so the chip leads somewhere that can actually find the person.
+   * Free text — a name rather than a handle ("guy licht"), which on LinkedIn is
+   * the normal thing to type: its profile URLs are slugs nobody knows by heart,
+   * so the field ends up holding a name and the chip sat there dead, styled
+   * exactly like the working ones beside it. A name is all LinkedIn's people
+   * search wants, so the chip can lead somewhere that finds the person.
    *
-   * Instagram is left out on purpose: it has no stable public people-search URL,
-   * and a name with a space in it is never an Instagram handle anyway.
+   * Only LinkedIn. Facebook and Instagram free text stays an unlinked chip, as
+   * `daily-life.test` pins down — this is the one field where a name is the
+   * expected input rather than a mistake.
    */
-  const q = encodeURIComponent(v);
-  if (kind === "linkedin") return `https://www.linkedin.com/search/results/people/?keywords=${q}`;
-  if (kind === "facebook") return `https://www.facebook.com/search/people/?q=${q}`;
+  if (kind === "linkedin") {
+    return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(v)}`;
+  }
   return undefined;
 }
