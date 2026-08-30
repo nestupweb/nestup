@@ -14,6 +14,19 @@ const stageButton =
   "flex items-center justify-center rounded-full text-white backdrop-blur-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
 
 /**
+ * Is photo `i` the one on screen, or one arrow-tap from it?
+ *
+ * Modular on purpose: the arrows wrap, so from the last photo the "next" one is
+ * index 0, and that has to be mounted or the wrap would fade to nothing. With
+ * three photos or fewer every index is a neighbour of every other, which is
+ * correct — there is nothing left to defer.
+ */
+function withinWindow(i: number, current: number, count: number): boolean {
+  const distance = Math.abs(i - current);
+  return Math.min(distance, count - distance) <= 1;
+}
+
+/**
  * A single room: full-bleed photo story on top (scores, arrows, like/reject),
  * three-page information panel below. Remounted per listing via `key`, so
  * photo and page positions reset naturally.
@@ -83,18 +96,30 @@ export function SwipeCard({
         {count === 0 ? (
           <NoPhoto />
         ) : (
-          photos.map((src, i) => (
-            <Image
-              key={src}
-              src={src}
-              alt={i === photo ? `${listing.title} — photo ${i + 1} of ${count}` : ""}
-              aria-hidden={i !== photo}
-              fill
-              priority={i === 0}
-              sizes="(min-width: 640px) 672px, 100vw"
-              className={`object-cover transition-opacity duration-500 ${i === photo ? "opacity-100" : "opacity-0"}`}
-            />
-          ))
+          photos.map((src, i) =>
+            // Only the photo on screen and the one either side of it exist in the
+            // DOM. Every photo used to be mounted at once — stacked and faded
+            // between — and because they all sat inside the viewport, lazy
+            // loading never held any of them back: opening the deck pulled down
+            // every photo of the room at full size, five or six of them, when the
+            // member was only ever shown the first. The window keeps the
+            // cross-fade (both the outgoing and incoming photo are mounted) and
+            // keeps an arrow tap instant, while a photo three along is not
+            // fetched until it is nearly in view.
+            withinWindow(i, photo, count) ? (
+              <Image
+                key={src}
+                src={src}
+                alt={i === photo ? `${listing.title} — photo ${i + 1} of ${count}` : ""}
+                aria-hidden={i !== photo}
+                fill
+                // The first photo of the card in view is the page's LCP.
+                priority={i === 0}
+                sizes="(min-width: 640px) 672px, 100vw"
+                className={`object-cover transition-opacity duration-500 ${i === photo ? "opacity-100" : "opacity-0"}`}
+              />
+            ) : null
+          )
         )}
 
         {/* Legibility scrims — never block the image itself. */}

@@ -148,8 +148,25 @@ export function SwipeDeck({
       />
       {upcoming?.listing.photo_urls[0] ? (
         // Warm the cache for the next room's cover so the hand-off is instant.
+        //
+        // `fill` with the card's own `sizes`, not the 16×16 this used to be.
+        // next/image turns width and sizes into the `w=` on the optimizer URL,
+        // so asking for a 16-pixel copy fetched a URL the card would never
+        // request — a wasted round-trip that warmed nothing. Matching the card's
+        // `sizes` string makes the browser pick the identical candidate, which
+        // is the whole point.
+        //
+        // Deliberately not `priority`: this competes with the photo the member
+        // is actually looking at, and the current card's cover is the LCP. One
+        // image ahead, at normal priority — the next card, not the whole deck.
         <div aria-hidden className="pointer-events-none fixed left-0 top-0 h-px w-px overflow-hidden opacity-0">
-          <Image src={upcoming.listing.photo_urls[0]} alt="" width={16} height={16} priority />
+          <Image
+            src={upcoming.listing.photo_urls[0]}
+            alt=""
+            fill
+            loading="eager"
+            sizes="(min-width: 640px) 672px, 100vw"
+          />
         </div>
       ) : null}
       {error ? (
