@@ -14,7 +14,7 @@ import { notifyNewListing } from "@/lib/notify";
 import { cleanIds, tagCapError } from "@/lib/co-posters";
 import { inviteRoommates } from "@/lib/invites";
 import { auditPhotos, isPhotoCheckEnabled, photoCheckSecret } from "@/lib/photo-check";
-import { geocodeAddress } from "@/lib/geocode";
+import { geocodeAddress, type GeocodeOutcome } from "@/lib/geocode";
 import { shouldGeocode } from "@/lib/geo";
 import type { CoordsSource, PhotoRoom } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -90,6 +90,20 @@ async function resolveCoords(
     return { columns: { lat: hit.lat, lng: hit.lng, coords_source: "geocoded" } };
   }
   return { unknownAddress: hit.status };
+}
+
+/**
+ * Same lookup the save path runs, exposed so the form can show where the
+ * address resolves to while it's still being filled in — not a substitute for
+ * the check at save time, just a preview of it.
+ */
+export async function previewAddressAction(
+  street: string,
+  house_number: string,
+  city: string
+): Promise<GeocodeOutcome> {
+  await requireUser();
+  return geocodeAddress({ street, house_number, city });
 }
 
 const FIELD_NAMES: Record<string, string> = {
@@ -253,7 +267,7 @@ export async function saveListingAction(
     return {
       error:
         coords.unknownAddress === "missing"
-          ? `We couldn't find ${address}, ${parsed.data.city}. Check the street name and house number — or place the pin yourself on the map below.`
+          ? `This address doesn't exist: we couldn't find ${address}, ${parsed.data.city}. Check the street name and house number, or place the pin yourself on the map below.`
           : "We couldn't check that address just now. Please save again in a moment.",
     };
   }

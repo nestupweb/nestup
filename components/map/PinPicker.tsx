@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Map, MapControls, MapMarker, MarkerContent, useMap } from "@/components/ui/map";
 import { MAP_STYLES, MAX_ZOOM, ROOM_ZOOM } from "@/components/map/basemap";
 import { useMapTheme } from "@/components/map/useMapTheme";
@@ -14,6 +14,13 @@ import type { LatLng } from "@/lib/geo";
  * let the person who lives there drag the marker. Doing so submits
  * `pin_moved=1` with the coordinates, and the save path then treats that point
  * as final: no later automatic lookup overwrites it.
+ *
+ * `initial` isn't only the seed for the first paint any more — while the
+ * owner hasn't dragged yet, the caller re-sends it as each address preview
+ * resolves, and the effect below follows it (`FollowPoint` pans the map to
+ * match; a drag's own round trip back through `onMove` is the same object
+ * reference, so it's a no-op rather than a fight over where the map is
+ * pointed).
  */
 export default function PinPicker({
   initial,
@@ -28,15 +35,22 @@ export default function PinPicker({
   const theme = useMapTheme();
   const start = useMemo(() => initial ?? CITY_CENTRES[city] ?? ISRAEL_CENTRE, [initial, city]);
   const [point, setPoint] = useState<LatLng>(start);
+  const lastSentRef = useRef<LatLng | null>(null);
 
   const move = useCallback(
     (next: LatLng) => {
       const rounded = { lat: Math.round(next.lat * 1e6) / 1e6, lng: Math.round(next.lng * 1e6) / 1e6 };
+      lastSentRef.current = rounded;
       setPoint(rounded);
       onMove(rounded);
     },
     [onMove]
   );
+
+  useEffect(() => {
+    if (!initial || initial === lastSentRef.current) return;
+    setPoint(initial);
+  }, [initial]);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-hairline">
@@ -52,6 +66,7 @@ export default function PinPicker({
       >
         <MapControls position="bottom-right" showZoom />
         <ClickToPlace onPick={move} />
+        <FollowPoint point={point} />
         <MapMarker
           longitude={point.lng}
           latitude={point.lat}
@@ -78,5 +93,25 @@ function ClickToPlace({ onPick }: { onPick: (p: LatLng) => void }) {
       map.off("click", handler);
     };
   }, [map, onPick]);
+  return null;
+}
+
+/**
+ * Pans to `point` whenever it actually changes — an address preview arriving,
+ * not the map's own view. Skips the point the map already opened on, since
+ * `center` placed that one; a drag never reaches here; `point` only otherwise
+ * changes through the `initial` resync above.
+ */
+function FollowPoint({ point }: { point: LatLng }) {
+  const { map } = useMap();
+  const first = useRef(true);
+  useEffect(() => {
+    if (!map) return;
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    map.flyTo({ center: [point.lng, point.lat], zoom: ROOM_ZOOM + 1, duration: 600 });
+  }, [map, point.lat, point.lng]);
   return null;
 }

@@ -23,6 +23,7 @@ export function CityCombobox({
   className = inputClass,
   clearOnSelect = false,
   onSelect,
+  onChange,
 }: {
   name?: string;
   id?: string;
@@ -33,6 +34,8 @@ export function CityCombobox({
   /** Multi-pickers: empty the box after a pick. */
   clearOnSelect?: boolean;
   onSelect?: (city: City) => void;
+  /** Fires with the box's current text on every change — typing, a pick, or the blur snap to canonical. */
+  onChange?: (value: string) => void;
 }) {
   const reactId = useId();
   const inputId = id ?? `city-${reactId}`;
@@ -73,10 +76,12 @@ export function CityCombobox({
   };
 
   const pick = (city: City) => {
-    setValue(clearOnSelect ? "" : city);
+    const next = clearOnSelect ? "" : city;
+    setValue(next);
     close();
     setActive(0);
     onSelect?.(city);
+    onChange?.(next);
   };
 
   const toggleBrowse = () => {
@@ -110,12 +115,16 @@ export function CityCombobox({
           setBrowseAll(false);
           setOpen(true);
           setActive(0);
+          onChange?.(e.target.value);
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => {
           // Snap "haifa" → "Haifa" so the server's enum check passes.
           const canonical = matchCity(value);
-          if (canonical && canonical !== value && !clearOnSelect) setValue(canonical);
+          if (canonical && canonical !== value && !clearOnSelect) {
+            setValue(canonical);
+            onChange?.(canonical);
+          }
         }}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {

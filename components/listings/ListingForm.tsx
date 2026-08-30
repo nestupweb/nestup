@@ -43,6 +43,11 @@ export function ListingForm({
   // Open on a room that already has a requirement, so editing shows the rule
   // as it stands rather than as if there were none.
   const [genderOnly, setGenderOnly] = useState(Boolean(listing?.wanted_gender));
+  // Tracked (not just left as defaultValue) so PinField can preview where the
+  // room will land as these are typed, before the form is ever submitted.
+  const [city, setCity] = useState(listing?.city ?? "");
+  const [street, setStreet] = useState(listing?.street ?? "");
+  const [houseNumber, setHouseNumber] = useState(listing?.house_number ?? "");
   // Controlled, because the co-poster cap is `roommates_count - 1` and has to
   // move the moment this number does.
   const [roommatesCount, setRoommatesCount] = useState(listing?.roommates_count ?? 1);
@@ -84,7 +89,7 @@ export function ListingForm({
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className={label} htmlFor="listing-city">
             City *
-            <CityCombobox id="listing-city" name="city" required defaultValue={listing?.city ?? ""} />
+            <CityCombobox id="listing-city" name="city" required defaultValue={listing?.city ?? ""} onChange={setCity} />
           </label>
           <label className={label}>
             Area
@@ -92,17 +97,34 @@ export function ListingForm({
           </label>
           <label className={label}>
             Street *
-            <input name="street" required minLength={2} maxLength={80} defaultValue={listing?.street ?? ""} className={input} />
+            <input
+              name="street"
+              required
+              minLength={2}
+              maxLength={80}
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              className={input}
+            />
           </label>
           <label className={label}>
             House number *
-            <input name="house_number" required maxLength={10} defaultValue={listing?.house_number ?? ""} className={input} />
+            <input
+              name="house_number"
+              required
+              maxLength={10}
+              value={houseNumber}
+              onChange={(e) => setHouseNumber(e.target.value)}
+              className={input}
+            />
           </label>
         </div>
         <div className="mt-3">
           <PinField
             initial={pointOf({ lat: listing?.lat ?? null, lng: listing?.lng ?? null })}
-            city={listing?.city ?? ""}
+            street={street}
+            houseNumber={houseNumber}
+            city={city}
             hasPoint={Boolean(listing?.lat && listing?.lng)}
           />
         </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { previewAddressAction } from "@/app/actions/listing";
 import type { LatLng } from "@/lib/geo";
 
 const PinPicker = dynamic(() => import("@/components/map/PinPicker"), {
@@ -9,64 +10,94 @@ const PinPicker = dynamic(() => import("@/components/map/PinPicker"), {
   loading: () => <div className="h-56 w-full animate-pulse rounded-2xl border border-hairline bg-surface sm:h-64" />,
 });
 
+type PreviewStatus = "idle" | "loading" | "found" | "missing" | "unavailable";
+
+/** How long to wait after the owner stops typing before asking Nominatim. */
+const DEBOUNCE_MS = 700;
+
 /**
- * The listing form's map row: a "place it yourself" pin that submits with the
- * rest of the form. Collapsed by default, and it only sends `pin_moved=1` once
- * the marker has actually been moved, so simply opening the map changes
- * nothing.
+ * The listing form's map row: shows where the room will be placed as the
+ * address is typed — not only after Publish is pressed — and lets the owner
+ * drag the pin to correct it.
  *
- * Nothing here is ever required. Every save looks the address up and places
- * the room itself, and a save it cannot verify is refused outright rather than
- * handed to the owner as work (2026-08-29). This map is for the owner who
- * wants to correct a pin, or who knows an address Nominatim does not.
+ * The address is looked up again at save time regardless (`resolveCoords` in
+ * `app/actions/listing.ts`); this is a preview of that lookup, not a
+ * replacement for it, so a fake address still gets refused on save even if
+ * this preview never runs. Once the owner drags the pin, later previews stop
+ * moving it — a placement they made on purpose outranks a lookup, exactly as
+ * it does on save (2026-08-29).
  */
 export function PinField({
   initial,
+  street,
+  houseNumber,
   city,
   hasPoint,
 }: {
   initial: LatLng | null;
+  street: string;
+  houseNumber: string;
   city: string;
-  /** Whether the listing already has coordinates (affects the wording). */
+  /** Whether the listing already has coordinates — skips re-asking Nominatim for the address it was saved with. */
   hasPoint: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const [point, setPoint] = useState<LatLng | null>(initial);
   const [moved, setMoved] = useState(false);
+  const [status, setStatus] = useState<PreviewStatus>(hasPoint ? "found" : "idle");
+  const requestId = useRef(0);
+  const settledFor = useRef(hasPoint ? `${street.trim()}|${houseNumber.trim()}|${city.trim()}` : null);
+
+  const s = street.trim();
+  const h = houseNumber.trim();
+  const c = city.trim();
+  const complete = s.length >= 2 && h.length > 0 && c.length > 0;
+
+  useEffect(() => {
+    if (moved || !complete) return; // the owner's own placement is never overwritten by a later lookup
+    const key = `${s}|${h}|${c}`;
+    if (key === settledFor.current) return;
+
+    const id = ++requestId.current;
+    setStatus("loading");
+    const timer = setTimeout(async () => {
+      const outcome = await previewAddressAction(s, h, c);
+      if (id !== requestId.current) return; // a newer address was typed meanwhile
+      settledFor.current = key;
+      setStatus(outcome.status);
+      if (outcome.status === "found") setPoint({ lat: outcome.lat, lng: outcome.lng });
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [s, h, c, moved, complete]);
+
+  const displayStatus: PreviewStatus = complete ? status : "idle";
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="text-sm font-semibold text-accent underline underline-offset-4"
-          aria-expanded={open}
-        >
-          {open ? "Hide map" : hasPoint ? "Check the pin on the map" : "Place the room on the map"}
-        </button>
-        <span className="text-xs text-muted">
-          {moved
-            ? "Pin set — this is where the room will show."
-            : hasPoint
-              ? "We placed it from the address. Move it if it's off."
-              : "Optional — we place it from the address when you save."}
-        </span>
-      </div>
+      <p className="text-xs text-muted">
+        {moved
+          ? "Pin set — this is where the room will show."
+          : displayStatus === "loading"
+            ? "Locating…"
+            : displayStatus === "found"
+              ? "This is where the room will show. Drag the pin if it's off."
+              : displayStatus === "missing"
+                ? "We couldn't find this address — check the spelling, or drop the pin yourself."
+                : displayStatus === "unavailable"
+                  ? "Couldn't check the address just now — it's checked again when you save."
+                  : "Fill in the street and house number to see it on the map, or place the pin yourself."}
+      </p>
 
-      {open ? (
-        <div className="mt-3">
-          <PinPicker
-            initial={point}
-            city={city}
-            onMove={(p) => {
-              setPoint(p);
-              setMoved(true);
-            }}
-          />
-          <p className="mt-2 text-xs text-muted">Drag the pin, or tap the map, to set the exact spot.</p>
-        </div>
-      ) : null}
+      <div className="mt-3">
+        <PinPicker
+          initial={point}
+          city={city}
+          onMove={(p) => {
+            setPoint(p);
+            setMoved(true);
+          }}
+        />
+        <p className="mt-2 text-xs text-muted">Drag the pin, or tap the map, to set the exact spot.</p>
+      </div>
 
       {moved && point ? (
         <>
