@@ -2,14 +2,20 @@
 
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { compressImage } from "@/lib/image-client";
+import { CHAT_MEDIA_ACCEPT, MAX_CHAT_MEDIA_BYTES, prepareChatMedia } from "@/lib/chat-media";
 
-type Attachment = { preview: string; path: string | null; status: "uploading" | "ready" | "failed"; error?: string };
+type Attachment = {
+  preview: string;
+  path: string | null;
+  kind: "image" | "video";
+  status: "uploading" | "ready" | "failed";
+  error?: string;
+};
 
 export interface SendPayload {
   content: string;
   imagePath: string | null;
-  /** Object URL of the attached photo, shown until the server copy arrives. Ownership passes to the caller. */
+  /** Object URL of the attachment, shown until the server copy arrives. Ownership passes to the caller. */
   imagePreview: string | null;
 }
 

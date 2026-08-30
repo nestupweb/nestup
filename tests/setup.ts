@@ -2,23 +2,17 @@ import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
 /**
- * Point the bare `localStorage` global at jsdom's, which is the one the tests
- * and the browser both mean.
+ * Known-red, and not from anything in the app: `tests/unit/theme-toggle.test.tsx`
+ * fails both its cases with `localStorage.clear is not a function`.
  *
- * Node 25 ships its own `localStorage` global, gated behind `--localstorage-file`.
- * Vitest passes that flag without a path, so the global exists but is inert —
- * hence `localStorage.clear is not a function`. Because Node installs it as a
- * non-writable global, jsdom's working implementation never replaced it, and
- * anything reading the bare identifier (`ThemeToggle` included, exactly as it
- * does in a real browser) got the dud instead of the store the assertions read.
- * Redefining it here rather than rewriting call sites keeps the components
- * under test written the way they ship.
+ * Node 25 ships a `localStorage` global gated behind `--localstorage-file`, and
+ * Vitest passes that flag with no path (see the warnings the run prints), so the
+ * global exists but is inert — and jsdom's working implementation does not
+ * replace it. Aliasing `globalThis.localStorage` to `window.localStorage` here
+ * does NOT fix it: jsdom's own is the inert one in this combination, so the fix
+ * is a Vitest/Node version move rather than a line of setup. Left documented
+ * rather than papered over, so the next person does not re-derive it.
  */
-Object.defineProperty(globalThis, "localStorage", {
-  value: window.localStorage,
-  configurable: true,
-  writable: true,
-});
 
 // next/font/google is a build-time macro Next compiles away; Vitest can't, so stub every font loader.
 // `has` must report every prop as present (Vitest checks `prop in mock` before reading a named
