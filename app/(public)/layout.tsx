@@ -7,15 +7,24 @@ import { BottomNav } from "@/components/ui/BottomNav";
 import { UnreadBadge } from "@/components/ui/UnreadBadge";
 import { getAuthContext } from "@/lib/auth";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const { user } = await getAuthContext();
-
+/**
+ * Not async, unlike the version this replaces.
+ *
+ * `/browse` is the app's public front door, so it is the page most worth
+ * prerendering — and awaiting `auth.getUser()` here meant none of it could be.
+ * Only two spots actually differ by session: the Log in / Sign up pills, and
+ * whether the bottom nav is there at all. Both now sit behind their own
+ * `<Suspense>` and stream in, so the wordmark, the theme toggle and the page
+ * itself ship in the static shell.
+ *
+ * The bottom padding that used to depend on `user` is now unconditional: it is
+ * the height of the floating nav, and reserving it for signed-out visitors too
+ * costs one empty strip at the foot of the page but keeps the shell static and
+ * stops the layout jumping when the nav streams in.
+ */
+export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`min-h-dvh ${user ? "pb-28" : ""}`}>
+    <div className="min-h-dvh pb-28">
       <header className="border-b border-hairline" style={{ viewTransitionName: "site-header" }}>
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link href="/" aria-label="NestUp home" className="flex items-center text-ink">
@@ -23,18 +32,9 @@ export default async function PublicLayout({ children }: { children: React.React
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            {user ? null : (
-              <>
-                <Link href="/login" className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-contrast">Log in</Link>
-                {/* Quieter than Log in so the two pills don't compete for the same glance. */}
-                <Link
-                  href="/signup"
-                  className="rounded-full border border-hairline px-4 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
+            <Suspense fallback={null}>
+              <SignedOutActions />
+            </Suspense>
           </div>
         </div>
       </header>
@@ -42,15 +42,42 @@ export default async function PublicLayout({ children }: { children: React.React
         <BackButton />
         {children}
       </div>
-      {user ? (
-        <BottomNav
-          unreadSlot={
-            <Suspense fallback={null}>
-              <UnreadBadge />
-            </Suspense>
-          }
-        />
-      ) : null}
+      <Suspense fallback={null}>
+        <SignedInNav />
+      </Suspense>
     </div>
+  );
+}
+
+/** The Log in / Sign up pair, shown only to visitors without a session. */
+async function SignedOutActions() {
+  const { user } = await getAuthContext();
+  if (user) return null;
+  return (
+    <>
+      <Link href="/login" className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-contrast">Log in</Link>
+      {/* Quieter than Log in so the two pills don't compete for the same glance. */}
+      <Link
+        href="/signup"
+        className="rounded-full border border-hairline px-4 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
+      >
+        Sign up
+      </Link>
+    </>
+  );
+}
+
+/** The floating nav, which only means anything once there is an account behind it. */
+async function SignedInNav() {
+  const { user } = await getAuthContext();
+  if (!user) return null;
+  return (
+    <BottomNav
+      unreadSlot={
+        <Suspense fallback={null}>
+          <UnreadBadge />
+        </Suspense>
+      }
+    />
   );
 }
