@@ -71,17 +71,29 @@ export function MessageComposer({
 
   async function attach(file: File | undefined) {
     if (!file) return;
+    const kind = file.type.startsWith("video/") ? "video" : "image";
     const preview = URL.createObjectURL(file);
-    setImage({ preview, path: null, status: "uploading" });
+    // Checked before the upload starts: a 400 MB clip should fail instantly,
+    // not after minutes on a phone connection (the bucket refuses it anyway).
+    if (file.size > MAX_CHAT_MEDIA_BYTES) {
+      setImage({
+        preview,
+        path: null,
+        kind,
+        status: "failed",
+        error: `That ${kind} is too large — the limit is ${Math.round(MAX_CHAT_MEDIA_BYTES / 1024 / 1024)} MB.`,
+      });
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    setImage({ preview, path: null, kind, status: "uploading" });
     try {
-      const blob = await compressImage(file);
-      const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-      const path = `${conversationId}/${crypto.randomUUID()}.${ext}`;
+      const media = await prepareChatMedia(file, conversationId);
       const { error } = await createClient()
         .storage.from("chat-images")
-        .upload(path, blob, { contentType: blob.type || "image/jpeg" });
+        .upload(media.path, media.blob, { contentType: media.contentType });
       if (error) throw new Error("Upload failed — check your connection and try again.");
-      setImage((img) => (img && img.preview === preview ? { ...img, path, status: "ready" } : img));
+      setImage((img) => (img && img.preview === preview ? { ...img, path: media.path, status: "ready" } : img));
     } catch (e) {
       setImage((img) =>
         img && img.preview === preview
@@ -103,8 +115,8 @@ export function MessageComposer({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
-        aria-label="Attach a photo"
+        accept={CHAT_MEDIA_ACCEPT}
+        aria-label="Attach a photo or video"
         className="sr-only"
         onChange={(e) => void attach(e.target.files?.[0])}
       />
@@ -112,12 +124,23 @@ export function MessageComposer({
       {image ? (
         <div className="mb-2 flex items-end gap-3">
           <div className="relative overflow-hidden rounded-2xl border border-hairline bg-surface">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={image.preview}
-              alt="Photo to send"
-              className={`h-24 w-auto max-w-[12rem] object-cover transition-opacity ${image.status === "ready" ? "opacity-100" : "opacity-50"}`}
-            />
+            {image.kind === "video" ? (
+              <video
+                src={image.preview}
+                muted
+                playsInline
+                preload="metadata"
+                aria-label="Video to send"
+                className={`h-24 w-auto max-w-[12rem] object-cover transition-opacity ${image.status === "ready" ? "opacity-100" : "opacity-50"}`}
+              />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={image.preview}
+                alt="Photo to send"
+                className={`h-24 w-auto max-w-[12rem] object-cover transition-opacity ${image.status === "ready" ? "opacity-100" : "opacity-50"}`}
+              />
+            )}
             {image.status === "uploading" ? (
               <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[10px] font-semibold uppercase tracking-widest text-white">
                 Uploading…
@@ -126,7 +149,7 @@ export function MessageComposer({
             <button
               type="button"
               onClick={removeImage}
-              aria-label="Remove photo"
+              aria-label={image.kind === "video" ? "Remove video" : "Remove photo"}
               className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-xs text-white backdrop-blur hover:bg-black/75"
             >
               ×
@@ -154,8 +177,8 @@ export function MessageComposer({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          aria-label="Add a photo"
-          title="Add a photo"
+          aria-label="Add a photo or video"
+          title="Add a photo or video"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline text-muted transition-colors hover:border-accent hover:text-accent"
         >
           <PhotoIcon />

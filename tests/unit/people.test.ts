@@ -39,9 +39,22 @@ describe("socialHref", () => {
     expect(socialHref("linkedin", "danalevi")).toBe("https://linkedin.com/in/danalevi");
     expect(socialHref("facebook", "https://www.facebook.com/dana")).toBe("https://www.facebook.com/dana");
   });
-  test("free text (a display name) gets no link", () => {
-    expect(socialHref("facebook", "Dana Levi")).toBeUndefined();
+  test("a typed-in name opens a people search rather than nothing", () => {
+    // Real data on the live site: the LinkedIn field held "guy licht", so the
+    // chip rendered as a dead span while Instagram and Facebook beside it worked.
+    expect(socialHref("linkedin", "guy licht")).toBe(
+      "https://www.linkedin.com/search/results/people/?keywords=guy%20licht"
+    );
+    expect(socialHref("facebook", "Dana Levi")).toBe("https://www.facebook.com/search/people/?q=Dana%20Levi");
+    expect(socialHref("linkedin", "Dana Levi & Co")).toBe(
+      "https://www.linkedin.com/search/results/people/?keywords=Dana%20Levi%20%26%20Co"
+    );
+  });
+  test("nothing to link stays unlinked", () => {
     expect(socialHref("instagram", "")).toBeUndefined();
+    expect(socialHref("linkedin", "   ")).toBeUndefined();
+    // Instagram has no dependable people search, so a name there stays plain text.
+    expect(socialHref("instagram", "Dana Levi")).toBeUndefined();
   });
 });
 

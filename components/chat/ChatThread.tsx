@@ -10,6 +10,7 @@ import { ScheduleViewing, type GoogleState } from "@/components/chat/ScheduleVie
 import { ViewingCard } from "@/components/chat/ViewingCard";
 import { ViewingScheduledChip } from "@/components/chat/ViewingDetails";
 import { groupByDay, timeLabel } from "@/lib/chat-format";
+import { isVideoPath } from "@/lib/chat-media";
 import {
   OPEN_VIEWING_MESSAGE,
   mergeMessages,
@@ -185,8 +186,9 @@ export function ChatThread({
 
   // Opening a thread is what marks it read. This used to happen while the page
   // rendered, which a cached render cannot do — a write must not be skipped on a
-  // cache hit or replayed on every miss. The action stamps the read and
-  // revalidates the inbox tag, so the badge and the list update themselves.
+  // cache hit or replayed on every miss. The action stamps the read and calls
+  // `refresh()`, which reruns this route's uncached reads — the inbox and the
+  // unread badge — without expiring any of the caches behind the other tabs.
   useEffect(() => {
     if (conversation.unread_count > 0) void markReadAction(conversation.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -306,6 +308,7 @@ export function ChatThread({
                         grouped={grouped}
                         content={item.content}
                         image={item.image_url}
+                        isVideo={Boolean(item.image_path && isVideoPath(item.image_path))}
                         onOpenImage={setLightbox}
                         at={item.created_at}
                         sender={groupChat && item.sender_id !== meId && !grouped ? nameFor(item.sender_id) : undefined}
@@ -349,11 +352,22 @@ export function ChatThread({
   );
 }
 
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden="true">
+      <path d="M12 4v11" />
+      <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+      <path d="M5 19.5h14" />
+    </svg>
+  );
+}
+
 function Bubble({
   mine,
   grouped,
   content,
   image,
+  isVideo,
   onOpenImage,
   at,
   sender,
@@ -367,6 +381,8 @@ function Bubble({
   grouped: boolean;
   content: string;
   image?: string;
+  /** The attachment is a clip, not a photo — see `isVideoPath`. */
+  isVideo?: boolean;
   onOpenImage: (url: string) => void;
   at: string;
   sender?: string;
@@ -377,6 +393,8 @@ function Bubble({
   onDismiss?: () => void;
 }) {
   const failed = status === "failed";
+  // Set when this browser turns out not to decode the attachment (see below).
+  const [unplayable, setUnplayable] = useState(false);
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
       {sender ? (
@@ -392,7 +410,34 @@ function Bubble({
             : `rounded-2xl rounded-bl-md border border-hairline bg-surface text-ink ${grouped ? "rounded-tl-md" : ""}`
         } ${failed ? "opacity-60" : status === "sending" ? "opacity-85" : ""}`}
       >
-        {image ? (
+        {image && unplayable ? (
+          // Accepting every format means accepting containers this browser
+          // cannot decode — a .mkv here, a HEIC on anything but Safari. Rather
+          // than leave a dead player in the thread, hand over the file itself.
+          <a
+            href={image}
+            target="_blank"
+            rel="noreferrer"
+            className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm underline-offset-2 hover:underline ${
+              mine ? "text-accent-contrast" : "text-accent"
+            }`}
+          >
+            <DownloadIcon />
+            {isVideo ? "Open video" : "Open photo"}
+          </a>
+        ) : image && isVideo ? (
+          // Played in place, the way every messenger does it — no lightbox.
+          // `preload="metadata"` is the video counterpart of the lazy <img>
+          // below: a thread full of clips fetches poster frames, not megabytes.
+          <video
+            src={image}
+            controls
+            playsInline
+            preload="metadata"
+            onError={() => setUnplayable(true)}
+            className="max-h-72 w-auto max-w-full rounded-xl"
+          />
+        ) : image ? (
           <button type="button" onClick={() => onOpenImage(image)} aria-label="Open photo" className="block overflow-hidden rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -404,6 +449,7 @@ function Bubble({
               // the one line that makes it behave like the rest of the app.
               loading="lazy"
               decoding="async"
+              onError={() => setUnplayable(true)}
               className="max-h-72 w-auto max-w-full object-cover"
             />
           </button>

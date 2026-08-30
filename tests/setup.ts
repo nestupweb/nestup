@@ -2,16 +2,15 @@ import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
 /**
- * Known-red, and not from anything in the app: `tests/unit/theme-toggle.test.tsx`
- * fails both its cases with `localStorage.clear is not a function`.
+ * Run the suite with `npm test`, never a bare `npx vitest run`.
  *
- * Node 25 ships a `localStorage` global gated behind `--localstorage-file`, and
- * Vitest passes that flag with no path (see the warnings the run prints), so the
- * global exists but is inert — and jsdom's working implementation does not
- * replace it. Aliasing `globalThis.localStorage` to `window.localStorage` here
- * does NOT fix it: jsdom's own is the inert one in this combination, so the fix
- * is a Vitest/Node version move rather than a line of setup. Left documented
- * rather than papered over, so the next person does not re-derive it.
+ * The npm script sets `NODE_OPTIONS=--no-experimental-webstorage`, and it is
+ * load-bearing: without it Node 25 installs its own `localStorage` global, gated
+ * behind `--localstorage-file` and inert when Vitest passes that flag with no
+ * path. jsdom's working implementation does not replace it, so
+ * `theme-toggle.test.tsx` fails both cases with `localStorage.clear is not a
+ * function` — a failure that says nothing about the component and appears only
+ * when the npm script is bypassed.
  */
 
 // next/font/google is a build-time macro Next compiles away; Vitest can't, so stub every font loader.
