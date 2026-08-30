@@ -395,7 +395,17 @@ function Bubble({
         {image ? (
           <button type="button" onClick={() => onOpenImage(image)} aria-label="Open photo" className="block overflow-hidden rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt="" className="max-h-72 w-auto max-w-full object-cover" />
+            <img
+              src={image}
+              alt=""
+              // A long thread is a long column of photos, and without this every
+              // one of them downloads when the thread opens — including the
+              // hundred scrolled far above. `<img>` is eager by default; this is
+              // the one line that makes it behave like the rest of the app.
+              loading="lazy"
+              decoding="async"
+              className="max-h-72 w-auto max-w-full object-cover"
+            />
           </button>
         ) : null}
         {content ? <p className={`whitespace-pre-line break-words ${image ? "px-2 pt-1.5" : ""}`}>{content}</p> : null}

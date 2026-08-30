@@ -51,6 +51,46 @@ export function toDMY(iso: string): string {
  * real length: 45/13/2011, 31/04/2026 and 29/02/2025 are all rejected, while
  * 29/02/2024 (a leap year) is accepted. Single-digit day and month are fine.
  */
+/**
+ * Shape a dd/mm/yyyy field while it is being typed.
+ *
+ * The separators appear on their own: two digits close the day, two more close
+ * the month, so 1-2-7 reads as `12/7` without the "/" key and the month can
+ * never take a third digit — a third keypress starts the year instead. A slash
+ * may still be typed by hand to close a single-digit day or month (`1/7/2026`).
+ *
+ * `previous` is the value before this keystroke. While deleting, the string is
+ * left alone apart from stripping stray characters — otherwise backspacing over
+ * an auto-inserted "/" would put it straight back and trap the caret.
+ */
+export function maskDMY(raw: string, previous = ""): string {
+  const cleaned = raw.replace(/[^\d/]/g, "").replace(/\/{2,}/g, "/").slice(0, 10);
+  if (raw.length < previous.length) return cleaned;
+
+  const caps = [2, 2, 4];
+  const parts: string[] = [];
+  let cur = "";
+  for (const ch of cleaned) {
+    if (ch === "/") {
+      if (cur === "" || parts.length >= 2) continue; // leading, doubled, or past the year
+      parts.push(cur);
+      cur = "";
+      continue;
+    }
+    if (parts.length >= 3 || (parts.length === 2 && cur.length >= caps[2])) break;
+    cur += ch;
+    if (parts.length < 2 && cur.length === caps[parts.length]) {
+      parts.push(cur);
+      cur = "";
+    }
+  }
+
+  const out = (cur ? [...parts, cur] : parts).join("/");
+  // Show the separator the moment a section closes, so the next digit is
+  // visibly landing in the next box.
+  return cur === "" && parts.length > 0 && parts.length < 3 ? `${out}/` : out;
+}
+
 export function parseDMY(input: string): string | null {
   const m = /^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*$/.exec(input);
   if (!m) return null;
@@ -287,8 +327,9 @@ export function DatePicker({
             aria-label="Type a date as dd/mm/yyyy"
             aria-invalid={typedError ? true : undefined}
             aria-describedby={typedError ? `${fieldId}-typed-error` : undefined}
+            maxLength={10}
             onChange={(e) => {
-              const v = e.target.value.replace(/[^\d/]/g, "").slice(0, 10);
+              const v = maskDMY(e.target.value, typed);
               setTyped(v);
               setTypedError("");
               // Only judge it once it is a whole date, so half-typed input isn't scolded.

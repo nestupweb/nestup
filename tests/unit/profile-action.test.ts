@@ -14,7 +14,7 @@ vi.mock("@/lib/auth", () => ({
     supabase: { from: (table: string) => ({ upsert: (row: unknown) => upsert(table, row) }) },
   }),
 }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", async () => await import("../helpers/next-cache-stub"));
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
     throw new Error(`REDIRECT:${to}`);

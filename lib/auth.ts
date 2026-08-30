@@ -43,14 +43,31 @@ export async function requireUser() {
   return { supabase, user };
 }
 
-/** The signed-in user's profile, or null if they haven't created one yet. */
+/**
+ * The signed-in user's profile, or null if they haven't created one yet.
+ *
+ * Deliberately not `requireUser()` followed by the query, which is what this
+ * was: that ran three round-trips strictly one after another — `getUser`, then
+ * the suspension check, then this row — and Profile could not emit a byte until
+ * all three came back, which is what kept it the slowest tab even after its
+ * data was cached. Only the first is a genuine dependency; the other two both
+ * need nothing but the id, so they now go out together.
+ *
+ * The suspension gate is unchanged in effect: it is still checked before this
+ * returns, so a suspended member is bounced before anything renders. The cost of
+ * doing it this way is one wasted profile read for an account that turns out to
+ * be suspended — RLS-scoped to them, and a rare case besides.
+ */
 export const getOwnProfile = cache(async (): Promise<{ profile: Profile | null; userId: string }> => {
-  const { supabase, user } = await requireUser();
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const { supabase, user } = await getAuthContext();
+  if (!user) redirect("/login");
+
+  const [suspended, { data }] = await Promise.all([
+    getSuspended(),
+    supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
+  ]);
+  if (suspended) redirect("/login?error=suspended");
+
   return { profile: (data as Profile | null) ?? null, userId: user.id };
 });
 

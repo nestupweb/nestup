@@ -246,7 +246,18 @@ export default async function ListingDetailPage({
                 >
                   {p.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.avatar_url} alt="" className="h-14 w-14 rounded-full object-cover" />
+                    <img
+                      src={p.avatar_url}
+                      alt=""
+                      // The household sits well below the fold, behind the
+                      // gallery and the whole description; there is no reason for
+                      // these to compete with the photos at the top of the page.
+                      loading="lazy"
+                      decoding="async"
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 rounded-full object-cover"
+                    />
                   ) : (
                     <div className="h-14 w-14 rounded-full bg-hairline" />
                   )}

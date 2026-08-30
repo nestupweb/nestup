@@ -14,13 +14,30 @@ import { beforeEach, expect, test, vi } from "vitest";
  * member's cache, or into a feature it has no business touching.
  */
 const updateTag = vi.fn();
+const refresh = vi.fn();
 const requireUser = vi.fn();
 const rpc = vi.fn();
 const upsert = vi.fn();
 const del = vi.fn();
+const respondToInvite = vi.fn();
 
-vi.mock("next/cache", () => ({ updateTag, revalidateTag: vi.fn(), revalidatePath: vi.fn() }));
+// Spied by hand rather than taken from the shared stub: these tests assert on
+// the exact set of tags each mutation invalidates, so they need the reference.
+vi.mock("next/cache", () => ({
+  updateTag,
+  refresh,
+  revalidateTag: vi.fn(),
+  revalidatePath: vi.fn(),
+}));
 vi.mock("@/lib/auth", () => ({ requireUser }));
+vi.mock("@/lib/invites", () => ({ respondToInvite, searchAvailableMembers: vi.fn() }));
+vi.mock("@/lib/chat", () => ({
+  markConversationRead: vi.fn(),
+  clearConversation: vi.fn(async () => true),
+  findOrCreateConversation: vi.fn(),
+  getConversations: vi.fn(),
+  visibleConversations: vi.fn(),
+}));
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
     throw new Error(`REDIRECT:${to}`);
@@ -29,18 +46,31 @@ vi.mock("next/navigation", () => ({
 
 const ME = "11111111-1111-4111-8111-111111111111";
 const ROOM = "22222222-2222-4222-8222-222222222222";
+const CHAT = "33333333-3333-4333-8333-333333333333";
+const MESSAGE = "44444444-4444-4444-8444-444444444444";
 
 beforeEach(() => {
   updateTag.mockReset();
+  refresh.mockReset();
   rpc.mockReset().mockResolvedValue({ data: 1, error: null });
   upsert.mockReset().mockResolvedValue({ error: null });
   del.mockReset().mockResolvedValue({ error: null });
+  respondToInvite.mockReset().mockResolvedValue({ listingId: ROOM });
   requireUser.mockReset().mockResolvedValue({
     user: { id: ME, email: "me@nestup.dev" },
     supabase: {
       rpc,
       from: () => ({
         upsert,
+        update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+        insert: () => ({
+          select: () => ({
+            single: async () => ({
+              data: { id: MESSAGE, conversation_id: CHAT, content: "hi" },
+              error: null,
+            }),
+          }),
+        }),
         delete: () => ({ eq: () => ({ eq: del }) }),
         select: () => ({
           eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }),
@@ -106,4 +136,74 @@ test("every per-member tag is scoped to the member who acted", async () => {
   const personal = tags().filter((t) => /^(saved|profile|deck):/.test(t));
   expect(personal.length).toBeGreaterThan(0);
   for (const tag of personal) expect(tag.endsWith(`:${ME}`)).toBe(true);
+});
+
+/**
+ * `refreshEverywhere` — the worst of the old sweeps. Answering one invite
+ * rebuilt /profile, /browse, /browse/[id], /swipe AND /chat, and because
+ * `revalidatePath` inside a Server Action also expires every page the member
+ * had already visited, saying yes to a roommate emptied their whole session
+ * cache. It changes their own profile and the room's household; that is all.
+ */
+test("answering an invite touches the member's profile and the room, nothing else", async () => {
+  const { respondToInviteAction } = await import("@/app/actions/co-posters");
+  const form = new FormData();
+  form.set("invite_id", "55555555-5555-4555-8555-555555555555");
+  form.set("answer", "yes");
+
+  await respondToInviteAction({}, form);
+
+  expect(tags()).toEqual([`profile:${ME}`, `listing:${ROOM}`]);
+});
+
+test("answering an invite never reaches into chat or the shared room list", async () => {
+  const { respondToInviteAction } = await import("@/app/actions/co-posters");
+  const form = new FormData();
+  form.set("invite_id", "55555555-5555-4555-8555-555555555555");
+  form.set("answer", "no");
+
+  await respondToInviteAction({}, form);
+
+  expect(tags()).not.toContain("listings");
+  for (const tag of tags()) expect(tag).not.toMatch(/chat|conversation|message/i);
+});
+
+/** Pausing a room is the same change as editing one, so it drops the same four. */
+test("pausing a room drops the public list, the room, and the owner's own caches", async () => {
+  const { setListingActiveAction } = await import("@/app/actions/settings");
+  await setListingActiveAction(ROOM, false);
+
+  expect(tags()).toEqual(["listings", `listing:${ROOM}`, `profile:${ME}`, `deck:${ME}`]);
+});
+
+/**
+ * The other half of the rule, and the one that matters most for Chat: sending a
+ * message expires no cache at all. It reruns the route in view via `refresh`
+ * and leaves Swipe, Listings and Profile exactly as they were — which is what
+ * `revalidatePath("/chat")` could not do, since in a Server Action it forced
+ * every visited page to refetch on its next visit.
+ */
+test("sending a message expires no cached data and only reruns the current route", async () => {
+  const { sendMessageAction } = await import("@/app/actions/chat");
+  const result = await sendMessageAction({
+    conversationId: CHAT,
+    clientId: MESSAGE,
+    content: "hello",
+  });
+
+  expect(result.ok).toBe(true);
+  expect(tags()).toEqual([]);
+  expect(refresh).toHaveBeenCalledTimes(1);
+});
+
+/** Blocking removes their rooms from the deck — and touches nothing shared. */
+test("blocking a member drops only the blocker's own deck", async () => {
+  const { blockUserAction } = await import("@/app/actions/moderation");
+  const form = new FormData();
+  form.set("blocked_id", "66666666-6666-4666-8666-666666666666");
+
+  await blockUserAction({}, form);
+
+  expect(tags()).toEqual([`deck:${ME}`]);
+  expect(tags()).not.toContain("listings");
 });

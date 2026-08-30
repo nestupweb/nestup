@@ -14,7 +14,7 @@ vi.mock("@/lib/auth", () => ({
   requireUser: async () => ({ user: { id: "me-1" }, supabase: { rpc } }),
 }));
 vi.mock("@/lib/moderation", () => ({ getBlockedIds: blocked }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", async () => await import("../helpers/next-cache-stub"));
 
 const INVITE = "33333333-3333-4333-8333-333333333333";
 const LISTING = "22222222-2222-4222-8222-222222222222";

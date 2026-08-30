@@ -42,7 +42,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => supabase }))
 vi.mock("@/lib/auth", () => ({
   requireUser: async () => ({ supabase, user: { id: "me-0000", email: "me@nestup.dev" } }),
 }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", async () => await import("../helpers/next-cache-stub"));
 vi.mock("next/headers", () => ({ headers: async () => ({ get: () => null }) }));
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {

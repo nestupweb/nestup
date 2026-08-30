@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "vitest";
-import { DatePicker, formatISODate, parseDMY, parseISODate, toDMY, toISODate } from "@/components/ui/DatePicker";
+import { DatePicker, formatISODate, maskDMY, parseDMY, parseISODate, toDMY, toISODate } from "@/components/ui/DatePicker";
 
 afterEach(cleanup);
 
@@ -13,6 +13,37 @@ test("ISO helpers", () => {
   expect(formatISODate("2026-10-01")).toBe("Thu, 1 Oct 2026");
   expect(toDMY("2026-10-01")).toBe("01/10/2026");
   expect(toDMY("")).toBe("");
+});
+
+test("maskDMY puts the slashes in and caps the day, month and year", () => {
+  // Two digits close the day; the next keypress is already in the month.
+  expect(maskDMY("1")).toBe("1");
+  expect(maskDMY("12")).toBe("12/");
+  expect(maskDMY("12/7")).toBe("12/7");
+  expect(maskDMY("12/07")).toBe("12/07/");
+  expect(maskDMY("12/07/2026")).toBe("12/07/2026");
+
+  // Typed straight through, no "/" key at all.
+  const typeOut = (keys: string) => keys.split("").reduce((acc, k) => maskDMY(acc + k, acc), "");
+  expect(typeOut("12")).toBe("12/");
+  expect(typeOut("127")).toBe("12/7");
+  expect(typeOut("12072026")).toBe("12/07/2026");
+
+  // The month can never take a third digit — it starts the year instead.
+  expect(typeOut("121234")).toBe("12/12/34");
+  expect(maskDMY("12/123")).toBe("12/12/3");
+  expect(maskDMY("12/12/20267")).toBe("12/12/2026");
+
+  // A hand-typed slash still closes a single-digit section.
+  expect(maskDMY("1/7/2026")).toBe("1/7/2026");
+  expect(maskDMY("1/")).toBe("1/");
+  expect(maskDMY("//12")).toBe("12/");
+  expect(maskDMY("ab12cd")).toBe("12/");
+
+  // Deleting leaves the string alone, so backspace can walk back over a slash.
+  expect(maskDMY("12/", "12/7")).toBe("12/");
+  expect(maskDMY("12", "12/")).toBe("12");
+  expect(maskDMY("1", "12")).toBe("1");
 });
 
 test("parseDMY takes real dd/mm/yyyy dates and refuses impossible ones", () => {
@@ -91,6 +122,27 @@ test("a date typed as dd/mm/yyyy is accepted, and a bogus one is refused", async
   expect(document.querySelector('input[name="move_in_by"]')).toHaveValue("2026-12-03");
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Thu, 3 Dec 2026" })).toBeInTheDocument();
+});
+
+test("the slash appears by itself and the month stops at two digits", async () => {
+  render(<DatePicker name="d" placeholder="Any date" />);
+  await userEvent.click(screen.getByRole("button", { name: "Any date" }));
+  const box = screen.getByLabelText("Type a date as dd/mm/yyyy");
+
+  await userEvent.type(box, "12");
+  expect(box).toHaveValue("12/"); // no "/" was pressed
+  await userEvent.type(box, "7");
+  expect(box).toHaveValue("12/7");
+
+  // A third month digit rolls into the year rather than making a 3-digit month.
+  await userEvent.clear(box);
+  await userEvent.type(box, "121234");
+  expect(box).toHaveValue("12/12/34");
+
+  await userEvent.clear(box);
+  await userEvent.type(box, "12072026");
+  expect(box).toHaveValue("12/07/2026");
+  expect(document.querySelector('input[name="d"]')).toHaveValue("2026-07-12");
 });
 
 test("typing refuses a date the calendar itself blocks", async () => {

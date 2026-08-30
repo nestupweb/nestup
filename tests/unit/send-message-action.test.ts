@@ -23,7 +23,7 @@ vi.mock("@/lib/auth", () => ({
   }),
 }));
 vi.mock("@/lib/chat", () => ({ markConversationRead: vi.fn(async () => {}) }));
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", async () => await import("../helpers/next-cache-stub"));
 
 const CONV = "11111111-1111-4111-8111-111111111111";
 const CLIENT = "44444444-4444-4444-8444-444444444444";
