@@ -123,6 +123,17 @@ input:is([type="button"], [type="submit"], [type="reset"], [type="checkbox"], [t
   cursor: pointer;
 }
 
+/* The one deliberate exception. A dismiss scrim is pressable — clicking the dim
+   area closes the sheet over it — but it is the darkened background, not an item
+   you aim at, and a hand spanning the whole viewport reads as a bug. They keep
+   the arrow, which is the call MapPanel had already made on its own. The same
+   marker goes on a click-swallower (a lightbox photo whose only handler stops
+   the close from firing). `npm run check:cursors` treats this attribute as the
+   only licence for a pressable element to show an arrow. */
+[data-cursor="arrow"] {
+  cursor: default;
+}
+
 /* ===== Swipe deck motion ===== */
 @keyframes swipe-in {
   from { opacity: 0; transform: translateY(18px) scale(0.985); }

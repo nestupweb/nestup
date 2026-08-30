@@ -104,6 +104,7 @@ export function ChatRowMenu({ conversationId, title }: { conversationId: string;
             type="button"
             aria-label="Close"
             onClick={() => (pending ? undefined : setConfirming(false))}
+            data-cursor="arrow"
             className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
           />
           <div

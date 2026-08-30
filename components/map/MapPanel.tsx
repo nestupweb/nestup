@@ -106,7 +106,8 @@ export function MapDialog({
         tabIndex={-1}
         aria-hidden="true"
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-ink/50 backdrop-blur-[2px]"
+        data-cursor="arrow"
+        className="absolute inset-0 bg-ink/50 backdrop-blur-[2px]"
       />
 
       <div

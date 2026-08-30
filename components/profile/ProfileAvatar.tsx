@@ -70,6 +70,7 @@ export function ProfileAvatar({ url, name }: { url: string | null; name: string 
           aria-modal="true"
           aria-label={`${name}'s profile photo`}
           onClick={() => setOpen(false)}
+          data-cursor="arrow"
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 p-4 backdrop-blur-sm"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -77,6 +78,7 @@ export function ProfileAvatar({ url, name }: { url: string | null; name: string 
             src={fullSizeUrl(url)}
             alt={name}
             onClick={(e) => e.stopPropagation()}
+            data-cursor="arrow"
             className="aspect-square h-auto w-[min(80vw,80dvh,32rem)] rounded-full object-cover shadow-2xl ring-4 ring-surface/30"
           />
           <button

@@ -75,6 +75,7 @@ export function FilterBar() {
         <div
           aria-hidden="true"
           onClick={() => setOpen(false)}
+          data-cursor="arrow"
           className="fixed inset-0 z-40 bg-ink/40 lg:hidden"
         />
       ) : null}

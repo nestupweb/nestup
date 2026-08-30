@@ -106,7 +106,7 @@ export function ViewingDetails({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" />
+      <button type="button" aria-label="Close" onClick={onClose} data-cursor="arrow" className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" />
       <div
         role="dialog"
         aria-modal="true"

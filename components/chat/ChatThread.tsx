@@ -335,7 +335,7 @@ export function ChatThread({
 
       {lightbox ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 p-4" role="dialog" aria-modal="true" aria-label="Photo">
-          <button type="button" aria-label="Close" onClick={() => setLightbox(null)} className="absolute inset-0" />
+          <button type="button" aria-label="Close" onClick={() => setLightbox(null)} data-cursor="arrow" className="absolute inset-0" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={lightbox} alt="" className="relative max-h-[90dvh] max-w-full rounded-2xl object-contain shadow-2xl" />
           <button

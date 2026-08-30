@@ -105,6 +105,7 @@ export function ScheduleViewing({
         type="button"
         aria-label="Close"
         onClick={onClose}
+        data-cursor="arrow"
         className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
       />
       <form
