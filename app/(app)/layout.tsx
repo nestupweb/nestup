@@ -46,11 +46,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
       <BottomNav
         unreadSlot={
-          user ? (
-            <Suspense fallback={null}>
-              <UnreadBadge />
-            </Suspense>
-          ) : null
+          <Suspense fallback={null}>
+            <UnreadBadge />
+          </Suspense>
         }
       />
     </div>
