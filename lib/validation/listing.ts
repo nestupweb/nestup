@@ -26,7 +26,7 @@ export const listingSchema = z.object({
   street: z.string().trim().min(2, "Street is required.").max(80),
   house_number: z.string().trim().min(1, "House number is required.").max(10),
   rent: z.coerce.number().int().positive(),
-  available_from: z.iso.date(),
+  available_from: z.iso.date("Add an entrance date."),
   lease_term: z.enum(leaseTermKeys).default("flexible"),
   property_type: z.enum(propertyTypeKeys).default("apartment"),
   rooms: z.coerce.number().min(1).max(12).multipleOf(0.5).default(3),
