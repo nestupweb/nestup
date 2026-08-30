@@ -2,8 +2,9 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { sendConfirmationMail, sendRecoveryMail } from "@/lib/auth-mail";
+import { sendConfirmationMail, sendEmailChangeMail, sendRecoveryMail } from "@/lib/auth-mail";
 import { requireUser } from "@/lib/auth";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { SUSPENDED_MESSAGE } from "@/lib/moderation";
@@ -228,35 +229,69 @@ export async function updatePasswordAction(_prev: AuthState, formData: FormData)
   redirect("/swipe");
 }
 
-export type AccountState = { error?: string; sent?: boolean; done?: boolean };
+export type AccountState = { error?: string; sent?: boolean; done?: boolean; email?: string };
 
 /**
- * Change the address the account signs in with. Supabase mails a confirmation
- * link to the NEW address and nothing moves until it is clicked, so the member
- * can't lock themselves out with a typo.
+ * Change the address the account signs in with. A 6-digit code goes ONLY to
+ * the NEW address (`sendEmailChangeMail`) and nothing moves until it is
+ * entered on this same page, so the member can't lock themselves out with a
+ * typo. The old address hears about the request separately — see
+ * `mailer_notifications_email_changed_enabled` in `scripts/auth-config.mjs`.
  */
 export async function changeEmailAction(_prev: AccountState, formData: FormData): Promise<AccountState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!emailOk(email)) return { error: "Please enter a valid email address." };
 
-  const { supabase, user } = await requireUser();
+  const { user } = await requireUser();
   if (email === (user.email ?? "").toLowerCase()) return { error: "That's already your e-mail address." };
 
-  const { error } = await supabase.auth.updateUser({ email });
+  const site = await requestOrigin();
+  const result = await sendEmailChangeMail(user.email ?? "", email, site);
+  if (result.status === "taken") return { error: "That email is already in use." };
+  if (result.status === "throttled") {
+    return { error: `We just sent one — try again in ${result.seconds} seconds.` };
+  }
+  if (result.status === "error") return { error: "Could not send the code. Try again in a moment." };
+  return { sent: true, email };
+}
+
+/** "Didn't get it? Send it again." — kept in its own state, same reason `resendConfirmationAction` is: a throttled resend must not blank out the code screen the member is already on. */
+export async function resendEmailChangeCodeAction(_prev: AccountState, formData: FormData): Promise<AccountState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!emailOk(email)) return { error: "Please enter a valid email address." };
+
+  const { user } = await requireUser();
+  const site = await requestOrigin();
+  const result = await sendEmailChangeMail(user.email ?? "", email, site);
+  if (result.status === "taken") return { error: "That email is already in use." };
+  if (result.status === "throttled") {
+    return { error: `We just sent one — try again in ${result.seconds} seconds.` };
+  }
+  if (result.status === "error") return { error: "Could not send it again. Please try in a moment." };
+  return { sent: true, email };
+}
+
+/**
+ * Second half of an e-mail change: the code from `sendEmailChangeMail`.
+ * `verifyOtp` with type "email_change" both confirms the new address and
+ * completes the switch — no link, no second screen.
+ */
+export async function verifyEmailChangeCodeAction(_prev: AccountState, formData: FormData): Promise<AccountState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const code = String(formData.get("code") ?? "").replace(/\D/g, "");
+  if (code.length !== 6) return { error: "Enter the 6-digit code from the email.", email };
+
+  const { supabase } = await requireUser();
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email_change" });
   if (error) {
-    // Same one-per-minute window as sign-up: a second attempt inside it is a
-    // wait, not a bad address, and the confirmation is already on its way.
     if (isSendRateLimit(error)) {
       const seconds = retryAfterSeconds(error.message);
-      return {
-        error: seconds
-          ? `We just mailed that address — try again in ${seconds} seconds.`
-          : "We just mailed that address — give it a minute before asking again.",
-      };
+      return { error: seconds ? `Too many tries — wait ${seconds} seconds.` : "Too many tries — wait a minute.", email };
     }
-    return { error: "Could not change the email. Try a different address." };
+    return { error: "That code is wrong or has expired. Send a new one.", email };
   }
-  return { sent: true };
+  revalidatePath("/settings");
+  return { done: true };
 }
 
 /**

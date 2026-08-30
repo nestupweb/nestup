@@ -74,6 +74,18 @@ export function buildAuthConfig({ templates, smtp = null }) {
     // (`{{ .Token }}` in the template). Supabase defaults to 8, which would
     // silently overflow the boxes.
     mailer_otp_length: 6,
+    // Off, so changing your e-mail only asks the NEW address to confirm — the
+    // default double-confirmation also mails the OLD address and blocks the
+    // change until both click through, which is what `lib/auth-mail.ts`'s
+    // single-code flow (`sendEmailChangeMail`) needs to be able to finish the
+    // change itself. In exchange, the old address is told about the change
+    // after the fact by the next setting.
+    mailer_secure_email_change_enabled: false,
+    // Supabase's own mailer sends this one directly (it's a single low-volume
+    // security notice, not the main confirmation path the spam problem above
+    // was about): the previous address hears about the change even though it
+    // no longer has to approve it.
+    mailer_notifications_email_changed_enabled: true,
   };
   if (smtp) {
     Object.assign(config, {
@@ -111,6 +123,8 @@ const SHOWN = [
   "mailer_otp_length",
   "mailer_autoconfirm",
   "external_email_enabled",
+  "mailer_secure_email_change_enabled",
+  "mailer_notifications_email_changed_enabled",
 ];
 
 function endpoint() {

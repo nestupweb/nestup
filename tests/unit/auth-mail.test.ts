@@ -145,6 +145,46 @@ describe("the throttle — the replacement for GoTrue's rate limit", () => {
   });
 });
 
+describe("sendEmailChangeMail", () => {
+  test("mints a code for the NEW address only, and sends it there", async () => {
+    const { sendEmailChangeMail } = await import("@/lib/auth-mail");
+    const r = await sendEmailChangeMail("old@nestup.dev", "new@nestup.dev", SITE);
+    expect(r).toEqual({ status: "sent" });
+    expect(generateLink).toHaveBeenCalledWith({
+      type: "email_change_new",
+      email: "old@nestup.dev",
+      newEmail: "new@nestup.dev",
+    });
+
+    const mail = sendMail.mock.calls[0][0];
+    expect(mail.to).toBe("new@nestup.dev");
+    expect(mail.text).toContain("123456");
+    expect(mail.html).toContain("123456");
+  });
+
+  test("a new address already confirmed on another account is reported as taken, nothing sent", async () => {
+    generateLink.mockResolvedValue({ data: null, error: { status: 422, code: "email_exists", message: "already registered" } });
+    const { sendEmailChangeMail } = await import("@/lib/auth-mail");
+    expect(await sendEmailChangeMail("old@nestup.dev", "taken@nestup.dev", SITE)).toEqual({ status: "taken" });
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  test("the throttle is keyed on the new address, the one actually being mailed", async () => {
+    const { sendEmailChangeMail } = await import("@/lib/auth-mail");
+    expect(await sendEmailChangeMail("old@nestup.dev", "new@nestup.dev", SITE)).toEqual({ status: "sent" });
+    const second = await sendEmailChangeMail("old@nestup.dev", "new@nestup.dev", SITE);
+    expect(second.status).toBe("throttled");
+    expect(sendMail).toHaveBeenCalledTimes(1);
+  });
+
+  test("a response with no code is an error rather than an empty mail", async () => {
+    generateLink.mockResolvedValue({ data: { properties: {} }, error: null });
+    const { sendEmailChangeMail } = await import("@/lib/auth-mail");
+    expect(await sendEmailChangeMail("old@nestup.dev", "new@nestup.dev", SITE)).toEqual({ status: "error" });
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendRecoveryMail", () => {
   test("links to the app's own confirm route, the shape that route already parses", async () => {
     const { sendRecoveryMail } = await import("@/lib/auth-mail");

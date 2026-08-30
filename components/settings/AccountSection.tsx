@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { changeEmailAction, changePasswordAction, type AccountState } from "@/app/actions/auth";
+import {
+  changeEmailAction,
+  changePasswordAction,
+  resendEmailChangeCodeAction,
+  verifyEmailChangeCodeAction,
+  type AccountState,
+} from "@/app/actions/auth";
+import { CodeInput } from "@/components/auth/CodeInput";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Card } from "@/components/settings/Card";
 import { useStickyForm } from "@/lib/hooks";
@@ -53,9 +60,18 @@ function Row({
 export function AccountSection({ email }: { email: string }) {
   const [openRow, setOpenRow] = useState<"email" | "password" | null>(null);
   const [emailState, emailForm, emailPending] = useStickyForm<AccountState>(changeEmailAction, {});
-  // A finished password change has nothing more to say, so the row folds itself
-  // away — done inside the action rather than in an effect, so there is no
-  // second render pass to close it.
+  // Kept apart from `emailState`: a resend that gets throttled must not blank
+  // out the code screen `emailState.sent` is what's keeping on-screen (the
+  // same reason sign-up's resend has its own state — see VerifyForm).
+  const [resent, resendForm, resending] = useStickyForm<AccountState>(resendEmailChangeCodeAction, {});
+  // A finished email or password change has nothing more to say, so the row
+  // folds itself away — done inside the action rather than in an effect, so
+  // there is no second render pass to close it.
+  const [codeState, codeForm, codePending] = useStickyForm<AccountState>(async (prev, formData) => {
+    const result = await verifyEmailChangeCodeAction(prev, formData);
+    if (result.done) setOpenRow(null);
+    return result;
+  }, {});
   const [pwState, pwForm, pwPending] = useStickyForm<AccountState>(async (prev, formData) => {
     const result = await changePasswordAction(prev, formData);
     if (result.done) setOpenRow(null);
@@ -70,21 +86,43 @@ export function AccountSection({ email }: { email: string }) {
         open={openRow === "email"}
         onToggle={() => setOpenRow((r) => (r === "email" ? null : "email"))}
       >
-        <form {...emailForm}>
-          <label className={label}>
-            New e-mail address
-            <input name="email" type="email" required maxLength={120} className={input} />
-          </label>
-          {emailState.error ? <p role="alert" className="mt-2 text-sm text-danger">{emailState.error}</p> : null}
-          {emailState.sent ? (
-            <p role="status" className="mt-2 text-sm text-accent">
-              Check the new inbox for a confirmation link — your address changes once you click it.
+        {emailState.sent ? (
+          <>
+            <p className="text-[13px] text-muted">
+              We sent a 6-digit code to <strong className="font-medium text-ink">{emailState.email}</strong>. It
+              becomes your sign-in address once you enter it below.
             </p>
-          ) : null}
-          <button type="submit" disabled={emailPending} className={submit}>
-            {emailPending ? "Sending…" : "Send confirmation link"}
-          </button>
-        </form>
+            <form {...codeForm} className="mt-4">
+              <input type="hidden" name="email" value={emailState.email ?? ""} />
+              <CodeInput disabled={codePending} invalid={Boolean(codeState.error)} />
+              {codeState.error ? <p role="alert" className="mt-2 text-center text-sm text-danger">{codeState.error}</p> : null}
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <button type="submit" disabled={codePending} className={submit}>
+                  {codePending ? "Checking…" : "Confirm"}
+                </button>
+              </div>
+            </form>
+            <form {...resendForm} className="mt-3 text-center">
+              <input type="hidden" name="email" value={emailState.email ?? ""} />
+              <button type="submit" disabled={resending} className="text-[13px] font-semibold text-accent underline disabled:opacity-60">
+                {resending ? "Sending…" : "Send a new code"}
+              </button>
+              {resent.error ? <p role="alert" className="mt-2 text-sm text-danger">{resent.error}</p> : null}
+              {resent.sent ? <p role="status" className="mt-2 text-sm text-accent">A new code is on its way.</p> : null}
+            </form>
+          </>
+        ) : (
+          <form {...emailForm}>
+            <label className={label}>
+              New e-mail address
+              <input name="email" type="email" required maxLength={120} className={input} />
+            </label>
+            {emailState.error ? <p role="alert" className="mt-2 text-sm text-danger">{emailState.error}</p> : null}
+            <button type="submit" disabled={emailPending} className={submit}>
+              {emailPending ? "Sending…" : "Send code"}
+            </button>
+          </form>
+        )}
       </Row>
 
       <Row

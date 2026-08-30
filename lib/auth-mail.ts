@@ -4,9 +4,12 @@ import { sendMail } from "@/lib/mail";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   CONFIRMATION_SUBJECT,
+  EMAIL_CHANGE_SUBJECT,
   RECOVERY_SUBJECT,
   renderConfirmationHtml,
   renderConfirmationText,
+  renderEmailChangeHtml,
+  renderEmailChangeText,
   renderRecoveryHtml,
   renderRecoveryText,
 } from "@/lib/email/auth";
@@ -126,6 +129,53 @@ export async function sendConfirmationMail(
     subject: CONFIRMATION_SUBJECT,
     html: renderConfirmationHtml(code, email, site),
     text: renderConfirmationText(code, email, site),
+  });
+  await sweep(admin);
+  return sent ? { status: "sent" } : { status: "error" };
+}
+
+/**
+ * The "confirm your new e-mail" code, sent ONLY to the new address.
+ *
+ * Requires `mailer_secure_email_change_enabled: false` (`scripts/auth-config.mjs`):
+ * with it on, GoTrue also mails the OLD address and won't finish the change
+ * until that link is clicked too. `generateLink({ type: "email_change_new" })`
+ * mints the new address's code — the same one Supabase's own dual-mail flow
+ * would have sent — without asking Supabase to mail anything, exactly like
+ * `sendConfirmationMail` does for signup. `verifyOtp({ email: newEmail, token,
+ * type: "email_change" })` is what completes the change.
+ */
+export async function sendEmailChangeMail(
+  currentEmail: string,
+  newEmail: string,
+  site: string
+): Promise<AuthMailResult> {
+  const admin = createAdminClient();
+  if (!admin) return { status: "error" };
+
+  const waiting = await claimSend(admin, newEmail);
+  if (waiting !== null) return { status: "throttled", seconds: waiting };
+
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "email_change_new",
+    email: currentEmail,
+    newEmail,
+  });
+  if (error) {
+    // Same case as signup: the new address already belongs to a CONFIRMED account.
+    if (error.status === 422 || error.code === "email_exists") return { status: "taken" };
+    console.error("[auth-mail] generateLink email_change_new failed", error.message);
+    return { status: "error" };
+  }
+
+  const code = data?.properties?.email_otp;
+  if (!code) return { status: "error" };
+
+  const sent = await sendMail({
+    to: newEmail,
+    subject: EMAIL_CHANGE_SUBJECT,
+    html: renderEmailChangeHtml(code, newEmail, site),
+    text: renderEmailChangeText(code, newEmail, site),
   });
   await sweep(admin);
   return sent ? { status: "sent" } : { status: "error" };

@@ -66,6 +66,7 @@ function shell(site: string, preheader: string, inner: string): string {
 
 export const CONFIRMATION_SUBJECT = "Confirm your NestUp email";
 export const RECOVERY_SUBJECT = "Reset your NestUp password";
+export const EMAIL_CHANGE_SUBJECT = "Confirm your new NestUp email";
 
 export function renderConfirmationText(code: string, email: string, site: string): string {
   return [
@@ -102,6 +103,42 @@ export function renderConfirmationHtml(code: string, email: string, site: string
      <p style="${SMALL}">The code is good for one hour. Don&rsquo;t share it with anyone &mdash; NestUp will never ask you for it.</p>
      <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:rgba(32,29,26,0.68);">Closed the tab? <a href="${site}/verify?email=${encodeURIComponent(email)}" style="color:#2e7d5e;font-weight:600;">Open the confirmation screen</a> and enter the code there.</p>
      <p style="${SMALL}">If you didn&rsquo;t sign up for NestUp, you can ignore this email &mdash; nothing was created without this code.</p>`
+  );
+}
+
+export function renderEmailChangeText(code: string, newEmail: string, site: string): string {
+  return [
+    `We received a request to change your NestUp sign-in address to ${newEmail}.`,
+    "",
+    `Your confirmation code is: ${code}`,
+    "",
+    "Enter it in Settings → Account to finish the switch. Nothing changes until then, and your old address has been told about this request either way.",
+    "",
+    "The code is good for one hour. Don't share it with anyone — NestUp will never ask you for it.",
+    "",
+    "If you didn't ask for this, you can ignore this email — your sign-in address stays as it is.",
+    "",
+    `NestUp · ${site}`,
+  ].join("\n");
+}
+
+export function renderEmailChangeHtml(code: string, newEmail: string, site: string): string {
+  const safeEmail = escapeHtml(newEmail);
+  return shell(
+    site,
+    `Your NestUp confirmation code is ${code}.`,
+    `<p style="${EYEBROW}">E-mail change</p>
+     <h1 style="${H1}">Your confirmation code</h1>
+     <p style="${LEAD}">We received a request to change your NestUp sign-in address to <strong style="color:#201d1a;">${safeEmail}</strong>. Enter this code in Settings &rarr; Account to finish the switch.</p>
+     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+       <tr>
+         <td align="center" style="border:1px solid rgba(46,125,94,0.35);border-radius:16px;background:#f4f8f6;padding:20px 12px;">
+           <span style="display:inline-block;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:34px;line-height:1.1;font-weight:700;letter-spacing:0.28em;text-indent:0.28em;color:#2e7d5e;">${escapeHtml(code)}</span>
+         </td>
+       </tr>
+     </table>
+     <p style="${SMALL}">The code is good for one hour. Don&rsquo;t share it with anyone &mdash; NestUp will never ask you for it.</p>
+     <p style="${SMALL}">If you didn&rsquo;t ask for this, you can ignore this email &mdash; your sign-in address stays as it is. Your old address has been told about this request either way.</p>`
   );
 }
 
