@@ -2,8 +2,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { SettingsLink } from "@/components/ui/GearIcon";
-import { signOutAction } from "@/app/actions/auth";
+import { MemberActions } from "@/components/ui/MemberActions";
 
 /**
  * Deliberately not async, and it reads no session.
@@ -28,12 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <SettingsLink />
-            <form action={signOutAction}>
-              <button className="rounded-full border border-hairline px-3 py-1.5 text-xs font-medium text-muted hover:text-ink">
-                Log out
-              </button>
-            </form>
+            <MemberActions />
           </div>
         </div>
       </header>

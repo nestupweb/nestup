@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/ui/BackButton";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { MemberActions } from "@/components/ui/MemberActions";
 import { Suspense } from "react";
 import { getAuthContext } from "@/lib/auth";
 
@@ -10,9 +11,10 @@ import { getAuthContext } from "@/lib/auth";
  *
  * `/browse` is the app's public front door, so it is the page most worth
  * prerendering — and awaiting `auth.getUser()` here meant none of it could be.
- * Only one spot here differs by session — the Log in / Sign up pills — and it
- * sits behind its own `<Suspense>`, so the wordmark, the theme toggle and the
- * page itself ship in the static shell.
+ * Only one spot here differs by session — `SessionActions`, the gear and Log
+ * out for a member or the Log in / Sign up pills for a visitor — and it sits
+ * behind its own `<Suspense>`, so the wordmark, the theme toggle and the page
+ * itself ship in the static shell.
  *
  * The bottom nav is no longer one of them. It used to stream in here behind a
  * `fallback={null}`, which is what made it blink out for a `getUser()`
@@ -34,7 +36,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Suspense fallback={null}>
-              <SignedOutActions />
+              <SessionActions />
             </Suspense>
           </div>
         </div>
@@ -48,10 +50,15 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   );
 }
 
-/** The Log in / Sign up pair, shown only to visitors without a session. */
-async function SignedOutActions() {
+/**
+ * The half of the header that depends on who is looking: a signed-in member
+ * gets the settings gear and Log out they have on every other page (2026-08-30
+ * — Listings used to leave them with the theme toggle alone), a visitor gets
+ * Log in / Sign up.
+ */
+async function SessionActions() {
   const { user } = await getAuthContext();
-  if (user) return null;
+  if (user) return <MemberActions />;
   return (
     <>
       <Link href="/login" className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-contrast">Log in</Link>
