@@ -56,3 +56,45 @@ test("the schedule shortcut stays in the composer", () => {
   fireEvent.click(screen.getByRole("button", { name: "Schedule a viewing" }));
   expect(onSchedule).toHaveBeenCalled();
 });
+
+test("a HEIC preview is swapped for the re-encoded JPEG, so the thumbnail is never a broken image", async () => {
+  const urls: Blob[] = [];
+  const created: string[] = [];
+  const revoked: string[] = [];
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: (b: Blob) => {
+      urls.push(b);
+      const u = `blob:test/${urls.length}`;
+      created.push(u);
+      return u;
+    },
+  });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: (u: string) => revoked.push(u) });
+
+  // What prepareChatMedia does for a HEIC now: hands back a different blob.
+  const jpeg = new Blob([new Uint8Array(8)], { type: "image/jpeg" });
+  const media = await import("@/lib/chat-media");
+  const spy = vi.spyOn(media, "prepareChatMedia").mockResolvedValue({
+    blob: jpeg,
+    path: `${CONVERSATION}/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg`,
+    contentType: "image/jpeg",
+    kind: "image",
+  });
+
+  setup();
+  const input = screen.getByLabelText("Attach a photo or video") as HTMLInputElement;
+  const heic = new File([new Uint8Array(16)], "IMG_4821.HEIC", { type: "image/heic" });
+  fireEvent.change(input, { target: { files: [heic] } });
+
+  const shown = await screen.findByAltText("Photo to send");
+  await vi.waitFor(() => expect(shown.getAttribute("src")).toBe(created[1]));
+  // The second URL is the one made from the JPEG, not from the picked HEIC.
+  expect(urls[0]).toBe(heic);
+  expect(urls[1]).toBe(jpeg);
+
+  // Dropping the attachment releases both, so the superseded one cannot leak.
+  fireEvent.click(screen.getByRole("button", { name: /remove/i }));
+  expect(revoked).toEqual(expect.arrayContaining([created[0], created[1]]));
+  spy.mockRestore();
+});

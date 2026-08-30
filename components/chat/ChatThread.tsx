@@ -393,8 +393,15 @@ function Bubble({
   onDismiss?: () => void;
 }) {
   const failed = status === "failed";
-  // Set when this browser turns out not to decode the attachment (see below).
-  const [unplayable, setUnplayable] = useState(false);
+  /*
+   * The src that failed to decode, rather than a plain boolean. A bubble shows
+   * the local preview first and the signed server URL a moment later, so a
+   * latched flag would keep the fallback link for a copy that decodes perfectly
+   * well — which is what happened when the preview was an unconvertible HEIC.
+   * Comparing against the current src resets it the moment the src changes.
+   */
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const unplayable = failedSrc !== null && failedSrc === image;
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
       {sender ? (
@@ -434,7 +441,7 @@ function Bubble({
             controls
             playsInline
             preload="metadata"
-            onError={() => setUnplayable(true)}
+            onError={() => setFailedSrc(image)}
             className="max-h-72 w-auto max-w-full rounded-xl"
           />
         ) : image ? (
@@ -449,7 +456,7 @@ function Bubble({
               // the one line that makes it behave like the rest of the app.
               loading="lazy"
               decoding="async"
-              onError={() => setUnplayable(true)}
+              onError={() => setFailedSrc(image)}
               className="max-h-72 w-auto max-w-full object-cover"
             />
           </button>

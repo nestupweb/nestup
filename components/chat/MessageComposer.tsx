@@ -6,11 +6,23 @@ import { CHAT_MEDIA_ACCEPT, MAX_CHAT_MEDIA_BYTES, prepareChatMedia } from "@/lib
 
 type Attachment = {
   preview: string;
+  /**
+   * The object URL made from the picked file, kept only so it can be revoked,
+   * once `preview` has been swapped for the re-encoded copy (see `attach`).
+   */
+  superseded?: string;
   path: string | null;
   kind: "image" | "video";
   status: "uploading" | "ready" | "failed";
   error?: string;
 };
+
+/** Drop every object URL an attachment created. */
+function revokePreviews(att: Attachment) {
+  for (const url of [att.preview, att.superseded]) {
+    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+  }
+}
 
 export interface SendPayload {
   content: string;
@@ -50,7 +62,10 @@ export function MessageComposer({
     const ready = hasImage ? image! : null;
     onSend({ content: text.trim(), imagePath: ready?.path ?? null, imagePreview: ready?.preview ?? null });
     setText("");
-    if (image && !ready && image.preview.startsWith("blob:")) URL.revokeObjectURL(image.preview);
+    if (image && !ready) revokePreviews(image);
+    // A sent attachment hands `preview` to the thread, but the superseded URL
+    // is ours to drop.
+    if (image && ready?.superseded?.startsWith("blob:")) URL.revokeObjectURL(ready.superseded);
     setImage(null);
     // The field never remounts, so focus survives; re-assert it in case the Send button was clicked.
     textareaRef.current?.focus();
@@ -87,16 +102,30 @@ export function MessageComposer({
       return;
     }
     setImage({ preview, path: null, kind, status: "uploading" });
+    // Whichever object URL the attachment is showing right now: the picked file
+    // to begin with, the re-encoded copy once there is one.
+    let shown = preview;
     try {
       const media = await prepareChatMedia(file, conversationId);
+      /*
+       * The preview above was made from the picked file, which for an iPhone
+       * HEIC is a file this browser cannot paint — a broken thumbnail here, and
+       * a broken image in the bubble too, since this URL is what the thread
+       * shows until the server copy arrives. Once the file has been re-encoded,
+       * preview the copy instead; it is a JPEG by construction.
+       */
+      if (kind === "image" && media.blob !== file) {
+        shown = URL.createObjectURL(media.blob);
+        setImage((img) => (img && img.preview === preview ? { ...img, preview: shown, superseded: preview } : img));
+      }
       const { error } = await createClient()
         .storage.from("chat-images")
         .upload(media.path, media.blob, { contentType: media.contentType });
       if (error) throw new Error("Upload failed — check your connection and try again.");
-      setImage((img) => (img && img.preview === preview ? { ...img, path: media.path, status: "ready" } : img));
+      setImage((img) => (img && img.preview === shown ? { ...img, path: media.path, status: "ready" } : img));
     } catch (e) {
       setImage((img) =>
-        img && img.preview === preview
+        img && img.preview === shown
           ? { ...img, status: "failed", error: e instanceof Error ? e.message : "Upload failed." }
           : img
       );
@@ -106,7 +135,7 @@ export function MessageComposer({
   }
 
   const removeImage = () => {
-    if (image?.preview.startsWith("blob:")) URL.revokeObjectURL(image.preview);
+    if (image) revokePreviews(image);
     setImage(null);
   };
 
