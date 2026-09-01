@@ -48,13 +48,18 @@ export function FilterBar() {
   // the box sprang straight back on with the dropdown still submitting.
   const appliedGender = params.get("household_gender");
   const [sameGender, setSameGender] = useState(Boolean(appliedGender));
+  // React's "adjusting state during render": the tick is re-seeded the moment
+  // the applied filter changes, before the browser paints, so there is no frame
+  // showing the old one. An effect would do the same a paint later — and trips
+  // `react-hooks/set-state-in-effect`, which is the rule's whole point.
+  const [lastApplied, setLastApplied] = useState(appliedGender);
+  if (lastApplied !== appliedGender) {
+    setLastApplied(appliedGender);
+    setSameGender(Boolean(appliedGender));
+  }
   // Bumped by "Clear filters" so the fields remount even when the URL does not
   // change — see `clear()`.
   const [resetKey, setResetKey] = useState(0);
-
-  useEffect(() => {
-    setSameGender(Boolean(appliedGender));
-  }, [appliedGender]);
 
   useEffect(() => {
     if (!open) return;
