@@ -1,6 +1,9 @@
 // Desktop-only placeholder for the right pane; on phones the layout shows the list instead.
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+import { Suspense } from "react";
+import { getConversations, visibleConversations } from "@/lib/chat";
+
 export const instant = false;
 
 export default function ChatIndexPage() {
@@ -12,9 +15,23 @@ export default function ChatIndexPage() {
         </svg>
       </span>
       <p className="mt-4 text-2xl font-bold">Your messages</p>
-      <p className="mt-1 max-w-xs text-sm text-muted">
-        Pick a conversation on the left, or message an owner from any room to start one.
-      </p>
+      {/* The line depends on whether the inbox has anything in it, and the shell
+          must not wait on that query — it streams in beside the list instead. */}
+      <Suspense fallback={<p className="mt-1 h-10 max-w-xs" />}>
+        <Hint />
+      </Suspense>
     </div>
+  );
+}
+
+/** "Pick one" once there are chats; how to start one when there are none. */
+async function Hint() {
+  const hasChats = visibleConversations(await getConversations()).length > 0;
+  return (
+    <p className="mt-1 max-w-xs text-sm text-muted">
+      {hasChats
+        ? "Pick a conversation on the left."
+        : "Start a conversation by matching in Swipe or messaging a listing."}
+    </p>
   );
 }
