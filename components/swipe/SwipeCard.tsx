@@ -194,7 +194,7 @@ export function SwipeCard({
             onClick={() => onDecide("like")}
             disabled={leaving !== null}
             aria-label="Like this room"
-            className={`${stageButton} h-14 w-14 bg-accent text-accent-contrast shadow-[0_12px_30px_-8px_rgba(0,0,0,0.6)] hover:scale-105 disabled:opacity-60`}
+            className={`${stageButton} h-14 w-14 bg-accent text-accent-contrast shadow-[0_12px_30px_-8px_rgba(0,0,0,0.6)] hover:scale-105 hover:ring-4 hover:ring-accent/35 disabled:opacity-60`}
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
               <path d="M12 20.5c-.35 0-.7-.12-.98-.36C7.1 16.8 3 13.36 3 9.2 3 6.47 5.1 4.5 7.6 4.5c1.7 0 3.24.88 4.4 2.42 1.16-1.54 2.7-2.42 4.4-2.42 2.5 0 4.6 1.97 4.6 4.7 0 4.16-4.1 7.6-8.02 10.94-.28.24-.63.36-.98.36Z" />

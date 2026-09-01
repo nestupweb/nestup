@@ -34,14 +34,18 @@ export function SaveButton({
     });
   }
 
+  // Hover previews what liking does: the heart and its plate take the app's
+  // accent (green on Editorial, gold on Noir) rather than going merely darker.
+  // The tint is a color-mix, not `bg-accent/10`, because the plate sits on a
+  // listing photo and has to stay opaque enough to read.
   return (
     <button
       type="button"
       onClick={toggle}
       aria-pressed={saved}
       aria-label={saved ? "Remove from liked rooms" : "Like this room"}
-      className={`flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-surface/90 backdrop-blur transition-colors ${
-        saved ? "text-accent" : "text-muted hover:text-ink"
+      className={`flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-surface/90 backdrop-blur transition-colors hover:border-accent/50 hover:bg-[color-mix(in_oklab,var(--accent)_14%,var(--surface))] hover:text-accent ${
+        saved ? "text-accent" : "text-muted"
       } ${className}`}
     >
       <svg
