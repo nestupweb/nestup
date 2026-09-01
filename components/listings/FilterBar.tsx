@@ -113,7 +113,7 @@ export function FilterBar() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-xl border border-hairline bg-surface px-4 py-2.5 text-sm font-medium text-ink lg:hidden"
+        className="w-full rounded-xl border border-hairline bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent lg:hidden"
       >
         Filters
       </button>
@@ -144,7 +144,7 @@ export function FilterBar() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close filters"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline text-muted hover:text-ink"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline text-muted transition-colors hover:border-accent hover:text-accent"
             >
               <svg
                 viewBox="0 0 24 24"

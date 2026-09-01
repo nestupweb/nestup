@@ -83,3 +83,61 @@ test("the tick offers exactly two genders, male first", async () => {
   ]);
   expect(select).toHaveValue("male");
 });
+
+/**
+ * "Clear filters" (user request, 2026-09-01): empty the fields and show the
+ * unfiltered Listings again.
+ */
+test("clear filters empties the URL, keeping only sort and view", async () => {
+  cleanup();
+  push.mockClear();
+  currentSearch = "city=Haifa&rent_max=3000&pets_allowed=true&sort=newest&view=map";
+  render(<FilterBar />);
+
+  await userEvent.click(screen.getByRole("button", { name: /clear filters/i }));
+  expect(push).toHaveBeenCalledTimes(1);
+  const url = String(push.mock.calls[0][0]);
+  // How the member is reading the page is not something they filtered by.
+  expect(url).toContain("sort=newest");
+  expect(url).toContain("view=map");
+  expect(url).not.toContain("city=");
+  expect(url).not.toContain("rent_max=");
+  expect(url).not.toContain("pets_allowed=");
+});
+
+test("clear filters with nothing to keep goes to plain /browse", async () => {
+  cleanup();
+  push.mockClear();
+  currentSearch = "city=Haifa";
+  render(<FilterBar />);
+  await userEvent.click(screen.getByRole("button", { name: /clear filters/i }));
+  expect(push).toHaveBeenCalledWith("/browse");
+});
+
+/**
+ * The fields are uncontrolled and `AmountInput` keeps its digits in state of
+ * its own, so neither a re-render nor `form.reset()` blanks them. Clearing
+ * while already unfiltered — typed but never applied — pushes the URL it is
+ * already on, so the remount is the only thing that empties the boxes.
+ */
+test("clear filters empties typed values even when the URL cannot change", async () => {
+  cleanup();
+  push.mockClear();
+  currentSearch = "";
+  render(<FilterBar />);
+
+  await userEvent.type(screen.getByLabelText(/max rent/i), "3000");
+  await userEvent.type(screen.getByLabelText(/max roommates/i), "2");
+  await userEvent.click(screen.getByRole("checkbox", { name: /pets allowed/i }));
+  await userEvent.click(screen.getByRole("checkbox", { name: /all roommates of the same gender/i }));
+  expect(screen.getByLabelText(/max rent/i)).toHaveValue("3,000");
+
+  await userEvent.click(screen.getByRole("button", { name: /clear filters/i }));
+
+  expect(screen.getByLabelText(/max rent/i)).toHaveValue("");
+  expect(screen.getByLabelText(/max roommates/i)).toHaveValue(null);
+  expect(screen.getByRole("checkbox", { name: /pets allowed/i })).not.toBeChecked();
+  // The tick is component state, not a form field — it has to go too.
+  expect(screen.getByRole("checkbox", { name: /all roommates of the same gender/i })).not.toBeChecked();
+  expect(screen.queryByLabelText(/which gender/i)).toBeNull();
+});
