@@ -277,6 +277,21 @@ export function roommatesOverCapError(roommates: number, rooms: number): string 
 }
 
 /**
+ * The other side of the same rule, for a member EDITING a room: the home cannot
+ * be shrunk below the people already confirmed in it. They cannot fix that from
+ * this form by removing anybody, so the sentence points at the room count,
+ * which is the field they can move. The database refuses it either way
+ * (`listings_household_fits_rooms`, 0043) — this is so they find out while
+ * typing rather than from a failed save.
+ */
+export function roomsTooSmallError(householdSize: number, rooms: number): string | null {
+  const max = maxRoommates(rooms);
+  if (!Number.isFinite(householdSize) || householdSize <= max) return null;
+  const people = `${householdSize} ${householdSize === 1 ? "person" : "people"}`;
+  return `${people} already live here — a ${rooms}-room home holds at most ${max} roommate${max === 1 ? "" : "s"}.`;
+}
+
+/**
  * The listing page's contact CTA: "Message the roommate" for a room whose
  * household is one person, "…roommates" for more.
  *

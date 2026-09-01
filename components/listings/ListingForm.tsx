@@ -14,7 +14,7 @@ import { PinField } from "@/components/map/PinField";
 import { pointOf } from "@/lib/geo";
 import { normalizeSlots } from "@/lib/availability";
 import { useStickyForm } from "@/lib/hooks";
-import { FEATURES, GENDERS, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, maxRoommates, PROPERTY_TYPES, roommatesOverCapError, SAFE_ROOM_OPTIONS } from "@/lib/constants";
+import { FEATURES, GENDERS, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, maxRoommates, PROPERTY_TYPES, roommatesOverCapError, roomsTooSmallError, SAFE_ROOM_OPTIONS } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
 const input =
@@ -65,6 +65,10 @@ export function ListingForm({
   const [roommatesCountText, setRoommatesCountText] = useState(String(listing?.roommates_count ?? 1));
   // The same sentence the server would answer with, shown before the round trip.
   const roommatesCapError = roommatesOverCapError(roommatesCount, rooms);
+  // Editing only: a published room already has confirmed people in it, and the
+  // room count may not drop below what they need. New listings have nobody but
+  // the creator yet, so this never fires there.
+  const roomsError = roomsTooSmallError(listing?.household_size ?? 1, rooms);
   // A validation message lands next to the button, below a long form — bring it into view.
   const alertRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
@@ -187,6 +191,16 @@ export function ListingForm({
               }}
               className={input}
             />
+            {/* Sentence, not a field label — opt out of the uppercase tracking. */}
+            {roomsError ? (
+              <span
+                id="rooms-cap-error"
+                role="alert"
+                className="mt-1.5 block text-xs font-medium normal-case tracking-normal text-danger"
+              >
+                {roomsError}
+              </span>
+            ) : null}
           </label>
           <label className={label}>
             Size (m²)
