@@ -48,6 +48,9 @@ export function FilterBar() {
   // the box sprang straight back on with the dropdown still submitting.
   const appliedGender = params.get("household_gender");
   const [sameGender, setSameGender] = useState(Boolean(appliedGender));
+  // Bumped by "Clear filters" so the fields remount even when the URL does not
+  // change — see `clear()`.
+  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
     setSameGender(Boolean(appliedGender));
@@ -76,6 +79,33 @@ export function FilterBar() {
     }
     setOpen(false);
     router.push(`/browse?${next.toString()}`);
+  }
+
+  /**
+   * Empty every filter and show the unfiltered Listings again. Ordering and
+   * List/Map view survive, exactly as they do through `apply` — they are how
+   * the member is reading the page, not something they filtered by.
+   *
+   * Two things have to happen, and neither covers the other. The push is what
+   * actually clears the results, since the server filters from the URL. The
+   * remount (`resetKey`, in the form's key) is what empties the fields: they
+   * are uncontrolled, and `AmountInput` holds its digits in React state of its
+   * own, so neither a re-render nor `form.reset()` would blank the rents.
+   * Without the bump, clearing while already unfiltered — filters typed but
+   * never applied — pushes the URL it is already on, re-renders nothing, and
+   * leaves the typed text sitting there.
+   */
+  function clear() {
+    const next = new URLSearchParams();
+    const sort = params.get("sort");
+    if (sort) next.set("sort", sort);
+    const view = params.get("view");
+    if (view) next.set("view", view);
+    setSameGender(false);
+    setResetKey((n) => n + 1);
+    setOpen(false);
+    const qs = next.toString();
+    router.push(qs ? `/browse?${qs}` : "/browse");
   }
 
   return (
@@ -133,7 +163,10 @@ export function FilterBar() {
 
         <p className="mb-4 hidden text-lg font-semibold lg:block">Filters</p>
 
-        <form action={apply} className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        {/* Keyed on the applied filters (and on `resetKey`) so every field
+            re-seeds from the URL after an apply or a clear — the per-<Select>
+            keys below do the same job one control at a time. */}
+        <form key={`${params.toString()}|${resetKey}`} action={apply} className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           {/* Only the fields scroll; "Apply filters" is pinned below them, so it
               is on screen whatever the scroll position. The negative margin lets
               the scrollbar sit against the card edge rather than inside it. */}
@@ -217,6 +250,16 @@ export function FilterBar() {
               className="mt-5 w-full rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-accent-contrast lg:mt-0"
             >
               Apply filters
+            </button>
+            {/* Red, in the app's own danger tone rather than a raw red, and
+                outlined so it reads as the quieter of the two — undoing a
+                search is not the destination of this card. */}
+            <button
+              type="button"
+              onClick={clear}
+              className="mt-2 w-full rounded-xl border border-danger bg-danger/10 px-5 py-2.5 text-sm font-semibold text-danger transition-colors hover:bg-danger/15"
+            >
+              Clear filters
             </button>
           </div>
         </form>
