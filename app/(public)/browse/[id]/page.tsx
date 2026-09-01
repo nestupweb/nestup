@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FEATURES, genderLabel, leaseTermLabel, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
 import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
+import { MessageOwner } from "@/components/listings/MessageOwner";
 import { SaveButton } from "@/components/listings/SaveButton";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
 import { RoomMapButton } from "@/components/map/RoomMapButton";
@@ -31,10 +32,15 @@ export default async function ListingDetailPage({
   const listing = data as Listing | null;
   if (!listing) notFound();
 
-  // Signed-in extras: heart state + "recently viewed" for Profile › History.
+  // Signed-in extras: heart state, "recently viewed" for Profile › History, and
+  // what "Message the owner" needs to open its sheet with no round-trip — the
+  // seeker's own default hello, and whether they have a profile at all (without
+  // one they still go through the chat route, which sends them to onboarding).
   let saved = false;
+  let introTemplate = "";
+  let hasProfile = false;
   if (user) {
-    const [{ data: savedRow }] = await Promise.all([
+    const [{ data: savedRow }, , { data: detailsRow }, { data: meRow }] = await Promise.all([
       supabase.from("saved_listings").select("listing_id").eq("user_id", user.id).eq("listing_id", listing.id).maybeSingle(),
       supabase
         .from("listing_views")
@@ -42,8 +48,12 @@ export default async function ListingDetailPage({
           { user_id: user.id, listing_id: listing.id, viewed_at: new Date().toISOString() },
           { onConflict: "user_id,listing_id" }
         ),
+      supabase.from("profile_details").select("intro_template").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("user_id").eq("user_id", user.id).maybeSingle(),
     ]);
     saved = Boolean(savedRow);
+    introTemplate = (detailsRow as { intro_template: string } | null)?.intro_template ?? "";
+    hasProfile = Boolean(meRow);
   }
 
   // RLS: this returns null for anonymous visitors — by design.
@@ -280,8 +290,13 @@ export default async function ListingDetailPage({
       </div>
 
       <div className="mt-10 flex flex-col gap-3 border-t border-hairline pt-7">
-        {user?.id === listing.owner_id ? null : (
-          // Signed-out visitors land on the chat page's login redirect and return here.
+        {user?.id === listing.owner_id ? null : user && hasProfile && owner ? (
+          // The message is written first, in a sheet over this page; the thread
+          // is created only if it is actually sent.
+          <MessageOwner listingId={listing.id} household={[owner, ...residents]} template={introTemplate} />
+        ) : (
+          // Signed-out visitors — and anyone who hasn't made a profile yet —
+          // land on the chat route's login / onboarding redirect and return here.
           <Link
             href={`/browse/${listing.id}/chat`}
             className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-accent-contrast"
