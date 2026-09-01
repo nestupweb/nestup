@@ -21,9 +21,22 @@ export type PublicDetails = Pick<
   | "instagram"
   | "facebook"
   | "linkedin"
-  | "phone"
-  | "contact_email"
->;
+> & {
+  /**
+   * These two are NOT `ProfileDetails["phone"] | ["contact_email"]`, which are
+   * plain strings on the member's own row. `public_profile_details` hides a
+   * detail the member kept private by returning NULL for it rather than "":
+   *
+   *   case when d.show_phone         then d.phone         else null end
+   *   case when d.show_contact_email then d.contact_email else null end
+   *
+   * Typing them as strings was the reason a null reached `.trim()` in
+   * `ContactRow` with nothing to stop it and 500'd the page. Anything reading
+   * these has to handle null.
+   */
+  phone: string | null;
+  contact_email: string | null;
+};
 
 export type ProfileRow = { label: string; value: string; href?: string };
 export type ProfileGroup = { title: string; rows: ProfileRow[] };

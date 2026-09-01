@@ -30,9 +30,10 @@ export default async function SwipePage() {
     );
   }
 
-  // Budget, cities and move-in date are what a room is ranked against; without
+  // A budget and at least one city are what a room is ranked against; without
   // them every listing scores the same and the deck is a guess. Saving a
-  // profile without them is fine — being recommended rooms is not.
+  // profile without them is fine — being recommended rooms is not. Move-in is
+  // deliberately NOT required here (see `lib/apartment-prefs.ts`).
   if (!isApartmentPrefsComplete(profile)) {
     const missing = missingApartmentPrefs(profile);
     return (
@@ -43,7 +44,7 @@ export default async function SwipePage() {
             missing
           ).toLowerCase()} ${missing.length > 1 ? "are" : "is"} still empty. Fill ${
             missing.length > 1 ? "them" : "it"
-          } in and the deck opens — amenities stay optional.`}
+          } in and the deck opens — move-in and amenities stay optional.`}
           ctaHref={FINISH_APARTMENT_PREFS}
           ctaLabel="Finish preferences"
         />

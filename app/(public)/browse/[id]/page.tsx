@@ -182,7 +182,7 @@ export default async function ListingDetailPage({
           <div className={itemRow}>
             <span className={item}>
               <DetailIcon name="users" />
-              {listing.roommates_count} roommate{listing.roommates_count === 1 ? "" : "s"}
+              {listing.household_size} roommate{listing.household_size === 1 ? "" : "s"}
             </span>
             <span className={item}>
               <DetailIcon name="paw" />
@@ -305,7 +305,7 @@ export default async function ListingDetailPage({
             href={`/browse/${listing.id}/chat`}
             className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-accent-contrast"
           >
-            {messageHouseholdLabel(listing.roommates_count)}
+            {messageHouseholdLabel(listing.household_size)}
           </Link>
         )}
       </div>

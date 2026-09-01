@@ -35,9 +35,9 @@ export function MessageOwner({
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   // Counted off the household itself — the same people listed under "Who lives
-  // here", and the ones this message actually reaches. `listings.roommates_count`
-  // looks like the right number and is not: it disagrees with the residents on
-  // most rooms, so a two-person home was reading "Message the roommate".
+  // here", and the ones this message actually reaches. Equals the listing's
+  // `household_size` (0042), which is what the signed-out CTA uses; here we
+  // have the real list, so we count it directly.
   const label = messageHouseholdLabel(household.length);
 
   return (

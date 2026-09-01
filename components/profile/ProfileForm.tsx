@@ -124,7 +124,7 @@ export function ProfileForm({
           Swiping ranks every room against your apartment preferences, and your{" "}
           {listLabels(missingPrefs).toLowerCase()} {missingPrefs.length > 1 ? "are" : "is"} still
           empty. Fill {missingPrefs.length > 1 ? "them" : "it"} in below and the deck opens —
-          amenities are optional.
+          move-in and amenities are optional.
         </p>
       ) : null}
 
@@ -215,9 +215,9 @@ export function ProfileForm({
         title="Apartment preferences"
         hint={
           missingPrefs.length
-            ? `Swipe ranks rooms against your budget, preferred cities and earliest move-in — ${listLabels(
+            ? `Swipe ranks rooms against your budget and preferred cities — ${listLabels(
                 missingPrefs
-              ).toLowerCase()} still to fill in before it can suggest anything. Amenities are optional.`
+              ).toLowerCase()} still to fill in before it can suggest anything. Move-in and amenities are optional.`
             : "Powers the budget, city and move-in parts of your Lifestyle match. Amenities are what the room itself should have."
         }
       >

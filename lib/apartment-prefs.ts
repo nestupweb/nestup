@@ -3,22 +3,31 @@ import type { Profile } from "@/lib/types";
 /**
  * What "Apartment preferences" has to say before Swipe will recommend anything.
  *
- * Three answers, and they are exactly the three the match score reads: without
- * a budget, a city or a move-in date `lib/compatibility.ts` scores every room
- * as neutral, so a deck built on them is ranked by nothing the member said.
- * That is what this gate exists to prevent — see `/swipe`.
+ * Two answers: a budget and at least one city. Without either, every room
+ * scores the same in `lib/compatibility.ts` and the deck is ranked by nothing
+ * the member said — which is what this gate exists to prevent, see `/swipe`.
  *
- * Amenities (the mamad and the nice-to-haves) stay optional, and so does "For
- * how long": both offer "No preference" as a real answer, and the columns
- * default to it, so a member who deliberately has no preference is
- * indistinguishable from one who never looked — gating on either would lock
- * out people who have in fact answered.
+ * "Earliest move-in" was a third requirement until 2026-09-01, and it was the
+ * wrong kind of gate (user decision): the form offers it as a clearable field
+ * whose placeholder reads "Any time", so leaving it blank is a real answer
+ * there, while Swipe silently refused to build a deck for anyone who did —
+ * a member with a budget and five cities was told there was nothing for them.
+ * The score never needed it either: `compatibility.ts` already treats a blank
+ * date as neutral for that one dimension and ranks the rest normally.
+ *
+ * Amenities (the mamad and the nice-to-haves) stay optional for the same
+ * reason, and so does "For how long": both offer "No preference" as a real
+ * answer, and the columns default to it, so a member who deliberately has no
+ * preference is indistinguishable from one who never looked — gating on either
+ * would lock out people who have in fact answered.
  *
  * One rule, shared: the Swipe page reads it, `getCachedDeck` backstops it, and
  * the profile form uses it to say what is still missing.
  */
 export type ApartmentPrefs = Pick<
   Profile,
+  // `earliest_move_in` is part of the section and still feeds the score — it is
+  // simply not one of the rules below, so a blank date never closes the deck.
   "budget_min" | "budget_max" | "preferred_cities" | "earliest_move_in"
 >;
 
@@ -41,11 +50,6 @@ export const APARTMENT_PREF_RULES: readonly PrefRule[] = [
     key: "preferred_cities",
     label: "Preferred cities",
     filled: (p) => (p.preferred_cities?.length ?? 0) > 0,
-  },
-  {
-    key: "earliest_move_in",
-    label: "Earliest move-in",
-    filled: (p) => Boolean(p.earliest_move_in),
   },
 ];
 

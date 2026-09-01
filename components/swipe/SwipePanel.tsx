@@ -162,7 +162,7 @@ function Home({ entry }: { entry: DeckEntry }) {
       </Group>
       <Group title="House rules">
         <Item icon="users">
-          {listing.roommates_count} roommate{listing.roommates_count === 1 ? "" : "s"}
+          {listing.household_size} roommate{listing.household_size === 1 ? "" : "s"}
         </Item>
         <Item icon="paw">{listing.pets_allowed ? "Pets welcome" : "No pets"}</Item>
         <Item icon={listing.smoking_allowed ? "smoking" : "no-smoking"}>

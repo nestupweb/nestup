@@ -62,24 +62,35 @@ const linkPill = plainPill;
  * nothing to show.
  */
 export function ContactRow({
-  instagram = "",
-  facebook = "",
-  linkedin = "",
-  phone = "",
-  email = "",
+  instagram,
+  facebook,
+  linkedin,
+  phone,
+  email,
   className = "mt-3",
 }: {
-  instagram?: string;
-  facebook?: string;
-  linkedin?: string;
-  phone?: string;
-  email?: string;
+  /**
+   * Nullable, not merely optional. `public_profile_details` returns NULL for a
+   * detail the member chose not to publish — `case when d.show_phone then
+   * d.phone else null end` — so a hidden number arrives as null, never as "".
+   * These were default parameters, which cover `undefined` and not `null`, and
+   * that one gap took the whole /people/[id] render down with "Cannot read
+   * properties of null (reading 'trim')" for the one member who had turned
+   * their phone off. Normalise here, where the trimming happens, so no caller
+   * has to remember.
+   */
+  instagram?: string | null;
+  facebook?: string | null;
+  linkedin?: string | null;
+  phone?: string | null;
+  email?: string | null;
   className?: string;
 }) {
-  const raw: Record<Kind, string> = { instagram: instagram.trim(), facebook: facebook.trim(), linkedin: linkedin.trim() };
+  const given = (value: string | null | undefined) => (value ?? "").trim();
+  const raw: Record<Kind, string> = { instagram: given(instagram), facebook: given(facebook), linkedin: given(linkedin) };
   const socials = NETWORKS.filter((n) => raw[n.kind]).map((n) => ({ ...n, value: raw[n.kind], href: socialHref(n.kind, raw[n.kind]) }));
-  const tel = phone.trim();
-  const mail = email.trim();
+  const tel = given(phone);
+  const mail = given(email);
   if (socials.length === 0 && !tel && !mail) return null;
 
   return (

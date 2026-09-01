@@ -18,7 +18,7 @@ export function ListingCard({
     propertyTypeLabel(listing.property_type),
     `${listing.rooms} room${listing.rooms === 1 ? "" : "s"}`,
     ...(listing.size_sqm ? [`${listing.size_sqm} m²`] : []),
-    `${listing.roommates_count} roommate${listing.roommates_count === 1 ? "" : "s"}`,
+    `${listing.household_size} roommate${listing.household_size === 1 ? "" : "s"}`,
   ].join(" · ");
 
   const chips = [

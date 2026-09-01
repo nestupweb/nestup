@@ -3,7 +3,7 @@ import { LEASE_TERMS, leaseTermLabel } from "@/lib/constants";
 import { listingSchema } from "@/lib/validation/listing";
 
 const base = {
-  city: "Tel Aviv", street: "Florentin", house_number: "12", rent: 2800, available_from: "2026-10-01", roommates_count: 2,
+  city: "Tel Aviv", street: "Florentin", house_number: "12", rent: 2800, available_from: "2026-10-01", roommates_count: 2, household_size: 2,
 };
 
 test("lease term is a rough duration in words — never an end date", () => {

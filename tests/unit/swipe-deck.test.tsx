@@ -42,7 +42,7 @@ function listing(overrides: Partial<Listing> = {}): Listing {
     id: "11111111-1111-4111-8111-111111111111", owner_id: "o1", title: "Sunlit loft room",
     description: "Big windows.", city: "Tel Aviv", neighborhood: "Florentin", address: "Florentin 12",
     rent: 2800, available_from: "2026-10-01", lease_term: "flexible", property_type: "apartment", rooms: 3, size_sqm: 80,
-    roommates_count: 2, pets_allowed: true, smoking_allowed: false, wanted_gender: null, household_gender: null,
+    roommates_count: 2, household_size: 2, pets_allowed: true, smoking_allowed: false, wanted_gender: null, household_gender: null,
     balcony: true, air_conditioning: false, parking: false, elevator: false, furnished: true,
     safe_room: "apartment", food_restrictions: "Kosher kitchen", street: "Florentin", house_number: "12", lat: null, lng: null, coords_source: "none", photo_labels: [], viewing_slots: [],
     photo_urls: ["https://example.com/a.jpg", "https://example.com/b.jpg", "https://example.com/c.jpg"],

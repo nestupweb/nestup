@@ -77,6 +77,9 @@ test("the Swipe gate's reason is repeated on the form", () => {
   render(<ProfileForm profile={null} onboarding needsApartmentPrefs />);
 
   const banner = screen.getByRole("status");
-  expect(banner).toHaveTextContent(/monthly budget, preferred cities and earliest move-in/i);
-  expect(banner).toHaveTextContent(/amenities are optional/i);
+  // Two requirements, not three: the move-in date stopped gating the deck on
+  // 2026-09-01 (see lib/apartment-prefs.ts), so the banner must not demand it.
+  expect(banner).toHaveTextContent(/monthly budget and preferred cities/i);
+  expect(banner).not.toHaveTextContent(/earliest move-in are still empty/i);
+  expect(banner).toHaveTextContent(/move-in and amenities are optional/i);
 });

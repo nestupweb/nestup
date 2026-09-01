@@ -68,7 +68,7 @@ export function featureVector(listing: Listing): FeatureVector {
     [`lease:${listing.lease_term}`]: 1,
     [`rent:${rentBucket(listing.rent)}`]: 1,
     [`rooms:${listing.rooms}`]: 1,
-    [`roommates:${Math.min(listing.roommates_count, 5)}`]: 1,
+    [`roommates:${Math.min(listing.household_size, 5)}`]: 1,
   };
   if (listing.neighborhood) v[`area:${listing.neighborhood}`] = 1;
   if (listing.size_sqm) v[`size:${Math.round(listing.size_sqm / 20) * 20}`] = 1;

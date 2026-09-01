@@ -136,7 +136,19 @@ export interface Listing {
   property_type: PropertyType;
   rooms: number; // halves allowed, e.g. 3.5
   size_sqm: number | null;
+  /**
+   * What the creator typed in "Current roommates". A claim about the flat made
+   * before anyone confirms — it caps the co-poster picker (0032) and is NOT
+   * what the site displays. Use `household_size` for that.
+   */
   roommates_count: number;
+  /**
+   * Derived, never written by hand (0042): how many people the listing can
+   * actually name — the owner plus every confirmed resident. This is the
+   * number the UI prints as "N roommates", so it always equals the faces under
+   * "Who lives here".
+   */
+  household_size: number;
   pets_allowed: boolean;
   smoking_allowed: boolean;
   /** House rules: the room is open to one gender only. null = anyone. */

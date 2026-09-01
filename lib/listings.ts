@@ -33,7 +33,9 @@ export function applyListingFilters<Q extends FilterableQuery>(q: Q, f: ListingF
   // mixed or somebody hasn't said — neither qualifies.
   if (f.household_gender === HOUSEHOLD_GENDER_ANY) q.not("household_gender", "is", null);
   else if (f.household_gender) q.eq("household_gender", f.household_gender);
-  if (f.roommates_max !== undefined) q.lte("roommates_count", f.roommates_max);
+  // The shown number, not the typed one (0042) — a "max 2 roommates" search
+  // that returned cards reading "3 roommates" is the same contradiction.
+  if (f.roommates_max !== undefined) q.lte("household_size", f.roommates_max);
   for (const key of BOOL_KEYS) {
     if (f[key] !== undefined) q.eq(key, f[key]);
   }
