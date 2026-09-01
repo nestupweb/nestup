@@ -2,7 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { LISTINGS_TAG, savedTag } from "@/lib/cache-tags";
-import { HOUSEHOLD_GENDER_ANY, type ListingFilters } from "@/lib/validation/filters";
+import type { ListingFilters } from "@/lib/validation/filters";
 import type { Listing } from "@/lib/types";
 
 /** Minimal query surface we drive — lets unit tests fake the builder. */
@@ -28,11 +28,10 @@ export function applyListingFilters<Q extends FilterableQuery>(q: Q, f: ListingF
   if (f.lease_term) q.eq("lease_term", f.lease_term);
   if (f.safe_room) q.eq("safe_room", f.safe_room);
   // `household_gender` was computed when the household last changed, so this
-  // is one indexed lookup rather than a subquery per row (0037). "any" asks
-  // for a single-gender household without saying which, and null means either
-  // mixed or somebody hasn't said — neither qualifies.
-  if (f.household_gender === HOUSEHOLD_GENDER_ANY) q.not("household_gender", "is", null);
-  else if (f.household_gender) q.eq("household_gender", f.household_gender);
+  // is one indexed lookup rather than a subquery per row (0037). Null means
+  // either mixed or somebody hasn't said — neither qualifies, so an equality
+  // is the whole filter.
+  if (f.household_gender) q.eq("household_gender", f.household_gender);
   // The shown number, not the typed one (0042) — a "max 2 roommates" search
   // that returned cards reading "3 roommates" is the same contradiction.
   if (f.roommates_max !== undefined) q.lte("household_size", f.roommates_max);

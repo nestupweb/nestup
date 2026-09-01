@@ -3,17 +3,17 @@ import { CITIES, GENDERS, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants
 import type { Gender, LeaseTerm } from "@/lib/types";
 
 /**
- * The filter takes the four options, plus `any` for "they are all the same,
- * and I don't mind which" — which is what ticking the box without choosing
- * means, and it is a different query: `household_gender is not null` rather
- * than an equality.
+ * Two options, and only two (user decision, 2026-09-01): an all-male household
+ * or an all-female one. It used to offer all four `GENDERS` plus an `any` that
+ * meant "all the same, I don't mind which" — five entries for a filter people
+ * reach for to say one of two things. "Other" and "Prefer not to say" also
+ * never matched much: `household_gender` is only set when EVERY member states
+ * the same gender, so those two were near-empty searches dressed as choices.
+ *
+ * Old links still work: `?household_gender=any` (or `=other`) no longer parses
+ * and is caught to `undefined`, i.e. the room list is simply unfiltered.
  */
-export const HOUSEHOLD_GENDER_ANY = "any";
-type HouseholdGenderFilter = Gender | typeof HOUSEHOLD_GENDER_ANY;
-const householdGenderKeys: [HouseholdGenderFilter, ...HouseholdGenderFilter[]] = [
-  HOUSEHOLD_GENDER_ANY,
-  ...GENDERS.map((g) => g.key),
-];
+const householdGenderKeys = ["male", "female"] as const satisfies readonly Gender[];
 
 const optionalInt = z.preprocess((v) => {
   if (v === undefined || v === null || v === "") return undefined;

@@ -251,6 +251,32 @@ export function propertyTypeLabel(key: PropertyType): string {
 }
 
 /**
+ * The most roommates a home of this size can hold: one of its rooms is the
+ * living room, the rest are bedrooms. A 5-room flat tops out at 4 (user rule,
+ * 2026-09-01).
+ *
+ * Half rooms round UP — "3.5 rooms" holds 3 — because a half room here is a
+ * small bedroom, not storage; it is also the rule every listing's own
+ * "Current roommates" already obeys. The floor of 1 is for studios: a 1-room
+ * home has no living room to subtract, its single room is somebody's bedroom.
+ */
+export function maxRoommates(rooms: number): number {
+  if (!Number.isFinite(rooms)) return 1;
+  return Math.max(1, Math.ceil(rooms) - 1);
+}
+
+/**
+ * Null when the household fits the home, else the one sentence the form and
+ * the server action both show. Same words in both places, so a member who gets
+ * past the browser sees no new wording from the server.
+ */
+export function roommatesOverCapError(roommates: number, rooms: number): string | null {
+  const max = maxRoommates(rooms);
+  if (!Number.isFinite(roommates) || roommates <= max) return null;
+  return `A ${rooms}-room home holds at most ${max} roommate${max === 1 ? "" : "s"} — one of the rooms is the living room.`;
+}
+
+/**
  * The listing page's contact CTA: "Message the roommate" for a room whose
  * household is one person, "…roommates" for more.
  *

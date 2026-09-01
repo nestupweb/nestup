@@ -98,11 +98,25 @@ describe("the same-gender filter", () => {
     expect(calls).toContainEqual(["eq", "household_gender", "female"]);
   });
 
-  test("'any' asks for a single-gender household without naming one", () => {
+  /**
+   * The filter offers male and female and nothing else (user decision,
+   * 2026-09-01). The three it used to carry — `any`, `other` and
+   * `prefer_not_to_say` — are now unparseable, and a bookmarked link holding
+   * one has to degrade to "no filter" rather than 500 or return nothing.
+   */
+  test.each(["any", "other", "prefer_not_to_say"])(
+    "a retired option (%s) leaves the room list unfiltered",
+    (retired) => {
+      const { q, calls } = fakeQuery();
+      applyListingFilters(q, listingFiltersSchema.parse({ household_gender: retired }));
+      expect(calls.some((c) => c[1] === "household_gender")).toBe(false);
+    }
+  );
+
+  test("male is the other half of it", () => {
     const { q, calls } = fakeQuery();
-    applyListingFilters(q, listingFiltersSchema.parse({ household_gender: "any" }));
-    expect(calls).toContainEqual(["not", "household_gender", "is", null]);
-    expect(calls.some((c) => c[0] === "eq" && c[1] === "household_gender")).toBe(false);
+    applyListingFilters(q, listingFiltersSchema.parse({ household_gender: "male" }));
+    expect(calls).toContainEqual(["eq", "household_gender", "male"]);
   });
 
   test("unticked filters nothing, and junk is ignored rather than throwing", () => {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CITIES, GENDERS, LEASE_TERMS, PHOTO_ROOMS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
+import { CITIES, GENDERS, LEASE_TERMS, PHOTO_ROOMS, PROPERTY_TYPES, roommatesOverCapError, SAFE_ROOM_OPTIONS } from "@/lib/constants";
 import type { Gender, LeaseTerm, PhotoRoom, PropertyType, SafeRoom } from "@/lib/types";
 
 const propertyTypeKeys = PROPERTY_TYPES.map((p) => p.key) as [PropertyType, ...PropertyType[]];
@@ -45,6 +45,12 @@ export const listingSchema = z.object({
   safe_room: z.enum(safeRoomKeys).default("none"),
   wanted_gender: wantedGender,
   food_restrictions: z.string().trim().max(200).default(""),
+}).superRefine((v, ctx) => {
+  // Cross-field, so it cannot live on `roommates_count` itself: the cap depends
+  // on `rooms`. Reported against roommates_count so the action names the right
+  // field ("Current roommates") and the form marks the right input.
+  const error = roommatesOverCapError(v.roommates_count, v.rooms);
+  if (error) ctx.addIssue({ code: "custom", message: error, path: ["roommates_count"] });
 });
 
 export type ListingInput = z.infer<typeof listingSchema>;

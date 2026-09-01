@@ -21,6 +21,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { SEEDS, SEEKERS, SEED_EMAIL_DOMAIN } from "./seed-data.ts";
+import { maxRoommates } from "../lib/constants.ts";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -170,11 +171,11 @@ async function seedSeekers(idByEmail: Map<string, string>) {
 async function addRoommates(idByEmail: Map<string, string>) {
   const seedIds = [...idByEmail.values()];
 
-  const listings: { id: string; owner_id: string; city: string; roommates_count: number }[] = [];
+  const listings: { id: string; owner_id: string; city: string; roommates_count: number; rooms: number }[] = [];
   for (const ids of chunk(seedIds, CHUNK)) {
     const { data, error } = await admin
       .from("listings")
-      .select("id, owner_id, city, roommates_count")
+      .select("id, owner_id, city, roommates_count, rooms")
       .in("owner_id", ids)
       .eq("is_active", true);
     if (error) throw new Error(`listings for roommates: ${error.message}`);
@@ -197,7 +198,13 @@ async function addRoommates(idByEmail: Map<string, string>) {
   listings.forEach((l, i) => {
     if (hasRoommates.has(l.id)) return;
     const candidates = (ownersByCity.get(l.city) ?? []).filter((id) => id !== l.owner_id);
-    const want = Math.min(l.roommates_count, 2, candidates.length);
+    // The home has to have a bedroom for each of them: the household is the
+    // owner plus these, so it may not exceed `maxRoommates(rooms)` (0043). This
+    // path writes `listing_residents` directly with the service role, so it
+    // never passes `invite_listing_roommates` and this is the only place the
+    // cap can be respected before the check constraint rejects the whole batch.
+    const roomFor = maxRoommates(l.rooms) - 1;
+    const want = Math.min(l.roommates_count, 2, candidates.length, Math.max(0, roomFor));
     for (let k = 0; k < want; k++) {
       rows.push({ listing_id: l.id, resident_id: candidates[(i + k) % candidates.length] });
     }

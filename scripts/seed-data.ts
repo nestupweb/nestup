@@ -13,6 +13,7 @@
  * resolve the `@/` alias, and the unit test asserts the two lists agree.
  * (Relative `../lib/*.ts` imports do work, and the third wave uses them.)
  */
+import { maxRoommates } from "../lib/constants.ts";
 import { CITIES as ALL_CITIES } from "../lib/cities.ts";
 import { CITY_CENTRES } from "../lib/city-centres.ts";
 import { distanceM } from "../lib/geo.ts";
@@ -776,7 +777,11 @@ export function generateSeeds(count = GENERATED_COUNT, wave: Wave = WAVE1): Seed
     const studio = property_type === "studio";
     const house = property_type === "private_house" || property_type === "duplex";
     const rooms = studio ? pick([1, 1.5, 2]) : house ? pick([4, 4.5, 5, 5.5, 6]) : pick([2.5, 3, 3, 3.5, 4, 4.5]);
-    const roommates_count = studio ? 0 : Math.min(Math.max(1, Math.round(rooms) - int(1, 2)), 4);
+    // Never more roommates than the home has bedrooms (0043) — the check
+    // constraint would reject the insert, and the number would be a lie anyway.
+    const roommates_count = studio
+      ? 0
+      : Math.min(Math.max(1, Math.round(rooms) - int(1, 2)), 4, maxRoommates(rooms));
     const band = RENT[city as City] ?? wave3Rent(city);
     const rent = Math.round((band.min + Math.pow(rand(), band.skew) * (band.max - band.min)) / 50) * 50;
 

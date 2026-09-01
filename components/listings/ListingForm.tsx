@@ -14,7 +14,7 @@ import { PinField } from "@/components/map/PinField";
 import { pointOf } from "@/lib/geo";
 import { normalizeSlots } from "@/lib/availability";
 import { useStickyForm } from "@/lib/hooks";
-import { FEATURES, GENDERS, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, PROPERTY_TYPES, SAFE_ROOM_OPTIONS } from "@/lib/constants";
+import { FEATURES, GENDERS, LEASE_TERMS, MAX_LISTING_PHOTOS, MIN_LISTING_PHOTOS, maxRoommates, PROPERTY_TYPES, roommatesOverCapError, SAFE_ROOM_OPTIONS } from "@/lib/constants";
 import type { Listing } from "@/lib/types";
 
 const input =
@@ -49,6 +49,13 @@ export function ListingForm({
   const [city, setCity] = useState(listing?.city ?? "");
   const [street, setStreet] = useState(listing?.street ?? "");
   const [houseNumber, setHouseNumber] = useState(listing?.house_number ?? "");
+  // Controlled, because the roommate cap is `ceil(rooms) - 1` and has to move
+  // the moment the room count does — a member who fixes "Rooms" should see the
+  // roommate error clear without touching the roommate field.
+  const [rooms, setRooms] = useState(listing?.rooms ?? 3);
+  // Same trick as the roommate field: the text is tracked apart from the number
+  // so the box can sit empty mid-edit instead of snapping back on a backspace.
+  const [roomsText, setRoomsText] = useState(String(listing?.rooms ?? 3));
   // Controlled, because the co-poster cap is `roommates_count - 1` and has to
   // move the moment this number does.
   const [roommatesCount, setRoommatesCount] = useState(listing?.roommates_count ?? 1);
@@ -56,6 +63,8 @@ export function ListingForm({
   // can sit empty mid-edit instead of snapping to "0" on every backspace; only
   // onBlur forces it back to a valid number (below).
   const [roommatesCountText, setRoommatesCountText] = useState(String(listing?.roommates_count ?? 1));
+  // The same sentence the server would answer with, shown before the round trip.
+  const roommatesCapError = roommatesOverCapError(roommatesCount, rooms);
   // A validation message lands next to the button, below a long form — bring it into view.
   const alertRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
@@ -157,7 +166,27 @@ export function ListingForm({
           </label>
           <label className={label}>
             Rooms
-            <input name="rooms" type="number" required min={1} max={12} step={0.5} defaultValue={listing?.rooms ?? 3} className={input} />
+            <input
+              name="rooms"
+              type="number"
+              required
+              min={1}
+              max={12}
+              step={0.5}
+              value={roomsText}
+              onChange={(e) => {
+                setRoomsText(e.target.value);
+                const parsed = Number(e.target.value);
+                if (e.target.value !== "" && Number.isFinite(parsed) && parsed > 0) setRooms(parsed);
+              }}
+              onBlur={(e) => {
+                const parsed = Number(e.target.value);
+                const next = e.target.value === "" || !Number.isFinite(parsed) || parsed < 1 ? 1 : parsed;
+                setRooms(next);
+                setRoomsText(String(next));
+              }}
+              className={input}
+            />
           </label>
           <label className={label}>
             Size (m²)
@@ -189,7 +218,9 @@ export function ListingForm({
               type="number"
               required
               min={0}
-              max={10}
+              max={Math.min(10, maxRoommates(rooms))}
+              aria-invalid={roommatesCapError ? true : undefined}
+              aria-describedby={roommatesCapError ? "roommates-cap-error" : undefined}
               value={roommatesCountText}
               onChange={(e) => {
                 const raw = e.target.value;
@@ -206,6 +237,11 @@ export function ListingForm({
               }}
               className={input}
             />
+            {roommatesCapError ? (
+              <span id="roommates-cap-error" role="alert" className="mt-1 block text-xs font-medium text-danger">
+                {roommatesCapError}
+              </span>
+            ) : null}
           </label>
         </div>
       </section>

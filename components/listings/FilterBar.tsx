@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FEATURES, GENDERS, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants";
+import { FEATURES, LEASE_TERMS, SAFE_ROOM_FILTERS } from "@/lib/constants";
 import { CityCombobox } from "@/components/ui/CityCombobox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
@@ -14,12 +14,20 @@ const label = "block text-[11px] font-semibold uppercase tracking-widest text-mu
 
 /**
  * Filters where the option literally called "any" means "don't filter", so it
- * is dropped from the URL rather than sent. `household_gender` is deliberately
- * NOT one of them: there "any" means "all the same, and I don't mind which",
- * which is a narrower search than no filter at all — a blanket skip silently
- * threw it away.
+ * is dropped from the URL rather than sent. `household_gender` has no such
+ * option any more — see HOUSEHOLD_GENDERS.
  */
 const ANY_MEANS_UNSET = new Set(["lease_term", "safe_room"]);
+
+/**
+ * The whole of "All roommates of the same gender": two options, nothing else
+ * (user decision, 2026-09-01). The tick is the on/off; this says which of the
+ * two, and the first is what an untouched tick means.
+ */
+const HOUSEHOLD_GENDERS = [
+  { key: "male", label: "All male" },
+  { key: "female", label: "All female" },
+] as const;
 
 /**
  * GET-style filters: submits the chosen filters into /browse?… search params
@@ -171,11 +179,10 @@ export function FilterBar() {
                   key={params.get("household_gender") ?? ""}
                   name="household_gender"
                   aria-label="Which gender"
-                  defaultValue={params.get("household_gender") ?? "any"}
+                  defaultValue={params.get("household_gender") ?? HOUSEHOLD_GENDERS[0].key}
                   className="mt-2"
                 >
-                  <option value="any">Any gender, as long as they all match</option>
-                  {GENDERS.map((g) => (
+                  {HOUSEHOLD_GENDERS.map((g) => (
                     <option key={g.key} value={g.key}>{g.label}</option>
                   ))}
                 </Select>
