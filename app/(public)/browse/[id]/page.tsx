@@ -294,15 +294,13 @@ export default async function ListingDetailPage({
         {user?.id === listing.owner_id ? null : user && hasProfile && owner ? (
           // The message is written first, in a sheet over this page; the thread
           // is created only if it is actually sent.
-          <MessageOwner
-            listingId={listing.id}
-            household={[owner, ...residents]}
-            roommatesCount={listing.roommates_count}
-            template={introTemplate}
-          />
+          <MessageOwner listingId={listing.id} household={[owner, ...residents]} template={introTemplate} />
         ) : (
           // Signed-out visitors — and anyone who hasn't made a profile yet —
           // land on the chat route's login / onboarding redirect and return here.
+          // RLS hides the household from them, so the label falls back to the
+          // advertised count; they can't see "Who lives here" to contradict it,
+          // and signing in re-renders the button off the real household.
           <Link
             href={`/browse/${listing.id}/chat`}
             className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-accent-contrast"

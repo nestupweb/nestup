@@ -38,7 +38,7 @@ const household = [profile(), profile({ user_id: "r1", full_name: "Noa Bar", age
 
 // A two-person household, so the CTA reads "Message the roommates" here.
 function open() {
-  return render(<MessageOwner listingId={LISTING} household={household} roommatesCount={2} template="" />);
+  return render(<MessageOwner listingId={LISTING} household={household} template="" />);
 }
 
 beforeEach(() => {
@@ -61,9 +61,7 @@ test("the button opens the sheet instead of navigating to the chat", async () =>
 });
 
 test("the sheet opens with the seeker's default hello, editable", async () => {
-  render(
-    <MessageOwner listingId={LISTING} household={household} roommatesCount={2} template="Hey {name}, is it still free?" />
-  );
+  render(<MessageOwner listingId={LISTING} household={household} template="Hey {name}, is it still free?" />);
   await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
 
   const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
@@ -124,16 +122,29 @@ test("a failed send keeps the sheet, the text, and the conversation unstarted", 
   expect(push).not.toHaveBeenCalled();
 });
 
-test("the CTA names the household: singular for a one-person home, plural above it", async () => {
-  const { unmount } = render(
-    <MessageOwner listingId={LISTING} household={[profile()]} roommatesCount={1} template="" />
-  );
+test("the CTA counts the household it messages: singular for an owner living alone, plural once anyone else is there", async () => {
+  const { unmount } = render(<MessageOwner listingId={LISTING} household={[profile()]} template="" />);
   expect(screen.getByRole("button", { name: /^message the roommate$/i })).toBeInTheDocument();
   // The sheet it opens agrees with the button that opened it.
   await userEvent.click(screen.getByRole("button", { name: /^message the roommate$/i }));
   expect(screen.getByRole("dialog", { name: /^message the roommate$/i })).toBeInTheDocument();
   unmount();
 
-  render(<MessageOwner listingId={LISTING} household={household} roommatesCount={3} template="" />);
+  render(
+    <MessageOwner
+      listingId={LISTING}
+      household={[profile(), profile({ user_id: "r1" }), profile({ user_id: "r2" })]}
+      template=""
+    />
+  );
+  expect(screen.getByRole("button", { name: /^message the roommates$/i })).toBeInTheDocument();
+});
+
+// The bug that prompted this: "Ground-floor room with a yard, Nazareth" has
+// roommates_count = 1 but an owner AND a resident under "Who lives here", and
+// the button read "Message the roommate". The household is what counts.
+test("an owner plus one resident is plural, whatever the listing's roommates_count says", () => {
+  render(<MessageOwner listingId={LISTING} household={household} template="" />);
+  expect(household).toHaveLength(2);
   expect(screen.getByRole("button", { name: /^message the roommates$/i })).toBeInTheDocument();
 });

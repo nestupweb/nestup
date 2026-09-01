@@ -254,14 +254,15 @@ export function propertyTypeLabel(key: PropertyType): string {
  * The listing page's contact CTA: "Message the roommate" for a room whose
  * household is one person, "…roommates" for more.
  *
- * `roommates_count` is the current roommates besides the creator, one of which
- * is the room being advertised — so the people a seeker would actually live
- * with (owner included, their own slot excluded) come to `roommates_count`.
- * That is also the number the page prints above it ("2 roommates"), so button
- * and body agree.
+ * Pass the size of the household being messaged — owner plus residents, the
+ * people the page lists under "Who lives here". Deliberately NOT
+ * `listings.roommates_count`: that field disagrees with `listing_residents` on
+ * most rooms, which is how a two-person home came to read "Message the
+ * roommate". The signed-out CTA still falls back to it, having no household to
+ * count, but it is a fallback and not the source of truth.
  */
-export function messageHouseholdLabel(roommatesCount: number): string {
-  return roommatesCount > 1 ? "Message the roommates" : "Message the roommate";
+export function messageHouseholdLabel(householdSize: number): string {
+  return householdSize > 1 ? "Message the roommates" : "Message the roommate";
 }
 
 export const FEATURES = [

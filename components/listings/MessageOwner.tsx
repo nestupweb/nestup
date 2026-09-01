@@ -24,20 +24,21 @@ import type { Profile } from "@/lib/types";
 export function MessageOwner({
   listingId,
   household,
-  roommatesCount,
   template = "",
 }: {
   listingId: string;
   /** The household the message reaches, owner first. */
   household: Profile[];
-  /** The listing's `roommates_count`, which decides singular vs plural. */
-  roommatesCount: number;
   /** The seeker's saved default hello, "" for the built-in text. */
   template?: string;
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
-  const label = messageHouseholdLabel(roommatesCount);
+  // Counted off the household itself — the same people listed under "Who lives
+  // here", and the ones this message actually reaches. `listings.roommates_count`
+  // looks like the right number and is not: it disagrees with the residents on
+  // most rooms, so a two-person home was reading "Message the roommate".
+  const label = messageHouseholdLabel(household.length);
 
   return (
     <>
