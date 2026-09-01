@@ -14,7 +14,8 @@ import { applyListingFilters } from "@/lib/listings";
 import { listingFiltersSchema } from "@/lib/validation/filters";
 import { featureVector } from "@/lib/affinity";
 import { ListingCard } from "@/components/listings/ListingCard";
-import type { Listing } from "@/lib/types";
+import { SwipePanel } from "@/components/swipe/SwipePanel";
+import type { Listing, Profile } from "@/lib/types";
 
 vi.mock("@/app/actions/saved", () => ({ setSavedAction: async () => ({ ok: true }) }));
 
@@ -66,4 +67,43 @@ test("the deck learns from the household the seeker was shown", () => {
   const v = featureVector(listing({ roommates_count: 1, household_size: 2 }));
   expect(v["roommates:2"]).toBe(1);
   expect(v["roommates:1"]).toBeUndefined();
+});
+
+function person(overrides: Partial<Profile> = {}): Profile {
+  return {
+    user_id: "p1", full_name: "Dana Levi", age: 29, occupation: "Chef", bio: "",
+    avatar_url: null, smoker: false, has_pet: false, cleanliness: 3,
+    sleep_schedule: "flexible", guests_freq: "sometimes", interests: [],
+    ok_with_smoker: true, ok_with_pets: true, noise_level: "moderate", diet: "none",
+    pref_cleanliness: 1, pref_sleep: "any", pref_guests: "any", pref_noise: "any",
+    pref_diet: "any", shabbat: "", pref_shabbat: "any", chores: [], gender: null,
+    pref_same_gender: false, budget_min: 0, budget_max: 3000, preferred_cities: [],
+    earliest_move_in: null, pref_lease_term: "any", pref_safe_room: "any",
+    pref_amenities: [], notify_new_matches: false, created_at: "", updated_at: "",
+    ...overrides,
+  };
+}
+
+// The swipe card states the count on its "Home" page and lists the same people
+// on its "Roommates" page — the one surface where both halves sit on one card,
+// so a disagreement is visible in a single glance.
+test("the swipe card's House rules line counts the people on its own Roommates page", () => {
+  const owner = person();
+  const residents = [person({ user_id: "p2", full_name: "Kfir Shamir" })];
+  const entry = {
+    listing: listing({ roommates_count: 1, household_size: 1 + residents.length }),
+    owner,
+    residents,
+    lifestyle: 80,
+    social: 70,
+  };
+  const { rerender } = render(
+    <SwipePanel entry={entry} seeker={person({ user_id: "seeker" })} page={1} onPageChange={() => {}} />
+  );
+  expect(screen.getByText(/^2 roommates$/)).toBeInTheDocument();
+  expect(screen.queryByText(/^1 roommate$/)).toBeNull();
+
+  // Same card, its Roommates page: the number above matches what is listed here.
+  rerender(<SwipePanel entry={entry} seeker={person({ user_id: "seeker" })} page={2} onPageChange={() => {}} />);
+  expect(screen.getAllByRole("link", { name: /'s profile$/ })).toHaveLength(2);
 });
