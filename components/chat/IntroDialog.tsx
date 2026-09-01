@@ -29,9 +29,9 @@ export function householdName(household: Profile[]): string {
  * Two entry points share this sheet, and they differ only in wording and in
  * what happens after the send. The deck (`IntroSheet`) opens it on a like and
  * closes it the moment the message is away, because the next room is waiting
- * behind it. The listing page opens it from "Message the owner" and hands the
- * seeker on to the conversation, so the send leaves a success state on screen
- * while that navigation happens — nothing there is in a hurry to move on.
+ * behind it. The listing page opens it from "Message the owner" and stays where
+ * it is: the sheet reports that the message went and offers the conversation as
+ * a link, rather than pulling the seeker off the room they were reading.
  *
  * Nothing is created until "Send": closing this — Cancel, Escape, the backdrop
  * — leaves no conversation behind.

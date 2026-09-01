@@ -41,13 +41,16 @@ export default async function ChatThreadPage({
   // seeker's own template is ever loaded here.
   const wantsIntro = intro === "1" && conversation.seeker_id === user.id;
 
-  const [{ data: messageRows }, { data: viewingRows }, { data: googleRow }, { data: introRow }] = await Promise.all([
+  const [{ data: messageRows }, { data: viewingRows }, { data: googleRow }, { data: introRow }, { data: meRow }] = await Promise.all([
     supabase.from("messages").select("*").eq("conversation_id", id).gt("created_at", since).order("created_at", { ascending: true }),
     supabase.from("viewings").select("*").eq("conversation_id", id).gt("created_at", since).order("created_at", { ascending: true }),
     supabase.from("google_tokens").select("email").eq("user_id", user.id).maybeSingle(),
     wantsIntro
       ? supabase.from("profile_details").select("intro_template").eq("user_id", user.id).maybeSingle()
       : Promise.resolve({ data: null }),
+    // The conversation row describes the other side only, so the viewer's own
+    // photo is read here — it is what "You" wears in the viewing participants.
+    supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle(),
   ]);
   // Marking the thread read is deliberately NOT done here. It is a write, and a
   // render that writes cannot be cached: the write would be skipped on a cache
@@ -80,6 +83,7 @@ export default async function ChatThreadPage({
   return (
     <ChatThread
       meId={user.id}
+      meAvatar={(meRow as { avatar_url: string | null } | null)?.avatar_url ?? null}
       conversation={conversation}
       messages={messages}
       viewings={(viewingRows as Viewing[] | null) ?? []}

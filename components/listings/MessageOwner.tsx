@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { IntroDialog } from "@/components/chat/IntroDialog";
 import type { Profile } from "@/lib/types";
@@ -10,9 +9,14 @@ import type { Profile } from "@/lib/types";
  *
  * It used to be a link straight to `/browse/[id]/chat`, which opened a thread
  * — creating the conversation — before the seeker had written a word. Now it
- * opens the same sheet the deck uses after a like (`IntroDialog`): the hello
- * is there to edit, Send posts it and moves on to the conversation, and Cancel
- * leaves nothing behind, because nothing was created yet.
+ * opens the same sheet the deck uses after a like (`IntroDialog`): the hello is
+ * there to edit, and Cancel leaves nothing behind because nothing was created
+ * yet.
+ *
+ * Sending does NOT navigate (user decision, 2026-09-01). The seeker was reading
+ * this room; the message going out is not a reason to take the room off their
+ * screen. The sheet says it went and offers the conversation as a link, so
+ * going there stays their choice.
  *
  * Not a like, so nothing here claims one — no "You liked this room" line.
  */
@@ -27,16 +31,8 @@ export function MessageOwner({
   /** The seeker's saved default hello, "" for the built-in text. */
   template?: string;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
-
   const close = useCallback(() => setOpen(false), []);
-  // The sheet keeps its "Message sent" state on screen while this runs, so the
-  // send never looks like it did nothing on a slow navigation.
-  const goToConversation = useCallback(
-    (conversationId: string) => router.push(`/chat/${conversationId}`),
-    [router]
-  );
 
   return (
     <>
@@ -56,7 +52,6 @@ export function MessageOwner({
           sendLabel="Send"
           cancelLabel="Cancel"
           onClose={close}
-          onSent={goToConversation}
         />
       ) : null}
     </>

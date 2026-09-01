@@ -43,6 +43,8 @@ const conversation: ConversationSummary = {
   cleared_at: null,
 };
 
+const MY_PHOTO = "https://example.com/storage/v1/object/public/avatars/me/pic.jpg";
+
 const viewing: Viewing = {
   id: "33333333-3333-4333-8333-333333333333",
   conversation_id: conversation.id,
@@ -60,7 +62,7 @@ test("the chip opens every appointment detail; Escape closes it", () => {
   render(<ViewingScheduledChip viewing={viewing} conversation={conversation} meId="seeker" />);
   expect(screen.queryByRole("dialog")).toBeNull();
 
-  fireEvent.click(screen.getByRole("button", { name: /viewing scheduled/i }));
+  fireEvent.click(screen.getByRole("button", { name: /viewing details/i }));
   const dialog = screen.getByRole("dialog");
   const q = within(dialog);
   const longDate = new Date(viewing.starts_at).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -87,9 +89,19 @@ test("participants are listed from each side's point of view", () => {
   expect(viewingParticipants(hostView, "owner").map((p) => p.name)).toEqual(["You", "Dana Levi"]);
 });
 
+test("the viewer's own photo is theirs, not the placeholder", () => {
+  expect(viewingParticipants(conversation, "seeker", MY_PHOTO)[0]).toEqual({ name: "You", avatar: MY_PHOTO, me: true });
+
+  render(<ViewingScheduledChip viewing={viewing} conversation={conversation} meId="seeker" meAvatar={MY_PHOTO} />);
+  fireEvent.click(screen.getByRole("button", { name: /viewing details/i }));
+  const rows = within(screen.getByRole("dialog")).getByText("Participants").nextElementSibling!.querySelectorAll("li");
+  expect(rows[0]).toHaveTextContent("You");
+  expect(rows[0].querySelector("img")).toHaveAttribute("src", MY_PHOTO);
+});
+
 test("cancelling asks for confirmation first, then cancels and closes the details", async () => {
   render(<ViewingScheduledChip viewing={viewing} conversation={conversation} meId="seeker" />);
-  fireEvent.click(screen.getByRole("button", { name: /viewing scheduled/i }));
+  fireEvent.click(screen.getByRole("button", { name: /viewing details/i }));
   const dialog = screen.getByRole("dialog");
   const q = within(dialog);
 
@@ -111,7 +123,7 @@ test("cancelling asks for confirmation first, then cancels and closes the detail
 test("a failed cancellation keeps the details open and explains", async () => {
   respondViewingAction.mockResolvedValue({ ok: false, error: "This viewing is already closed." });
   render(<ViewingScheduledChip viewing={viewing} conversation={conversation} meId="owner" />);
-  fireEvent.click(screen.getByRole("button", { name: /viewing scheduled/i }));
+  fireEvent.click(screen.getByRole("button", { name: /viewing details/i }));
   const q = within(screen.getByRole("dialog"));
   fireEvent.click(q.getByRole("button", { name: "Cancel viewing" }));
   fireEvent.click(q.getByRole("button", { name: /yes, cancel viewing/i }));
@@ -121,6 +133,6 @@ test("a failed cancellation keeps the details open and explains", async () => {
 
 test("a viewing with no note says so", () => {
   render(<ViewingScheduledChip viewing={{ ...viewing, note: "" }} conversation={conversation} meId="owner" />);
-  fireEvent.click(screen.getByRole("button", { name: /viewing scheduled/i }));
+  fireEvent.click(screen.getByRole("button", { name: /viewing details/i }));
   expect(screen.getByText("No notes")).toBeInTheDocument();
 });

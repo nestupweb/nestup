@@ -89,7 +89,7 @@ test("Cancel closes the sheet without starting a conversation", async () => {
   expect(screen.getByRole("dialog")).toBeInTheDocument();
 });
 
-test("Send posts the message, shows it went, and moves on to the conversation", async () => {
+test("Send posts the message and says so, without leaving the listing", async () => {
   open();
   await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
   const box = screen.getByRole("textbox", { name: /message to the roommates/i });
@@ -98,10 +98,15 @@ test("Send posts the message, shows it went, and moves on to the conversation", 
   await userEvent.click(screen.getByRole("button", { name: /^send$/i }));
 
   expect(sendIntroAction).toHaveBeenCalledWith(LISTING, "Hi from the listing page");
-  await waitFor(() => expect(push).toHaveBeenCalledWith(`/chat/${CONVERSATION}`));
-  // The success state holds the sheet while that navigation happens.
-  expect(screen.getByRole("dialog", { name: /message sent/i })).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByRole("dialog", { name: /message sent/i })).toBeInTheDocument());
+  // The seeker was reading this room; sending doesn't take it off their screen.
+  expect(push).not.toHaveBeenCalled();
+  // The conversation is offered, not forced.
   expect(screen.getByRole("link", { name: /open the conversation/i })).toHaveAttribute("href", `/chat/${CONVERSATION}`);
+
+  await userEvent.click(screen.getByRole("button", { name: /^close$/i }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /message the owner/i })).toBeInTheDocument();
 });
 
 test("a failed send keeps the sheet, the text, and the conversation unstarted", async () => {

@@ -69,6 +69,7 @@ export const VIEWING_LABEL = "text-[11px] font-semibold leading-none text-accent
 
 export function ChatThread({
   meId,
+  meAvatar = null,
   conversation,
   messages,
   viewings,
@@ -77,6 +78,8 @@ export function ChatThread({
   initialDraft = "",
 }: {
   meId: string;
+  /** The signed-in member's own photo — the conversation row only carries the other side's. */
+  meAvatar?: string | null;
   conversation: ConversationSummary;
   messages: Message[];
   viewings: Viewing[];
@@ -255,7 +258,9 @@ export function ChatThread({
           </h1>
           <p className="truncate text-xs text-muted">{roleLine}</p>
         </div>
-        {nextViewing ? <ViewingScheduledChip viewing={nextViewing} conversation={conversation} meId={meId} /> : null}
+        {nextViewing ? (
+          <ViewingScheduledChip viewing={nextViewing} conversation={conversation} meId={meId} meAvatar={meAvatar} />
+        ) : null}
       </header>
 
       <Link
