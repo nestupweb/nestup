@@ -8,7 +8,7 @@
  * `public.max_roommates` SQL function behind the check constraints in 0043.
  */
 import { describe, expect, test } from "vitest";
-import { maxRoommates, roommatesOverCapError } from "@/lib/constants";
+import { maxRoommates, roommatesOverCapError, roomsTooSmallError } from "@/lib/constants";
 import { listingSchema } from "@/lib/validation/listing";
 
 describe("maxRoommates", () => {
@@ -83,5 +83,26 @@ describe("the listing form's server-side check", () => {
   test("shrinking the home is what breaks it — the same household is fine in a bigger one", () => {
     expect(listingSchema.safeParse({ ...valid, rooms: 4.5, roommates_count: 4 }).success).toBe(true);
     expect(listingSchema.safeParse({ ...valid, rooms: 3.5, roommates_count: 4 }).success).toBe(false);
+  });
+});
+
+describe("roomsTooSmallError — the rule from the editing side", () => {
+  test("silent while the home is big enough for the people in it", () => {
+    expect(roomsTooSmallError(1, 1)).toBeNull();   // a studio and its owner
+    expect(roomsTooSmallError(2, 3)).toBeNull();
+    expect(roomsTooSmallError(3, 3.5)).toBeNull(); // the half room counts
+    expect(roomsTooSmallError(4, 5)).toBeNull();
+  });
+
+  test("names the people already there when the home is shrunk under them", () => {
+    const msg = roomsTooSmallError(3, 3);
+    expect(msg).toMatch(/3 people already live here/);
+    expect(msg).toMatch(/at most 2 roommates/);
+  });
+
+  test("one person reads as a person, not 1 people", () => {
+    expect(roomsTooSmallError(2, 2)).toMatch(/2 people/);
+    // The cap is never below 1, so a single occupant can never trip this.
+    expect(roomsTooSmallError(1, 1)).toBeNull();
   });
 });

@@ -112,6 +112,26 @@ const FIELD_NAMES: Record<string, string> = {
   roommates_count: "Current roommates",
 };
 
+/**
+ * The room-capacity checks from 0043, said in words.
+ *
+ * The form and `listingSchema` both catch this first, so reaching here means a
+ * stale form or a hand-rolled POST — but "Please try again" would be a lie
+ * either way, because trying again cannot help. `listings_household_fits_rooms`
+ * is the one that can fire without the schema seeing it coming: it is about the
+ * confirmed household, which the submitted form never carries.
+ */
+function capConstraintError(message: string | undefined): string | null {
+  if (!message) return null;
+  if (message.includes("listings_household_fits_rooms")) {
+    return "This home has more people living in it than that many rooms can hold — one of the rooms is the living room. Add a room, or remove a roommate from the listing first.";
+  }
+  if (message.includes("listings_roommates_fit_rooms")) {
+    return "That is more roommates than the home has bedrooms — one of the rooms is the living room.";
+  }
+  return null;
+}
+
 export async function saveListingAction(
   _prev: ListingFormState,
   formData: FormData
@@ -285,7 +305,7 @@ export async function saveListingAction(
     // (0033) decides. A row RLS refuses comes back as zero rows and no error,
     // which would otherwise look like a silent success.
     const { data, error } = await supabase.from("listings").update(row).eq("id", listingId).select("id");
-    if (error) return { error: "Could not save the listing. Please try again." };
+    if (error) return { error: capConstraintError(error.message) ?? "Could not save the listing. Please try again." };
     if (!data || data.length === 0) {
       return { error: "You can no longer edit this listing." };
     }
@@ -295,7 +315,7 @@ export async function saveListingAction(
       .insert({ ...row, owner_id: user.id })
       .select("id")
       .single();
-    if (error) return { error: "Could not save the listing. Please try again." };
+    if (error) return { error: capConstraintError(error.message) ?? "Could not save the listing. Please try again." };
     publishedId = (data as { id: string }).id;
   }
 

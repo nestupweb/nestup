@@ -25,8 +25,8 @@ const ANY_MEANS_UNSET = new Set(["lease_term", "safe_room"]);
  * two, and the first is what an untouched tick means.
  */
 const HOUSEHOLD_GENDERS = [
-  { key: "male", label: "All male" },
-  { key: "female", label: "All female" },
+  { key: "male", label: "Male" },
+  { key: "female", label: "Female" },
 ] as const;
 
 /**

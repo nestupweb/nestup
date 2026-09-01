@@ -68,15 +68,18 @@ test("an applied same-gender filter can be unticked again", async () => {
   expect(String(push.mock.calls[0][0])).not.toContain("household_gender");
 });
 
-test("the tick offers exactly two genders, all male first", async () => {
+test("the tick offers exactly two genders, male first", async () => {
   cleanup();
   currentSearch = "";
   render(<FilterBar />);
   await userEvent.click(screen.getByRole("checkbox", { name: /all roommates of the same gender/i }));
   const select = screen.getByLabelText(/which gender/i) as HTMLSelectElement;
+  // The tick above already says "All roommates of the same gender", so the
+  // options are just the gender (user decision, 2026-09-01) — "All male" under
+  // that heading said "all" twice.
   expect([...select.options].map((o) => [o.value, o.textContent])).toEqual([
-    ["male", "All male"],
-    ["female", "All female"],
+    ["male", "Male"],
+    ["female", "Female"],
   ]);
   expect(select).toHaveValue("male");
 });
