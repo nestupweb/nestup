@@ -42,3 +42,41 @@ test("'for how long' follows the URL after a navigation, not just on first rende
   rerender(<FilterBar />);
   expect(screen.getByLabelText(/for how long/i)).toHaveValue("");
 });
+
+/**
+ * "All roommates of the same gender" used to be impossible to switch off once
+ * applied: the box read `checked` from the tick state OR the URL, so unticking
+ * cleared the state, the URL still said "male", and it sprang back on with the
+ * dropdown still submitting the filter.
+ */
+test("an applied same-gender filter can be unticked again", async () => {
+  cleanup();
+  push.mockClear();
+  currentSearch = "household_gender=male";
+  render(<FilterBar />);
+
+  const box = screen.getByRole("checkbox", { name: /all roommates of the same gender/i });
+  expect(box).toBeChecked(); // the applied filter is reflected
+  expect(screen.getByLabelText(/which gender/i)).toHaveValue("male");
+
+  await userEvent.click(box);
+  expect(box).not.toBeChecked();
+  // The dropdown goes with it, so nothing can submit the filter behind the tick.
+  expect(screen.queryByLabelText(/which gender/i)).toBeNull();
+
+  await userEvent.click(screen.getByRole("button", { name: /apply filters/i }));
+  expect(String(push.mock.calls[0][0])).not.toContain("household_gender");
+});
+
+test("the tick offers exactly two genders, all male first", async () => {
+  cleanup();
+  currentSearch = "";
+  render(<FilterBar />);
+  await userEvent.click(screen.getByRole("checkbox", { name: /all roommates of the same gender/i }));
+  const select = screen.getByLabelText(/which gender/i) as HTMLSelectElement;
+  expect([...select.options].map((o) => [o.value, o.textContent])).toEqual([
+    ["male", "All male"],
+    ["female", "All female"],
+  ]);
+  expect(select).toHaveValue("male");
+});

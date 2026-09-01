@@ -237,8 +237,14 @@ export function ListingForm({
               }}
               className={input}
             />
+            {/* The label above is uppercase+tracked; a sentence has to opt out of
+                both or it shouts. Same treatment as AuthForm's field errors. */}
             {roommatesCapError ? (
-              <span id="roommates-cap-error" role="alert" className="mt-1 block text-xs font-medium text-danger">
+              <span
+                id="roommates-cap-error"
+                role="alert"
+                className="mt-1.5 block text-xs font-medium normal-case tracking-normal text-danger"
+              >
                 {roommatesCapError}
               </span>
             ) : null}

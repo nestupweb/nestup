@@ -41,8 +41,17 @@ export function FilterBar() {
   const [open, setOpen] = useState(false);
   // "All roommates of the same gender" is two controls that mean one thing:
   // the tick decides whether to filter at all, the dropdown says which gender.
-  // The URL carries only the gender, so the tick is derived from it.
-  const [sameGender, setSameGender] = useState(false);
+  // The URL carries only the gender, so the tick starts from it and is re-read
+  // after every apply — but in between it is the tick that rules. Deriving
+  // `checked` from the URL *as well* is what made an applied filter impossible
+  // to switch off: unticking cleared the state, the URL still said "male", and
+  // the box sprang straight back on with the dropdown still submitting.
+  const appliedGender = params.get("household_gender");
+  const [sameGender, setSameGender] = useState(Boolean(appliedGender));
+
+  useEffect(() => {
+    setSameGender(Boolean(appliedGender));
+  }, [appliedGender]);
 
   useEffect(() => {
     if (!open) return;
@@ -169,17 +178,17 @@ export function FilterBar() {
               <label className="flex items-center gap-2 text-sm lg:text-base">
                 <input
                   type="checkbox"
-                  checked={sameGender || Boolean(params.get("household_gender"))}
+                  checked={sameGender}
                   onChange={(e) => setSameGender(e.target.checked)}
                 />
                 All roommates of the same gender
               </label>
-              {sameGender || params.get("household_gender") ? (
+              {sameGender ? (
                 <Select
-                  key={params.get("household_gender") ?? ""}
+                  key={appliedGender ?? ""}
                   name="household_gender"
                   aria-label="Which gender"
-                  defaultValue={params.get("household_gender") ?? HOUSEHOLD_GENDERS[0].key}
+                  defaultValue={appliedGender ?? HOUSEHOLD_GENDERS[0].key}
                   className="mt-2"
                 >
                   {HOUSEHOLD_GENDERS.map((g) => (
