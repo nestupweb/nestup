@@ -50,7 +50,8 @@ export function ListingCard({
           )}
         </div>
         <div className="flex min-w-0 flex-1">
-          <div className="min-w-0 flex-1 p-4 pr-14 sm:p-5 lg:pr-5">
+          {/* pr-14 only reserves room for the heart, which visitors never see. */}
+          <div className={`min-w-0 flex-1 p-4 sm:p-5 lg:pr-5 ${signedIn ? "pr-14" : ""}`}>
             <p className="text-2xl font-bold lg:hidden">
               ₪{listing.rent.toLocaleString()}
               <span className="text-sm font-normal text-muted"> / mo</span>
@@ -77,7 +78,7 @@ export function ListingCard({
             ) : null}
           </div>
           {/* Wide screens: rent as its own right-aligned scan column. */}
-          <div className="hidden w-44 shrink-0 flex-col items-end border-l border-hairline p-5 pr-14 lg:flex">
+          <div className={`hidden w-44 shrink-0 flex-col items-end border-l border-hairline p-5 lg:flex ${signedIn ? "pr-14" : ""}`}>
             <p className="whitespace-nowrap text-right text-2xl font-bold">
               ₪{listing.rent.toLocaleString()}
             </p>

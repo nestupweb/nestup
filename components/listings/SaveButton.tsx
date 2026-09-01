@@ -1,38 +1,13 @@
 "use client";
 
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { setSavedAction } from "@/app/actions/saved";
 
-const STORAGE_KEY = "nestup:saved-listings";
-
-function readSaved(): string[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-// Same-tab updates flow through this emitter; the "storage" event covers other tabs.
-const listeners = new Set<() => void>();
-function emit() {
-  for (const l of listeners) l();
-}
-function subscribe(callback: () => void) {
-  listeners.add(callback);
-  window.addEventListener("storage", callback);
-  return () => {
-    listeners.delete(callback);
-    window.removeEventListener("storage", callback);
-  };
-}
-
 /**
- * Heart toggle. Signed-in users persist to `saved_listings` (shows under
- * Profile › Liked on every device); visitors keep a per-browser localStorage
- * list so the button still feels alive before sign-up.
+ * Heart toggle, signed-in only. Liking persists to `saved_listings` and shows
+ * under Profile › Liked on every device, so there is nothing meaningful a
+ * visitor could do with it — for them the button isn't rendered at all rather
+ * than offered and then rejected.
  */
 export function SaveButton({
   listingId,
@@ -45,34 +20,18 @@ export function SaveButton({
   initialSaved?: boolean;
   className?: string;
 }) {
-  const localSaved = useSyncExternalStore(
-    subscribe,
-    () => readSaved().includes(listingId),
-    () => false
-  );
-  const [serverSaved, setServerSaved] = useState(initialSaved);
+  const [saved, setSaved] = useState(initialSaved);
   const [, startTransition] = useTransition();
-  const saved = signedIn ? serverSaved : localSaved;
+
+  if (!signedIn) return null;
 
   function toggle() {
-    if (signedIn) {
-      const next = !serverSaved;
-      setServerSaved(next); // optimistic
-      startTransition(async () => {
-        const { ok } = await setSavedAction(listingId, next);
-        if (!ok) setServerSaved(!next);
-      });
-      return;
-    }
-    try {
-      const ids = new Set(readSaved());
-      if (ids.has(listingId)) ids.delete(listingId);
-      else ids.add(listingId);
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
-    } catch {
-      // Storage blocked (private mode, etc.) — nothing to persist.
-    }
-    emit();
+    const next = !saved;
+    setSaved(next); // optimistic
+    startTransition(async () => {
+      const { ok } = await setSavedAction(listingId, next);
+      if (!ok) setSaved(!next);
+    });
   }
 
   return (

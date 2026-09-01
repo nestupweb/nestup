@@ -12,7 +12,8 @@ import type { ConversationSummary, Viewing } from "@/lib/types";
 /** Everyone at the viewing, from the viewer's side of the table. */
 export function viewingParticipants(
   conversation: ConversationSummary,
-  meId: string
+  meId: string,
+  meAvatar: string | null = null
 ): { name: string; avatar: string | null; me: boolean }[] {
   // A seeker meets the whole household; the household meets the seeker.
   const household = conversation.seeker_id === meId ? conversation.household ?? [] : [];
@@ -20,7 +21,10 @@ export function viewingParticipants(
     household.length > 0
       ? household.map((h) => ({ name: h.full_name, avatar: h.avatar_url, me: false }))
       : [{ name: conversation.other_name ?? "NestUp member", avatar: conversation.other_avatar, me: false }];
-  return [{ name: "You", avatar: null, me: true }, ...others];
+  // The conversation row carries everyone's photo but the viewer's own, so the
+  // page hands theirs down separately — without it "You" sat on the placeholder
+  // while everyone else had a face.
+  return [{ name: "You", avatar: meAvatar, me: true }, ...others];
 }
 
 /** Header chip shown while a confirmed viewing is still ahead; opens the details. */
@@ -28,10 +32,12 @@ export function ViewingScheduledChip({
   viewing,
   conversation,
   meId,
+  meAvatar = null,
 }: {
   viewing: Viewing;
   conversation: ConversationSummary;
   meId: string;
+  meAvatar?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -42,9 +48,11 @@ export function ViewingScheduledChip({
         className="flex shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3.5 py-2 text-[12px] font-bold uppercase tracking-wider text-accent transition-colors hover:border-accent hover:bg-accent/15"
       >
         <CalendarIcon className="h-4 w-4" />
-        Viewing scheduled
+        Viewing details
       </button>
-      {open ? <ViewingDetails viewing={viewing} conversation={conversation} meId={meId} onClose={() => setOpen(false)} /> : null}
+      {open ? (
+        <ViewingDetails viewing={viewing} conversation={conversation} meId={meId} meAvatar={meAvatar} onClose={() => setOpen(false)} />
+      ) : null}
     </>
   );
 }
@@ -57,11 +65,13 @@ export function ViewingDetails({
   viewing,
   conversation,
   meId,
+  meAvatar = null,
   onClose,
 }: {
   viewing: Viewing;
   conversation: ConversationSummary;
   meId: string;
+  meAvatar?: string | null;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -80,7 +90,7 @@ export function ViewingDetails({
   const longDate = start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const { time } = viewingLabel(viewing.starts_at, viewing.ends_at);
   const where = [conversation.listing_address, conversation.listing_city].filter(Boolean).join(", ");
-  const people = viewingParticipants(conversation, meId);
+  const people = viewingParticipants(conversation, meId, meAvatar);
   const withName = people.find((p) => !p.me)?.name ?? "your contact";
   const copy = describeViewing(
     { title: conversation.listing_title, address: conversation.listing_address, city: conversation.listing_city, rent: conversation.listing_rent },
