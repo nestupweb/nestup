@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Profile } from "@/lib/types";
@@ -36,8 +36,9 @@ function profile(overrides: Partial<Profile> = {}): Profile {
 
 const household = [profile(), profile({ user_id: "r1", full_name: "Noa Bar", age: 24 })];
 
+// A two-person household, so the CTA reads "Message the roommates" here.
 function open() {
-  return render(<MessageOwner listingId={LISTING} household={household} template="" />);
+  return render(<MessageOwner listingId={LISTING} household={household} roommatesCount={2} template="" />);
 }
 
 beforeEach(() => {
@@ -48,7 +49,7 @@ beforeEach(() => {
 test("the button opens the sheet instead of navigating to the chat", async () => {
   open();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
 
   const dialog = screen.getByRole("dialog", { name: /message the roommates/i });
   expect(dialog).toBeInTheDocument();
@@ -60,8 +61,10 @@ test("the button opens the sheet instead of navigating to the chat", async () =>
 });
 
 test("the sheet opens with the seeker's default hello, editable", async () => {
-  render(<MessageOwner listingId={LISTING} household={household} template="Hey {name}, is it still free?" />);
-  await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
+  render(
+    <MessageOwner listingId={LISTING} household={household} roommatesCount={2} template="Hey {name}, is it still free?" />
+  );
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
 
   const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
   expect(box.value).toBe("Hey Dana, is it still free?");
@@ -71,27 +74,27 @@ test("the sheet opens with the seeker's default hello, editable", async () => {
 
 test("a seeker with no saved template gets the built-in hello", async () => {
   open();
-  await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
   const box = screen.getByRole("textbox", { name: /message to the roommates/i }) as HTMLTextAreaElement;
   expect(box.value).toBe("Hi, I liked the room — can we schedule a viewing?");
 });
 
 test("Cancel closes the sheet without starting a conversation", async () => {
   open();
-  await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
   await userEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
 
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(sendIntroAction).not.toHaveBeenCalled();
   expect(push).not.toHaveBeenCalled();
   // And it can be opened again.
-  await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
   expect(screen.getByRole("dialog")).toBeInTheDocument();
 });
 
 test("Send posts the message and says so, without leaving the listing", async () => {
   open();
-  await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
   const box = screen.getByRole("textbox", { name: /message to the roommates/i });
   await userEvent.clear(box);
   await userEvent.type(box, "Hi from the listing page");
@@ -104,18 +107,33 @@ test("Send posts the message and says so, without leaving the listing", async ()
   // The conversation is offered, not forced.
   expect(screen.getByRole("link", { name: /open the conversation/i })).toHaveAttribute("href", `/chat/${CONVERSATION}`);
 
-  await userEvent.click(screen.getByRole("button", { name: /^close$/i }));
+  // The backdrop is labelled "Close" too — this is the button in the sheet.
+  await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /^close$/i }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /message the owner/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /^message the roommates$/i })).toBeInTheDocument();
 });
 
 test("a failed send keeps the sheet, the text, and the conversation unstarted", async () => {
   sendIntroAction.mockResolvedValueOnce({ ok: false, error: "This room can't receive messages right now." } as never);
   open();
-  await userEvent.click(screen.getByRole("button", { name: /message the owner/i }));
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommates$/i }));
   await userEvent.click(screen.getByRole("button", { name: /^send$/i }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent(/can't receive messages/i);
   expect(screen.getByRole("textbox", { name: /message to the roommates/i })).toBeInTheDocument();
   expect(push).not.toHaveBeenCalled();
+});
+
+test("the CTA names the household: singular for a one-person home, plural above it", async () => {
+  const { unmount } = render(
+    <MessageOwner listingId={LISTING} household={[profile()]} roommatesCount={1} template="" />
+  );
+  expect(screen.getByRole("button", { name: /^message the roommate$/i })).toBeInTheDocument();
+  // The sheet it opens agrees with the button that opened it.
+  await userEvent.click(screen.getByRole("button", { name: /^message the roommate$/i }));
+  expect(screen.getByRole("dialog", { name: /^message the roommate$/i })).toBeInTheDocument();
+  unmount();
+
+  render(<MessageOwner listingId={LISTING} household={household} roommatesCount={3} template="" />);
+  expect(screen.getByRole("button", { name: /^message the roommates$/i })).toBeInTheDocument();
 });

@@ -2,10 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { IntroDialog } from "@/components/chat/IntroDialog";
+import { messageHouseholdLabel } from "@/lib/constants";
 import type { Profile } from "@/lib/types";
 
 /**
- * "Message the owner", from the listing page.
+ * "Message the roommate(s)", from the listing page.
  *
  * It used to be a link straight to `/browse/[id]/chat`, which opened a thread
  * — creating the conversation — before the seeker had written a word. Now it
@@ -23,16 +24,20 @@ import type { Profile } from "@/lib/types";
 export function MessageOwner({
   listingId,
   household,
+  roommatesCount,
   template = "",
 }: {
   listingId: string;
   /** The household the message reaches, owner first. */
   household: Profile[];
+  /** The listing's `roommates_count`, which decides singular vs plural. */
+  roommatesCount: number;
   /** The seeker's saved default hello, "" for the built-in text. */
   template?: string;
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  const label = messageHouseholdLabel(roommatesCount);
 
   return (
     <>
@@ -41,14 +46,14 @@ export function MessageOwner({
         onClick={() => setOpen(true)}
         className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-accent-contrast"
       >
-        Message the owner
+        {label}
       </button>
       {open ? (
         <IntroDialog
           listingId={listingId}
           household={household}
           template={template}
-          title="Message the roommates"
+          title={label}
           sendLabel="Send"
           cancelLabel="Cancel"
           onClose={close}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { FEATURES, genderLabel, leaseTermLabel, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
+import { FEATURES, genderLabel, leaseTermLabel, messageHouseholdLabel, propertyTypeLabel, safeRoomLabel } from "@/lib/constants";
 import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { MessageOwner } from "@/components/listings/MessageOwner";
@@ -33,9 +33,10 @@ export default async function ListingDetailPage({
   if (!listing) notFound();
 
   // Signed-in extras: heart state, "recently viewed" for Profile › History, and
-  // what "Message the owner" needs to open its sheet with no round-trip — the
-  // seeker's own default hello, and whether they have a profile at all (without
-  // one they still go through the chat route, which sends them to onboarding).
+  // what the "Message the roommate(s)" button needs to open its sheet with no
+  // round-trip — the seeker's own default hello, and whether they have a
+  // profile at all (without one they still go through the chat route, which
+  // sends them to onboarding).
   let saved = false;
   let introTemplate = "";
   let hasProfile = false;
@@ -293,7 +294,12 @@ export default async function ListingDetailPage({
         {user?.id === listing.owner_id ? null : user && hasProfile && owner ? (
           // The message is written first, in a sheet over this page; the thread
           // is created only if it is actually sent.
-          <MessageOwner listingId={listing.id} household={[owner, ...residents]} template={introTemplate} />
+          <MessageOwner
+            listingId={listing.id}
+            household={[owner, ...residents]}
+            roommatesCount={listing.roommates_count}
+            template={introTemplate}
+          />
         ) : (
           // Signed-out visitors — and anyone who hasn't made a profile yet —
           // land on the chat route's login / onboarding redirect and return here.
@@ -301,7 +307,7 @@ export default async function ListingDetailPage({
             href={`/browse/${listing.id}/chat`}
             className="block w-full rounded-xl bg-accent py-3 text-center text-sm font-semibold text-accent-contrast"
           >
-            Message the owner
+            {messageHouseholdLabel(listing.roommates_count)}
           </Link>
         )}
       </div>

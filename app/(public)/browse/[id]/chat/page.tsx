@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 export const instant = false;
 
 /**
- * "Message the owner" entry point. Resolves (or starts) the seeker's thread for
+ * "Message the roommate(s)" entry point. Resolves (or starts) the seeker's thread for
  * this listing and hands off to the inbox at /chat/[conversationId]. `intro=1`
  * asks that thread to open with the seeker's default hello already in the
  * composer — the same offer the swipe sheet makes after a like.

@@ -250,6 +250,20 @@ export function propertyTypeLabel(key: PropertyType): string {
   return PROPERTY_TYPES.find((p) => p.key === key)?.label ?? key;
 }
 
+/**
+ * The listing page's contact CTA: "Message the roommate" for a room whose
+ * household is one person, "…roommates" for more.
+ *
+ * `roommates_count` is the current roommates besides the creator, one of which
+ * is the room being advertised — so the people a seeker would actually live
+ * with (owner included, their own slot excluded) come to `roommates_count`.
+ * That is also the number the page prints above it ("2 roommates"), so button
+ * and body agree.
+ */
+export function messageHouseholdLabel(roommatesCount: number): string {
+  return roommatesCount > 1 ? "Message the roommates" : "Message the roommate";
+}
+
 export const FEATURES = [
   { key: "balcony", label: "Balcony" },
   { key: "air_conditioning", label: "Air conditioning" },

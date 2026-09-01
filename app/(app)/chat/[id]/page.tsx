@@ -36,7 +36,7 @@ export default async function ChatThreadPage({
   // Re-opening a deleted chat therefore lands on an empty thread.
   const since = conversation.cleared_at ?? EPOCH;
 
-  // A thread opened from a listing's "Message the owner" arrives with ?intro=1.
+  // A thread opened from a listing's "Message the roommate(s)" arrives with ?intro=1.
   // The owner never does (that route sends them to the inbox), so only the
   // seeker's own template is ever loaded here.
   const wantsIntro = intro === "1" && conversation.seeker_id === user.id;

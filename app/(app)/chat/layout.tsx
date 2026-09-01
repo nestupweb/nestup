@@ -7,7 +7,7 @@ import { ConversationList } from "@/components/chat/ConversationList";
 
 // Chat is browsable even before the profile exists (WhatsApp-style empty
 // inbox); the profile gate lives where a conversation actually starts
-// (the listing's "Message the owner" entry point).
+// (the listing's "Message the roommate(s)" entry point).
 //
 // Note on caching: the inbox is deliberately NOT wrapped in `use cache`, unlike
 // Swipe, Listings and Profile. `ChatRealtime` subscribes to `messages` and
