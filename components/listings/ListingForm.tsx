@@ -94,9 +94,8 @@ export function ListingForm({
       <section id="photos" className={`${section} scroll-mt-24`}>
         <h2 className={heading}>Photos</h2>
         <p className="mt-1 text-sm text-muted">
-          {MIN_LISTING_PHOTOS}–{MAX_LISTING_PHOTOS} photos. Include the living room, a bedroom and the bathroom, and tag each
-          photo with the room it shows. Each photo is checked as you add it: anything that isn&rsquo;t a photo of the
-          apartment is removed on the spot, and a photo tagged with the wrong room is re-tagged to the room it shows.
+          Upload {MIN_LISTING_PHOTOS}–{MAX_LISTING_PHOTOS} tagged photos (living room, bedroom, bathroom required).
+          Photos are auto-checked: irrelevant ones are removed and mislabeled rooms re-tagged.
         </p>
         <PhotoPicker userId={userId} initialUrls={listing?.photo_urls ?? []} initialLabels={listing?.photo_labels ?? []} />
       </section>
@@ -271,10 +270,8 @@ export function ListingForm({
       <section className={section}>
         <h2 className={heading}>Who else lives here</h2>
         <p className="mt-1 text-sm text-muted">
-          Post the room together with the roommates you already live with. Each of them is asked to confirm before
-          the room appears on their profile — you can tag {Math.max(roommatesCount - 1, 0)} of your{" "}
-          {roommatesCount} current roommate{roommatesCount === 1 ? "" : "s"}, because the last room is the one you
-          are advertising.
+          List the room with your current roommates. Each must confirm before it shows on their profile (you can
+          tag up to {Math.max(roommatesCount - 1, 0)} of your {roommatesCount} roommate{roommatesCount === 1 ? "" : "s"}).
         </p>
         <div className="mt-3">
           <RoommateTagPicker
