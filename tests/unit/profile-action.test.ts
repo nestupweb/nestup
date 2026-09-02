@@ -98,17 +98,15 @@ test("without About-me fields the form saves only the profile (old layout)", asy
 
 /**
  * The table may be left half-answered — saving is never blocked by it, and
- * since 2026-08-30 nothing is gated on it either. Onboarding has no profile
- * page to go back to yet, so that save stays on the form and the warning is
- * read above the button.
+ * since 2026-08-30 nothing is gated on it either. Onboarding ends at the deck
+ * and says nothing: the "saved, but…" note is the profile page's alone
+ * (2026-09-02), so there is nowhere here to show it and nothing to interrupt.
  */
-test("onboarding: a half-answered table still saves, and stays put to warn", async () => {
+test("onboarding: a half-answered table still saves, and goes on to the deck", async () => {
   vi.resetModules();
   const { upsertProfileAction } = await import("@/app/actions/profile");
   const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
-  const res = await upsertProfileAction({}, validForm({}, half));
-  expect(res.savedWithDailyLifeGaps).toBe(true);
-  expect(res.error).toBeUndefined();
+  await expect(upsertProfileAction({}, validForm({}, half))).rejects.toThrow("REDIRECT:/swipe");
 
   expect(upsert).toHaveBeenCalledTimes(1);
   const [, row] = upsert.mock.calls[0] as unknown as [string, Record<string, unknown>];

@@ -53,23 +53,31 @@ test("a save refused for missing basics marks each field and says why", async ()
 });
 
 /**
- * The Daily life table stopped being mandatory (2026-08-30). Saving one that is
- * half-answered succeeds; what it earns is a warning where the member is
- * looking — directly above the button they just pressed.
+ * The Daily life table stopped being mandatory (2026-08-30), and since
+ * 2026-09-02 the "saved, but…" note lives on the profile page only — never on
+ * this form. Save ends the form; a note left sitting on it read as a failure.
  */
-test("an unfinished Daily life table warns above Save instead of blocking", async () => {
-  save.mockResolvedValue({ savedWithDailyLifeGaps: true });
+test("an unfinished Daily life table shows no note on the form", async () => {
+  save.mockResolvedValue({});
   render(<ProfileForm profile={null} onboarding />);
   await fillBasics();
   await userEvent.click(screen.getByRole("button", { name: "Save profile" }));
 
-  const warning = await screen.findByRole("status", {}, { timeout: 8000 });
-  expect(warning).toHaveTextContent(
-    "Your profile was saved, but completing the Daily Life section will improve the quality of your matches."
-  );
-  // Directly above the Save button, and not dressed as a failure.
-  expect(warning.nextElementSibling).toBe(screen.getByRole("button", { name: "Save profile" }));
+  await waitFor(() => expect(save).toHaveBeenCalled());
+  expect(screen.queryByRole("status")).toBeNull();
+  expect(screen.queryByText(/Daily Life section/i)).toBeNull();
+  // Nothing was dressed as a failure either — the save did work.
   expect(screen.queryByRole("alert")).toBeNull();
+});
+
+/** Errors are the one thing that still belongs on the form: they keep you here. */
+test("a real error still shows on the form", async () => {
+  save.mockResolvedValue({ error: "Could not save your profile. Please try again." });
+  render(<ProfileForm profile={null} onboarding />);
+  await fillBasics();
+  await userEvent.click(screen.getByRole("button", { name: "Save profile" }));
+
+  expect(await screen.findByRole("alert", {}, { timeout: 8000 })).toHaveTextContent(/could not save/i);
 });
 
 /** Arriving from /swipe, the form says which preferences are still empty. */

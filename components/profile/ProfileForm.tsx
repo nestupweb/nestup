@@ -13,7 +13,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import { hourChoices, nearestHour } from "@/lib/clock";
 import { useStickyForm } from "@/lib/hooks";
-import { BED_TIMES, DAILY_LIFE_GAPS_NOTICE, GENDERS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
+import { BED_TIMES, GENDERS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
 import { listLabels, missingApartmentPrefs } from "@/lib/apartment-prefs";
@@ -349,13 +349,9 @@ export function ProfileForm({
 
       {state.error ? <p role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
 
-      {/* Onboarding only. Editing from the profile redirects there and shows
-          this on the profile page instead, so Save always ends the form. */}
-      {state.savedWithDailyLifeGaps ? (
-        <p role="status" className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
-          {DAILY_LIFE_GAPS_NOTICE}
-        </p>
-      ) : null}
+      {/* No "saved, but…" note here by design (user, 2026-09-02): Save always
+          leaves this form, and the profile page is the only place that note is
+          shown. Errors still belong here — those keep the member on the form. */}
 
       <button type="submit" disabled={pending}
         className="mt-8 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-contrast disabled:opacity-60 sm:w-auto sm:px-10">

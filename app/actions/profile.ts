@@ -15,7 +15,6 @@ export type ProfileFormState = {
   /** Field name → message, so the form can highlight each one that failed. */
   fieldErrors?: Record<string, string>;
   /** Saved, but the Daily life table is still short of answers (a warning, not a block). */
-  savedWithDailyLifeGaps?: boolean;
 };
 
 const ABOUT_LABELS: Record<string, string> = {
@@ -135,20 +134,16 @@ export async function upsertProfileAction(
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
   const target = sanitizeNextPath(String(formData.get("next") ?? ""));
   // An unfinished Daily life table no longer blocks anything (2026-08-30), but
-  // the member is still told what it costs them. Where that message is read
-  // depends on where they came from:
+  // the member is still told what it costs them — on the profile page, never on
+  // the form (user, 2026-09-02). Save always ends the form: staying on it to
+  // display a note read as if the save had failed.
   //
-  //   * Editing from their profile (`next=/profile`) — Save means done, so they
-  //     go back to the profile and read it there (user request, 2026-09-02).
-  //     Staying on the form to show a note made Save look like it had failed.
-  //   * Onboarding, which ends at the deck — there is no profile page to return
-  //     to yet, so the form keeps the note above its own button.
-  //   * A save on its way somewhere specific (onboarding into a chat) still
-  //     goes there as promised, note or no note.
-  const goingOn = target !== "/profile" && target !== "/swipe";
-  if (!isDailyLifeComplete(parsed.data) && !goingOn) {
-    if (target === "/profile") redirect("/profile?saved=daily-life");
-    return { savedWithDailyLifeGaps: true };
+  // The note therefore rides the redirect, and only to the profile page, which
+  // is the one place that renders it. A save heading anywhere else — onboarding
+  // into the deck or into a chat — goes there as promised and says nothing;
+  // nothing is gated on the table, so there is nothing to interrupt them with.
+  if (!isDailyLifeComplete(parsed.data) && target === "/profile") {
+    redirect("/profile?saved=daily-life");
   }
   redirect(target);
 }
