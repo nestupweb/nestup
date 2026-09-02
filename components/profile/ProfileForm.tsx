@@ -23,6 +23,12 @@ const input =
   "mt-1 w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent";
 const label = "block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted";
 const note = "font-normal normal-case tracking-normal";
+/**
+ * The Preferred cities note. Louder than a plain `note` — bigger than the label
+ * it hangs off and bold — because it carries the one thing Swipe waits for, and
+ * it is doing the job the red `*` deliberately does not do here.
+ */
+const needNote = "normal-case tracking-normal text-[13px] font-bold";
 
 /** The mark on a label the form will not save without. */
 function Req() {
@@ -240,7 +246,7 @@ export function ProfileForm({
           <fieldset className="min-w-0 sm:col-span-2">
             {/* The one answer Swipe cannot work without — said plainly rather
                 than with the red asterisk, which on this form means "won't save". */}
-            <legend className={label}>Preferred cities <span className={note}>· needed for matches</span></legend>
+            <legend className={label}>Preferred cities <span className={needNote}>· needed for matches</span></legend>
             <div className="mt-1">
               <CityMultiPicker name="preferred_cities" initial={profile?.preferred_cities ?? []} />
             </div>

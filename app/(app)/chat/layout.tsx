@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { requireUser } from "@/lib/auth";
-import { getCachedConversations, visibleConversations } from "@/lib/chat";
+import { getCachedInbox, visibleConversations } from "@/lib/chat";
 import { ChatRealtime } from "@/components/chat/ChatRealtime";
 import { ChatShell } from "@/components/chat/ChatShell";
 import { ConversationList } from "@/components/chat/ConversationList";
@@ -40,10 +39,21 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
   );
 }
 
+/**
+ * One cached read and nothing else — deliberately no `requireUser()` in front
+ * of it. That call was an uncached `auth.getUser()` round-trip, and the App
+ * Shell prerender stops at the first uncached read, so its presence here kept
+ * the whole inbox out of the shell and Chat went on painting its skeleton on
+ * every visit even though the data was cached. `getCachedInbox` reads the
+ * session inside its own cache scope instead.
+ *
+ * The suspension gate is not lost with it: every page under this layout still
+ * calls `requireUser()`, and that check stays uncached, so an account
+ * suspended mid-session is still shut out on its very next navigation.
+ */
 async function Inbox() {
-  const { user } = await requireUser();
-  const conversations = visibleConversations(await getCachedConversations(user.id));
-  return <ConversationList conversations={conversations} meId={user.id} />;
+  const { conversations, meId } = await getCachedInbox();
+  return <ConversationList conversations={visibleConversations(conversations)} meId={meId} />;
 }
 
 /** Shaped like the real list, so the swap is a fill rather than a jump. */

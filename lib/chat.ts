@@ -47,15 +47,39 @@ export const getConversations = cache(async (): Promise<ConversationSummary[]> =
  * The inbox is a list of who and when — cheap to refresh, costly to re-fetch
  * on every tab tap.
  */
-export async function getCachedConversations(userId: string): Promise<ConversationSummary[]> {
+export async function getCachedInbox(): Promise<{ conversations: ConversationSummary[]; meId: string }> {
   "use cache: private";
-  cacheTag(chatTag(userId));
   // stale >= 300 is the threshold that lets this ride along in the route's App
   // Shell, so the prefetched Chat tab arrives with the inbox already in it
   // rather than a hole behind the skeleton. See `cacheLife` prerendering rules.
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
 
-  return getConversations();
+  // The session is read INSIDE the cache scope, and that is the whole point of
+  // the shape of this function.
+  //
+  // It used to take `userId`, which meant the caller had to `await
+  // requireUser()` first — an uncached `auth.getUser()` round-trip sitting in
+  // front of the cached read. The App Shell prerender advances through cached
+  // reads and stops at the first uncached one, so that one call was enough to
+  // keep the whole inbox out of the shell: the tab still painted its skeleton
+  // and streamed the list in after the click, exactly as if none of this were
+  // cached. Measured on the live site, that was ~900ms with a skeleton on every
+  // single visit to Chat.
+  //
+  // With the read in here, a cache hit does no uncached work at all, so the
+  // shell can carry it. `auth.getUser()` still runs on a miss.
+  //
+  // Access is not weakened by dropping the caller's `requireUser()`:
+  //  - `proxy.ts` gates /chat at the edge on every request, uncached;
+  //  - both pages under this layout still call `requireUser()` themselves, so
+  //    a suspension landing mid-session still closes the app immediately —
+  //    that check is deliberately NOT cached anywhere;
+  //  - `my_conversations` is RLS-scoped, so this returns only rows the
+  //    session may see, and an anonymous session gets none.
+  const { user } = await getAuthContext();
+  if (!user) return { conversations: [], meId: "" };
+  cacheTag(chatTag(user.id));
+  return { conversations: await getConversations(), meId: user.id };
 }
 
 /**
