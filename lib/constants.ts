@@ -251,6 +251,19 @@ export function propertyTypeLabel(key: PropertyType): string {
 }
 
 /**
+ * Saved, but the Daily life table is still short of answers. Not a failure —
+ * nothing is gated on that table — so it is phrased as what they are leaving on
+ * the table, not as an error.
+ *
+ * Lives here because two different pages say it: the profile page, for a member
+ * who edited from there and is sent back to it, and the form itself during
+ * onboarding, where there is no profile page to return to yet. One sentence, so
+ * the two can never drift.
+ */
+export const DAILY_LIFE_GAPS_NOTICE =
+  "Your profile was saved, but completing the Daily Life section will improve the quality of your matches.";
+
+/**
  * The most roommates a home of this size can hold: one of its rooms is the
  * living room, the rest are bedrooms. A 5-room flat tops out at 4 (user rule,
  * 2026-09-01).

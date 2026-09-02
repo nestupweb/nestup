@@ -98,10 +98,11 @@ test("without About-me fields the form saves only the profile (old layout)", asy
 
 /**
  * The table may be left half-answered — saving is never blocked by it, and
- * since 2026-08-30 nothing is gated on it either. The save stays on the form
- * so the warning above the button can be read.
+ * since 2026-08-30 nothing is gated on it either. Onboarding has no profile
+ * page to go back to yet, so that save stays on the form and the warning is
+ * read above the button.
  */
-test("a half-answered table still saves, and stays put to warn", async () => {
+test("onboarding: a half-answered table still saves, and stays put to warn", async () => {
   vi.resetModules();
   const { upsertProfileAction } = await import("@/app/actions/profile");
   const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
@@ -116,6 +117,39 @@ test("a half-answered table still saves, and stays put to warn", async () => {
   expect(row.ok_with_pets).toBeNull();
   expect(row.pref_noise).toBeNull();
   expect(row.cleanliness).toBe(4);
+});
+
+/**
+ * Editing from the profile is the other case (user request, 2026-09-02):
+ * pressing Save means done, so it goes back to the profile and the note is
+ * shown there. Staying on the form to display it read as if Save had failed.
+ */
+test("editing from the profile: a half-answered table saves and goes back, carrying the note", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
+
+  await expect(upsertProfileAction({}, validForm({ next: "/profile" }, half)))
+    .rejects.toThrow("REDIRECT:/profile?saved=daily-life");
+  // It really saved on the way out — the redirect is not instead of the write.
+  expect(upsert).toHaveBeenCalledTimes(1);
+});
+
+test("a whole table from the profile goes back with nothing to report", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  await expect(upsertProfileAction({}, validForm({ next: "/profile" })))
+    .rejects.toThrow("REDIRECT:/profile");
+  expect(upsert).toHaveBeenCalledTimes(1);
+});
+
+/** A save on its way somewhere specific still lands there, gaps or not. */
+test("onboarding into a chat still arrives at the chat", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
+  await expect(upsertProfileAction({}, validForm({ next: "/chat/abc" }, half)))
+    .rejects.toThrow("REDIRECT:/chat/abc");
 });
 
 /** …unless the save was on its way somewhere: onboarding into a chat still lands there. */

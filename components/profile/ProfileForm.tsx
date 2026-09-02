@@ -13,7 +13,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Select, TimeSelect } from "@/components/ui/Select";
 import { hourChoices, nearestHour } from "@/lib/clock";
 import { useStickyForm } from "@/lib/hooks";
-import { BED_TIMES, GENDERS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
+import { BED_TIMES, DAILY_LIFE_GAPS_NOTICE, GENDERS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
 import { listLabels, missingApartmentPrefs } from "@/lib/apartment-prefs";
@@ -349,11 +349,11 @@ export function ProfileForm({
 
       {state.error ? <p role="alert" className="mt-4 text-sm text-danger">{state.error}</p> : null}
 
-      {/* Saved, not blocked: the Daily life table is optional, and this says
-          what leaving it unfinished costs. It stays up until the table is. */}
+      {/* Onboarding only. Editing from the profile redirects there and shows
+          this on the profile page instead, so Save always ends the form. */}
       {state.savedWithDailyLifeGaps ? (
         <p role="status" className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
-          Your profile was saved, but completing the Daily Life section will improve the quality of your matches.
+          {DAILY_LIFE_GAPS_NOTICE}
         </p>
       ) : null}
 

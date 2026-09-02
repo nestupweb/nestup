@@ -134,12 +134,21 @@ export async function upsertProfileAction(
   updateTag(deckTag(user.id));
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
   const target = sanitizeNextPath(String(formData.get("next") ?? ""));
-  // An unfinished Daily life table no longer blocks anything (2026-08-30) — but
-  // the member is told what it costs them, and the only place that message can
-  // be read is the form they just submitted. So an ordinary Save stays put and
-  // renders the warning above the button; a save that was on its way somewhere
-  // specific (finishing onboarding into a chat) still goes there as promised.
+  // An unfinished Daily life table no longer blocks anything (2026-08-30), but
+  // the member is still told what it costs them. Where that message is read
+  // depends on where they came from:
+  //
+  //   * Editing from their profile (`next=/profile`) — Save means done, so they
+  //     go back to the profile and read it there (user request, 2026-09-02).
+  //     Staying on the form to show a note made Save look like it had failed.
+  //   * Onboarding, which ends at the deck — there is no profile page to return
+  //     to yet, so the form keeps the note above its own button.
+  //   * A save on its way somewhere specific (onboarding into a chat) still
+  //     goes there as promised, note or no note.
   const goingOn = target !== "/profile" && target !== "/swipe";
-  if (!isDailyLifeComplete(parsed.data) && !goingOn) return { savedWithDailyLifeGaps: true };
+  if (!isDailyLifeComplete(parsed.data) && !goingOn) {
+    if (target === "/profile") redirect("/profile?saved=daily-life");
+    return { savedWithDailyLifeGaps: true };
+  }
   redirect(target);
 }
