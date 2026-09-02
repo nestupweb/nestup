@@ -81,18 +81,27 @@ function ResultsSkeleton() {
 
 async function Results({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const filters = listingFiltersSchema.parse(await searchParams);
+  const filtersActive = FILTER_KEYS.some((k) => filters[k] !== undefined);
+
   // `getCachedSession`, not `getAuthContext`. The latter is an uncached
   // `auth.getUser()` round-trip, and the App Shell prerender stops at the first
   // uncached read — so it kept this whole results list out of the shell and
   // made Listings paint its skeleton on every visit even though `queryListings`
   // was cached and hitting.
+  //
+  // A second, argument-free copy of this query was tried here, on the theory
+  // that keying the cache on URL data was what kept it out of the App Shell.
+  // Measured on the live site it changed nothing, so it was removed rather than
+  // left in as complexity with no benefit. What the residual delay actually is,
+  // measured with the page-slide animation suppressed: ~60ms of client render,
+  // stretched to ~300ms of visible skeleton by the view transition. Not a
+  // caching problem — this navigation makes no server request at all.
   const [{ listings, total }, session] = await Promise.all([
     queryListings(filters),
     getCachedSession(),
   ]);
   // Signed-in hearts come from the account (Profile › Liked); visitors use localStorage.
   const savedIds = session ? await getSavedListingIds(session.id) : new Set<string>();
-  const filtersActive = FILTER_KEYS.some((k) => filters[k] !== undefined);
   const lastPage = Math.max(1, Math.ceil(total / filters.page_size));
 
   // Defaults are left out so the URL stays readable: /browse?page=2, not
