@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { FINISH_APARTMENT_PREFS } from "@/lib/apartment-prefs";
 import { NO_CITY_NOTICE } from "@/lib/constants";
@@ -25,14 +24,21 @@ import { NO_CITY_NOTICE } from "@/lib/constants";
  * permanently, which is what a member who dismisses this comes back to.
  */
 export function NoCityPrompt() {
-  const router = useRouter();
   const [open, setOpen] = useState(true);
 
   const close = useCallback(() => {
     setOpen(false);
     // Drop the flag so this is a one-time message, not a property of the page.
-    router.replace("/swipe", { scroll: false });
-  }, [router]);
+    // `history.replaceState` rather than `router.replace`, for the reason
+    // `DailyLifeReminder` documents: the App Router's replace left the query
+    // string in the address bar on prod, so a refresh brought the modal back.
+    try {
+      window.history.replaceState(null, "", "/swipe");
+    } catch {
+      // Some embedded browsers refuse history writes. The modal is closed
+      // either way; the worst case is that it returns on a manual refresh.
+    }
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

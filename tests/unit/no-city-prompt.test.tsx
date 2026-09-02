@@ -8,14 +8,16 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn(), refresh: vi.fn() }) }));
-
 import { NoCityPrompt } from "@/components/profile/NoCityPrompt";
 import { FINISH_APARTMENT_PREFS } from "@/lib/apartment-prefs";
 
+// The real thing, spied on: `router.replace` was tried first and did not clear
+// the query string on prod, while its unit test passed. This asserts the call
+// that actually erases the flag.
+const replaceState = vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
+
 afterEach(cleanup);
-beforeEach(() => replace.mockClear());
+beforeEach(() => replaceState.mockClear());
 
 test("says the profile saved and that no matches come without a city", () => {
   render(<NoCityPrompt />);
@@ -37,14 +39,14 @@ test("Not now closes it and clears the flag, so a refresh does not bring it back
   render(<NoCityPrompt />);
   await userEvent.click(screen.getByRole("button", { name: /not now/i }));
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(replace).toHaveBeenCalledWith("/swipe", { scroll: false });
+  expect(replaceState).toHaveBeenCalledWith(null, "", "/swipe");
 });
 
 test("Escape dismisses it too", () => {
   render(<NoCityPrompt />);
   fireEvent.keyDown(window, { key: "Escape" });
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(replace).toHaveBeenCalledWith("/swipe", { scroll: false });
+  expect(replaceState).toHaveBeenCalledWith(null, "", "/swipe");
 });
 
 test("so does the backdrop", async () => {
