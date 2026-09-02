@@ -353,8 +353,8 @@ export function ListingForm({
       <section className={section}>
         <h2 className={heading}>Viewing hours</h2>
         <p className="mt-1 text-sm text-muted">
-          When can seekers come by? In the chat they can only request times inside these hours, and you approve each
-          viewing before it goes on the calendar.
+          Set viewing hours to restrict requests, or leave empty for any time. You approve every viewing before it is
+          scheduled.
         </p>
         <ViewingHoursEditor initial={normalizeSlots(listing?.viewing_slots)} />
       </section>

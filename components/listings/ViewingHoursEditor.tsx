@@ -29,11 +29,10 @@ export function ViewingHoursEditor({ initial }: { initial: ViewingSlot[] }) {
   return (
     <div>
       <input type="hidden" name="viewing_slots" value={JSON.stringify(normalizeSlots(rows))} />
-      {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">
-          No viewing hours yet — seekers can suggest any time, and you approve each request.
-        </p>
-      ) : (
+      {/* No empty state (user, 2026-09-02): the section hint above already says
+          an empty list means any time, and saying it twice on the same screen
+          read as two different rules. Empty simply shows the Add button. */}
+      {rows.length === 0 ? null : (
         <ul className="mt-3 space-y-2.5">
           {rows.map((r, i) => (
             <li key={i} className="grid grid-cols-[1fr_auto] items-end gap-2 sm:grid-cols-[1.4fr_1fr_1fr_auto]">
