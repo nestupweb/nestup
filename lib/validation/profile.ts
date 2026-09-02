@@ -12,8 +12,8 @@ const amenityKeys = PREF_AMENITIES.map((o) => o.key) as [Amenity, ...Amenity[]];
  * The Daily life table may be saved half-finished (migration 0035): a blank
  * select is `null`, "not answered yet", and saving is never blocked by one.
  * Nothing is gated on it any more either — an unfinished table only earns a
- * warning above the Save button (2026-08-30). What /swipe requires is the
- * Apartment preferences — see `isApartmentPrefsComplete`.
+ * warning above the Save button (2026-08-30). What /swipe requires is one
+ * preferred city, and nothing else — see `hasPreferredCity`.
  */
 const blank = <T extends z.ZodTypeAny>(answer: T) =>
   z.preprocess((v) => (v === "" || v === undefined ? null : v), answer.nullable().default(null));

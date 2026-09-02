@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { getOwnProfile } from "@/lib/auth";
-import { isApartmentPrefsComplete, listLabels, missingApartmentPrefs } from "@/lib/apartment-prefs";
+import { FINISH_APARTMENT_PREFS, NEEDS_CITY, hasPreferredCity } from "@/lib/apartment-prefs";
 import { getCachedDeck } from "@/lib/swipe-deck";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
-
-/** Where unfinished Apartment preferences send a member, and why. */
-export const FINISH_APARTMENT_PREFS = "/profile/edit?needs=apartment-prefs";
+import { DailyLifeReminder } from "@/components/profile/DailyLifeReminder";
+import { NoCityPrompt } from "@/components/profile/NoCityPrompt";
 
 /**
  * Signing in always lands here — this is the one page, not a redirect chain
@@ -14,8 +13,27 @@ export const FINISH_APARTMENT_PREFS = "/profile/edit?needs=apartment-prefs";
  * a member used to be bounced to Edit Profile on every login, which reads as
  * "swipe is broken" rather than "one thing left to do."
  */
-export default async function SwipePage() {
-  const { profile } = await getOwnProfile();
+export default async function SwipePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string; needs?: string }>;
+}) {
+  const [{ profile }, { saved, needs }] = await Promise.all([getOwnProfile(), searchParams]);
+  // A profile save that left something unfinished sends the member here with a
+  // flag, and the flag rides above whatever the page shows — including the gates
+  // below, which a save can perfectly well land on.
+  //
+  // At most one modal, and the blocking one wins: no preferred city means no
+  // matches at all, so it is what a member needs to read first. The Daily-life
+  // nudge is only about sharpness, and it keeps until next time. `hasPreferredCity`
+  // is re-checked here rather than trusted from the URL, so a stale `?needs=cities`
+  // — a shared link, a back button after fixing it — shows nothing.
+  const reminder =
+    needs === NEEDS_CITY && !hasPreferredCity(profile) ? (
+      <NoCityPrompt />
+    ) : saved === "daily-life" ? (
+      <DailyLifeReminder />
+    ) : null;
 
   if (!profile) {
     return (
@@ -26,28 +44,27 @@ export default async function SwipePage() {
           ctaHref="/profile/edit"
           ctaLabel="Complete profile"
         />
+        {reminder}
       </main>
     );
   }
 
-  // A budget and at least one city are what a room is ranked against; without
-  // them every listing scores the same and the deck is a guess. Saving a
-  // profile without them is fine — being recommended rooms is not. Move-in is
-  // deliberately NOT required here (see `lib/apartment-prefs.ts`).
-  if (!isApartmentPrefsComplete(profile)) {
-    const missing = missingApartmentPrefs(profile);
+  // The one requirement (user, 2026-09-02): at least one preferred city. The
+  // deck is filtered by city before anything is scored, so a member who has
+  // named none is asking to be ranked against the whole country by nothing they
+  // said about where they want to live. Saving a profile without a city is fine
+  // — being recommended rooms is not. Budget, move-in and amenities are all
+  // deliberately optional here (see `lib/apartment-prefs.ts`).
+  if (!hasPreferredCity(profile)) {
     return (
       <main className="mx-auto w-full max-w-2xl pb-4 sm:px-6 sm:pt-5">
         <SwipeGate
           heading="No suggested listings yet."
-          body={`Rooms here are ranked against your apartment preferences, and your ${listLabels(
-            missing
-          ).toLowerCase()} ${missing.length > 1 ? "are" : "is"} still empty. Fill ${
-            missing.length > 1 ? "them" : "it"
-          } in and the deck opens — move-in and amenities stay optional.`}
+          body="Matches are found by location, and you haven’t named a city yet. Add at least one preferred city and the deck opens — budget, move-in and amenities all stay optional."
           ctaHref={FINISH_APARTMENT_PREFS}
-          ctaLabel="Finish preferences"
+          ctaLabel="Add a city"
         />
+        {reminder}
       </main>
     );
   }
@@ -63,6 +80,7 @@ export default async function SwipePage() {
           ctaHref="/profile/edit"
           ctaLabel="Complete profile"
         />
+        {reminder}
       </main>
     );
   }
@@ -76,6 +94,7 @@ export default async function SwipePage() {
         interest={deck.interest}
         events={deck.events}
       />
+      {reminder}
     </main>
   );
 }

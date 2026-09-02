@@ -16,7 +16,7 @@ import { useStickyForm } from "@/lib/hooks";
 import { BED_TIMES, GENDERS, PREF_AMENITIES, PREF_LEASE_TERMS, PREF_SAFE_ROOMS, WAKE_TIMES } from "@/lib/constants";
 import { DEFAULT_INTRO } from "@/lib/swipe-intro";
 import { isDailyLifeComplete, unansweredCount } from "@/lib/daily-life";
-import { listLabels, missingApartmentPrefs } from "@/lib/apartment-prefs";
+import { hasPreferredCity } from "@/lib/apartment-prefs";
 import type { Profile, ProfileDetails } from "@/lib/types";
 
 const input =
@@ -89,8 +89,10 @@ export function ProfileForm({
   // The table may be saved half-answered and nothing is gated on it; what an
   // unfinished one costs is the quality of the matches.
   const dailyLifeLeft = isDailyLifeComplete(profile) ? 0 : unansweredCount(profile);
-  // What /swipe is waiting for, named where the member can fix it.
-  const missingPrefs = missingApartmentPrefs(profile);
+  // The one thing /swipe is waiting for, named where the member can fix it.
+  // Not a `<Req />`: the form saves perfectly well without a city — what it
+  // costs is matches, and the save that leaves it empty says so on Swipe.
+  const needsCity = !hasPreferredCity(profile);
   const err = (name: string) => state.fieldErrors?.[name];
   /** The field's classes, its error id and `aria-invalid`, in one go. */
   const field = (name: string) => ({
@@ -119,12 +121,10 @@ export function ProfileForm({
           writing. Save it and you&rsquo;ll continue straight to your chat.
         </p>
       ) : null}
-      {needsApartmentPrefs && missingPrefs.length ? (
+      {needsApartmentPrefs && needsCity ? (
         <p className="mt-4 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent" role="status">
-          Swiping ranks every room against your apartment preferences, and your{" "}
-          {listLabels(missingPrefs).toLowerCase()} {missingPrefs.length > 1 ? "are" : "is"} still
-          empty. Fill {missingPrefs.length > 1 ? "them" : "it"} in below and the deck opens —
-          move-in and amenities are optional.
+          Swipe matches you by location, and you haven&rsquo;t named a city yet. Add at least one
+          preferred city below and the deck opens — budget, move-in and amenities are all optional.
         </p>
       ) : null}
 
@@ -214,10 +214,8 @@ export function ProfileForm({
         step={stepNo()}
         title="Apartment preferences"
         hint={
-          missingPrefs.length
-            ? `Swipe ranks rooms against your budget and preferred cities — ${listLabels(
-                missingPrefs
-              ).toLowerCase()} still to fill in before it can suggest anything. Move-in and amenities are optional.`
+          needsCity
+            ? "Swipe matches by location: add at least one preferred city before it can suggest anything. Budget, move-in and amenities only sharpen the ranking — they never hold the deck shut."
             : "Powers the budget, city and move-in parts of your Lifestyle match. Amenities are what the room itself should have."
         }
       >
@@ -240,7 +238,9 @@ export function ProfileForm({
             </Select>
           </label>
           <fieldset className="min-w-0 sm:col-span-2">
-            <legend className={label}>Preferred cities</legend>
+            {/* The one answer Swipe cannot work without — said plainly rather
+                than with the red asterisk, which on this form means "won't save". */}
+            <legend className={label}>Preferred cities <span className={note}>· needed for matches</span></legend>
             <div className="mt-1">
               <CityMultiPicker name="preferred_cities" initial={profile?.preferred_cities ?? []} />
             </div>

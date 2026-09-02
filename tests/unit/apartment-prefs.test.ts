@@ -1,69 +1,58 @@
 import { describe, expect, test } from "vitest";
-import { isApartmentPrefsComplete, listLabels, missingApartmentPrefs } from "@/lib/apartment-prefs";
+import { FINISH_APARTMENT_PREFS, NEEDS_CITY, SWIPE_NEEDS_CITY, hasPreferredCity } from "@/lib/apartment-prefs";
 
-/** A member who has said what they want from a flat: a budget and a city. */
+/** A member who has said where they want to live — and a lot they didn't have to. */
 const filled = {
   budget_min: 2000,
   budget_max: 4500,
   preferred_cities: ["Tel Aviv"],
+  earliest_move_in: "2026-10-01",
 };
 
 describe("what Swipe requires of Apartment preferences", () => {
-  test("a filled-in section opens the deck", () => {
-    expect(isApartmentPrefsComplete(filled)).toBe(true);
-    expect(missingApartmentPrefs(filled)).toEqual([]);
+  test("one preferred city opens the deck", () => {
+    expect(hasPreferredCity(filled)).toBe(true);
+    expect(hasPreferredCity({ preferred_cities: ["Haifa", "Netanya"] })).toBe(true);
   });
 
-  test("a profile that does not exist yet is missing both", () => {
-    expect(missingApartmentPrefs(null)).toEqual(["Monthly budget", "Preferred cities"]);
+  test("no city, no matches — and that is the whole rule", () => {
+    expect(hasPreferredCity({ ...filled, preferred_cities: [] })).toBe(false);
   });
 
-  test.each([
-    [{ budget_min: 0, budget_max: 0 }, "Monthly budget"],
-    [{ preferred_cities: [] }, "Preferred cities"],
-  ])("names the one that is empty (%j)", (gap, label) => {
-    const p = { ...filled, ...gap };
-    expect(isApartmentPrefsComplete(p)).toBe(false);
-    expect(missingApartmentPrefs(p)).toEqual([label]);
+  test("a profile that does not exist yet has not named a city either", () => {
+    expect(hasPreferredCity(null)).toBe(false);
+    expect(hasPreferredCity(undefined)).toBe(false);
+    expect(hasPreferredCity({})).toBe(false);
   });
 
   /**
-   * The regression this file exists for (2026-09-01): "Earliest move-in" used
-   * to be required, so a member who left the date on its "Any time" default —
-   * a real answer, the field is clearable — opened Swipe to "No suggested
-   * listings yet" with a full budget and five cities saved. A blank date costs
-   * one neutral dimension in the score, never the whole deck.
+   * The change this file now guards (user, 2026-09-02): the budget used to be a
+   * second requirement, so a member who knew exactly which city they wanted but
+   * had not settled on a number opened Swipe to "No suggested listings yet".
+   * An empty budget already means "any rent" to `fitsHardFilters`; it never
+   * needed to close the deck.
    */
-  test("a blank move-in date never holds the deck shut", () => {
-    expect(isApartmentPrefsComplete({ ...filled, earliest_move_in: null })).toBe(true);
-    expect(missingApartmentPrefs({ ...filled, earliest_move_in: null })).toEqual([]);
-    expect(missingApartmentPrefs(null)).not.toContain("Earliest move-in");
+  test("an empty budget never holds the deck shut", () => {
+    expect(hasPreferredCity({ ...filled, budget_min: 0, budget_max: 0 })).toBe(true);
   });
 
   /**
-   * Either handle of the budget slider counts (user decision, 2026-08-30): a
-   * floor is as much of an answer as a ceiling. Both parked at the ends is the
-   * "Any budget" no-op the gate exists to catch.
+   * Same reasoning for the rest of the section: move-in stopped gating on
+   * 2026-09-01, and amenities and "For how long" never did — each offers a
+   * blank or "No preference" as a real answer.
    */
-  test("a minimum alone is a budget, and so is a maximum alone", () => {
-    expect(isApartmentPrefsComplete({ ...filled, budget_max: 0 })).toBe(true);
-    expect(isApartmentPrefsComplete({ ...filled, budget_min: 0 })).toBe(true);
-    expect(isApartmentPrefsComplete({ ...filled, budget_min: 0, budget_max: 0 })).toBe(false);
-  });
-
-  /**
-   * Amenities and "For how long" stay optional: both keep "No preference" as a
-   * real answer, so neither can be told apart from an untouched field.
-   */
-  test("amenities and the lease term never hold the deck shut", () => {
-    const bare = { ...filled, pref_amenities: [], pref_safe_room: "any", pref_lease_term: "any" };
-    expect(isApartmentPrefsComplete(bare)).toBe(true);
+  test("neither does a blank move-in, or amenities left alone", () => {
+    expect(hasPreferredCity({ ...filled, earliest_move_in: null })).toBe(true);
+    expect(hasPreferredCity({ preferred_cities: ["Tel Aviv"] })).toBe(true);
   });
 });
 
-test("listLabels reads as a sentence", () => {
-  expect(listLabels([])).toBe("");
-  expect(listLabels(["Monthly budget"])).toBe("Monthly budget");
-  expect(listLabels(["Monthly budget", "Preferred cities"])).toBe("Monthly budget and Preferred cities");
-  expect(listLabels(["A", "B", "C"])).toBe("A, B and C");
+/**
+ * The round trip a save with no city makes: profile action → Swipe with the
+ * flag → the prompt's button → the form, banner showing. Asserted here because
+ * three files agree on these strings and only this one owns them.
+ */
+test("the no-city flow's two routes stay in step", () => {
+  expect(SWIPE_NEEDS_CITY).toBe(`/swipe?needs=${NEEDS_CITY}`);
+  expect(FINISH_APARTMENT_PREFS).toBe("/profile/edit?needs=apartment-prefs");
 });

@@ -5,11 +5,10 @@ import { ContactRow } from "@/components/profile/ContactRow";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
-import { DAILY_LIFE_GAPS_NOTICE, PROFILE_SAVED_NOTICE } from "@/lib/constants";
 import { PROFILE_EDIT_ON_PENCIL_PAGE } from "@/lib/feature-flags";
 import { getProfileTabData } from "@/lib/profile-data";
 
-type ProfileSearch = Promise<{ onboarding?: string; next?: string; tab?: string; published?: string; saved?: string }>;
+type ProfileSearch = Promise<{ onboarding?: string; next?: string; tab?: string; published?: string }>;
 
 /**
  * The heading and the Edit Profile button are the same for everyone, so they
@@ -62,7 +61,7 @@ function ProfileSkeleton() {
 
 async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
   const { profile, userId } = await getOwnProfile();
-  const { onboarding, next, tab, published, saved } = await searchParams;
+  const { onboarding, next, tab, published } = await searchParams;
 
   // First-run (or explicit onboarding link): the form is the whole page.
   if (!profile || onboarding === "1") {
@@ -113,15 +112,6 @@ async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
           />
         </div>
       </div>
-
-      {/* Sent here by Save on the edit form. Every save says one of these two:
-          the nudge when Daily life is short of answers, otherwise a plain
-          confirmation — arriving on a new page with no word is worse. */}
-      {saved === "daily-life" || saved === "1" ? (
-        <p role="status" className="mt-6 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
-          {saved === "daily-life" ? DAILY_LIFE_GAPS_NOTICE : PROFILE_SAVED_NOTICE}
-        </p>
-      ) : null}
 
       {published === "1" ? (
         <p role="status" className="mt-6 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">

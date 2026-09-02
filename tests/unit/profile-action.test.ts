@@ -31,7 +31,17 @@ const WHOLE_TABLE: Record<string, string> = {
   dietary: "vegetarian", pref_diet: "any", shabbat: "prefer_not_to_say", pref_shabbat: "any",
 };
 
-function validForm(extra: Record<string, string> = {}, table = WHOLE_TABLE): FormData {
+/**
+ * A form that would save. `cities` is a parameter of its own because it is the
+ * one answer that changes where a save lands: Swipe matches by location, so a
+ * profile without a city is routed to the prompt instead of wherever it asked
+ * to go (see `hasPreferredCity`). Pass `[]` for that case.
+ */
+function validForm(
+  extra: Record<string, string> = {},
+  table = WHOLE_TABLE,
+  cities: string[] = ["Tel Aviv"]
+): FormData {
   const fd = new FormData();
   fd.set("full_name", "Noa Peretz");
   fd.set("age", "26");
@@ -40,6 +50,7 @@ function validForm(extra: Record<string, string> = {}, table = WHOLE_TABLE): For
   fd.set("bio", "Plants and shakshuka.");
   for (const [k, v] of Object.entries(table)) fd.set(k, v);
   for (const i of ["Cooking", "Yoga", "Art"]) fd.append("interests", i);
+  for (const c of cities) fd.append("preferred_cities", c);
   for (const [k, v] of Object.entries(extra)) fd.set(k, v);
   return fd;
 }
@@ -118,39 +129,36 @@ test("onboarding: a half-answered table still saves, and goes on to the deck", a
 });
 
 /**
- * Editing from the profile is the other case (user request, 2026-09-02):
- * pressing Save means done, so it goes back to the profile and the note is
- * shown there. Staying on the form to display it read as if Save had failed.
+ * Save ends at the deck (user, 2026-09-02), and an unfinished Daily life table
+ * follows the member there as a flag the page turns into a dismissible modal.
  */
-test("editing from the profile: a half-answered table saves and goes back, carrying the note", async () => {
+test("a half-answered table saves and goes to the deck, carrying the flag", async () => {
   vi.resetModules();
   const { upsertProfileAction } = await import("@/app/actions/profile");
   const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
 
-  await expect(upsertProfileAction({}, validForm({ next: "/profile" }, half)))
-    .rejects.toThrow("REDIRECT:/profile?saved=daily-life");
+  // A city, or the no-city gate intercepts first and this branch is never reached.
+  await expect(upsertProfileAction({}, validForm({ next: "/swipe", preferred_cities: "Tel Aviv" }, half)))
+    .rejects.toThrow("REDIRECT:/swipe?saved=daily-life");
   // It really saved on the way out — the redirect is not instead of the write.
   expect(upsert).toHaveBeenCalledTimes(1);
 });
 
-/**
- * The complete case still has to say something. It is the shape the user's own
- * account is in, and a save that jumped to the profile in silence was read as
- * the feature not working at all.
- */
-test("a whole table from the profile goes back confirming the save", async () => {
+/** Nothing to warn about: the deck, with no flag and so no modal. */
+test("a whole table goes to the deck with no flag", async () => {
   vi.resetModules();
   const { upsertProfileAction } = await import("@/app/actions/profile");
-  await expect(upsertProfileAction({}, validForm({ next: "/profile" })))
-    .rejects.toThrow("REDIRECT:/profile?saved=1");
+  await expect(upsertProfileAction({}, validForm({ next: "/swipe", preferred_cities: "Tel Aviv" })))
+    .rejects.toThrow("REDIRECT:/swipe");
   expect(upsert).toHaveBeenCalledTimes(1);
 });
 
 /** A save on its way somewhere specific still lands there, gaps or not. */
-test("onboarding into a chat still arrives at the chat", async () => {
+test("onboarding into a chat still arrives at the chat, unflagged", async () => {
   vi.resetModules();
   const { upsertProfileAction } = await import("@/app/actions/profile");
   const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
+  // Only the deck renders the modal, so only the deck is ever flagged.
   await expect(upsertProfileAction({}, validForm({ next: "/chat/abc" }, half)))
     .rejects.toThrow("REDIRECT:/chat/abc");
 });
@@ -193,6 +201,60 @@ test("Shabbat's 'prefer not to say' is stored as the empty string, not as null",
   expect(row.shabbat).toBe("");
   expect(row.smoker).toBe(false);
   expect(row.ok_with_smoker).toBe(true);
+});
+
+/**
+ * The location rule (user, 2026-09-02). Saving without a city is allowed — the
+ * four basics are the only things that refuse to save — but it is also the one
+ * gap that means no matches at all, so the save lands on Swipe and says so
+ * there rather than leaving it to be discovered as an empty deck days later.
+ */
+test("a save with no preferred city lands on Swipe carrying the prompt", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+
+  await expect(upsertProfileAction({}, validForm({ next: "/swipe" }, WHOLE_TABLE, [])))
+    .rejects.toThrow("REDIRECT:/swipe?needs=cities");
+  // It really saved: the prompt is a warning about matches, never a failed save.
+  expect(upsert).toHaveBeenCalledTimes(1);
+  const [, row] = upsert.mock.calls[0] as unknown as [string, Record<string, unknown>];
+  expect(row.preferred_cities).toEqual([]);
+});
+
+/** Editing from the profile is the common case, and it is routed the same way. */
+test("the same save from the profile is redirected to Swipe, not back to the profile", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+
+  await expect(upsertProfileAction({}, validForm({ next: "/profile" }, WHOLE_TABLE, [])))
+    .rejects.toThrow("REDIRECT:/swipe?needs=cities");
+});
+
+/**
+ * Both gaps at once. The city wins: an unfinished Daily life table costs match
+ * quality, no city costs matches entirely, and two stacked modals help nobody.
+ */
+test("the city prompt outranks the Daily-life nudge", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+  const half = { cleanliness: "4", sleep_schedule: "early", guests_freq: "sometimes" };
+
+  await expect(upsertProfileAction({}, validForm({ next: "/swipe" }, half, [])))
+    .rejects.toThrow("REDIRECT:/swipe?needs=cities");
+});
+
+/**
+ * The one exception, and the reason the redirect is not unconditional:
+ * onboarding entered from a chat promises "you'll continue straight to your
+ * chat". That member was never on their way to Swipe, and the prompt is waiting
+ * on the tab whenever they open it.
+ */
+test("a save deep-linked into a chat still arrives at the chat", async () => {
+  vi.resetModules();
+  const { upsertProfileAction } = await import("@/app/actions/profile");
+
+  await expect(upsertProfileAction({}, validForm({ next: "/chat/abc" }, WHOLE_TABLE, [])))
+    .rejects.toThrow("REDIRECT:/chat/abc");
 });
 
 test("a signed-out request never reaches the database", async () => {

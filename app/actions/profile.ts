@@ -2,6 +2,7 @@
 
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { hasPreferredCity, SWIPE_NEEDS_CITY } from "@/lib/apartment-prefs";
 import { requireUser } from "@/lib/auth";
 import { deckTag, profileTag } from "@/lib/cache-tags";
 import { isDailyLifeComplete } from "@/lib/daily-life";
@@ -133,18 +134,33 @@ export async function upsertProfileAction(
   updateTag(deckTag(user.id));
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
   const target = sanitizeNextPath(String(formData.get("next") ?? ""));
-  // Save ends the form and confirms on the page it lands on (user, 2026-09-02).
-  // Both halves of that matter: a note left sitting on the form read as if the
-  // save had failed, and a silent jump to the profile read as if nothing had
-  // happened at all. So every save from the profile carries word of itself —
-  // the Daily-life nudge when the table is short of answers, a plain "saved"
-  // when it is not. The profile page is the only thing that renders either.
+
+  // A profile with no preferred city saves fine and matches with nothing: the
+  // deck drops every room outside the seeker's cities before a single one is
+  // scored (`fitsHardFilters`). Rather than let that be discovered as an empty
+  // Swipe tab days later, the save lands on Swipe itself and says so there —
+  // `?needs=cities` is what opens `NoCityPrompt`.
   //
-  // A save heading anywhere else — onboarding into the deck or into a chat —
-  // goes there as promised and stays quiet; those pages have nowhere to say it,
-  // and nothing is gated on the table anyway.
-  if (target === "/profile") {
-    redirect(isDailyLifeComplete(parsed.data) ? "/profile?saved=1" : "/profile?saved=daily-life");
+  // Checked before the Daily-life flag below, because the two gaps rank: an
+  // unfinished table costs match quality, no city costs matches entirely, and
+  // one member should never meet two stacked modals.
+  //
+  // A deep-linked save is the one exception. Onboarding entered from a chat
+  // ("Save it and you'll continue straight to your chat") made a promise this
+  // must not break, and that member was never on their way to the deck; the
+  // prompt is waiting on the tab whenever they next open it.
+  if (!hasPreferredCity(parsed.data) && (target === "/swipe" || target === "/profile")) {
+    redirect(SWIPE_NEEDS_CITY);
+  }
+  // Save ends the form and lands on the deck (user, 2026-09-02). An unfinished
+  // Daily life table follows the member there as a dismissible modal rather
+  // than a note on the form: it is a warning about match quality, and it has
+  // never blocked saving, the deck, or anything else.
+  //
+  // Only the deck renders it, so only a save heading there carries the flag; a
+  // save on its way into a chat arrives as promised and stays quiet.
+  if (!isDailyLifeComplete(parsed.data) && target === "/swipe") {
+    redirect("/swipe?saved=daily-life");
   }
   redirect(target);
 }

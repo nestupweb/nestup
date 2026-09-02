@@ -53,7 +53,7 @@ export interface Profile {
   // column used to be NOT NULL with a default, which put words in the member's
   // mouth. Read these through `withDailyLifeDefaults` (lib/daily-life.ts)
   // before scoring. Nothing is gated on a finished table (2026-08-30): what
-  // /swipe requires is `isApartmentPrefsComplete`.
+  // /swipe requires is `hasPreferredCity`.
   smoker: boolean | null;
   has_pet: boolean | null;
   cleanliness: number | null; // 1..5

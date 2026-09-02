@@ -48,7 +48,7 @@ export type DailyLifeAnswers = Partial<Pick<Profile, (typeof DAILY_LIFE_FIELDS)[
  * Nothing is gated on it since 2026-08-30 — the table is optional, and what an
  * unfinished one costs is the sharpness of the match scores, said as a warning
  * above the Save button rather than a locked deck. /swipe's own requirement is
- * `isApartmentPrefsComplete`. Mirrored in SQL as
+ * `hasPreferredCity`. Mirrored in SQL as
  * `public.is_daily_life_complete` (migration 0035), which nothing calls.
  */
 export function isDailyLifeComplete(p: DailyLifeAnswers | null | undefined): boolean {

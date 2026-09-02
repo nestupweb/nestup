@@ -30,7 +30,9 @@ export default async function ProfileEditPage({
     <ProfileForm
       profile={profile}
       onboarding={!profile}
-      next="/profile"
+      // Save ends at the deck, not back here and not on the profile (user,
+      // 2026-09-02) — anything still worth saying is said there, in a modal.
+      next="/swipe"
       about={about}
       needsApartmentPrefs={needs === "apartment-prefs"}
     />

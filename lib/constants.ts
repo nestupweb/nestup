@@ -264,11 +264,13 @@ export const DAILY_LIFE_GAPS_NOTICE =
   "Your profile was saved, but completing the Daily Life section will improve the quality of your matches.";
 
 /**
- * The same confirmation when there is nothing to add to it. Every save from the
- * edit form says one of these two on the profile page — a save that moved the
- * member to another page and then said nothing read as if it had not happened.
+ * The other thing a save can leave unfinished, and the harder one: with no
+ * preferred city there is nothing to match against at all, so this is a
+ * "saved, but nothing will reach you yet", not a "saved, but it could be
+ * sharper". Shown on Swipe by `NoCityPrompt` — see `lib/apartment-prefs.ts`.
  */
-export const PROFILE_SAVED_NOTICE = "Your profile was saved.";
+export const NO_CITY_NOTICE =
+  "Your profile was saved, but you won't receive any apartment matches in Swipe until you add at least one preferred city.";
 
 /**
  * The most roommates a home of this size can hold: one of its rooms is the

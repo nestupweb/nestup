@@ -2,7 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { deckTag } from "@/lib/cache-tags";
-import { isApartmentPrefsComplete } from "@/lib/apartment-prefs";
+import { hasPreferredCity } from "@/lib/apartment-prefs";
 import { getPersonalisedDeck, type PersonalisedDeck } from "@/lib/swipe";
 import type { Profile } from "@/lib/types";
 
@@ -41,9 +41,9 @@ export async function getCachedDeck(
   const seeker = row as Profile | null;
   if (!seeker) return null;
   // The same rule /swipe shows a message for, enforced where the deck is
-  // actually built: no recommendations for a member who has told us nothing to
-  // rank them by, whichever caller asks.
-  if (!isApartmentPrefsComplete(seeker)) return null;
+  // actually built: no recommendations for a member who has not said where they
+  // want to live, whichever caller asks.
+  if (!hasPreferredCity(seeker)) return null;
 
   const [deck, { data: details }] = await Promise.all([
     getPersonalisedDeck(supabase, seeker),
