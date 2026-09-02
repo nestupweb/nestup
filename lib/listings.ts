@@ -189,7 +189,16 @@ export async function queryListings(
 ): Promise<{ listings: Listing[]; total: number }> {
   "use cache";
   cacheTag(LISTINGS_TAG);
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
+  // stale: 300, not 60. Under 5 minutes Next keeps a cached value OUT of the
+  // route's App Shell (see `cacheLife` prerendering behaviour), and the App
+  // Shell is exactly what `partialPrefetching` sends when a link comes into
+  // view. At 60 the prefetch therefore arrived holding a shell with a hole in
+  // it, and the tab tap still paid for this read behind a skeleton. At 300 the
+  // data rides along in the prefetch, so the tap paints it.
+  //
+  // Freshness does not depend on this number: every write that changes this
+  // calls `updateTag`, which expires it immediately regardless of the window.
+  cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
 
   const supabase = createPublicClient();
   const query = supabase
@@ -210,7 +219,16 @@ export async function queryListings(
 export async function getSavedListingIds(userId: string): Promise<Set<string>> {
   "use cache: private";
   cacheTag(savedTag(userId));
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
+  // stale: 300, not 60. Under 5 minutes Next keeps a cached value OUT of the
+  // route's App Shell (see `cacheLife` prerendering behaviour), and the App
+  // Shell is exactly what `partialPrefetching` sends when a link comes into
+  // view. At 60 the prefetch therefore arrived holding a shell with a hole in
+  // it, and the tab tap still paid for this read behind a skeleton. At 300 the
+  // data rides along in the prefetch, so the tap paints it.
+  //
+  // Freshness does not depend on this number: every write that changes this
+  // calls `updateTag`, which expires it immediately regardless of the window.
+  cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
 
   const supabase = await createClient();
   const { data } = await supabase.from("saved_listings").select("listing_id").eq("user_id", userId);

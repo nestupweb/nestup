@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
-import { getConversations, visibleConversations } from "@/lib/chat";
+import { getCachedConversations, visibleConversations } from "@/lib/chat";
 import { ChatRealtime } from "@/components/chat/ChatRealtime";
 import { ChatShell } from "@/components/chat/ChatShell";
 import { ConversationList } from "@/components/chat/ConversationList";
@@ -9,14 +9,20 @@ import { ConversationList } from "@/components/chat/ConversationList";
 // inbox); the profile gate lives where a conversation actually starts
 // (the listing's "Message the roommate(s)" entry point).
 //
-// Note on caching: the inbox is deliberately NOT wrapped in `use cache`, unlike
-// Swipe, Listings and Profile. `ChatRealtime` subscribes to `messages` and
-// `viewings` and refreshes this tree whenever anything lands, including
-// messages from the other side — and a cached read with a stale window would
-// keep serving the old inbox for up to that window, so a message could arrive
-// and not appear. In a messaging feature, "always current" beats "instant", so
-// the shell streams instead: the chat frame and the list skeleton paint
-// immediately and the conversations arrive behind the boundary, always fresh.
+// Note on caching: the inbox IS cached now (`getCachedConversations`), which it
+// deliberately was not before. The old reasoning was that a stale window could
+// hide a message that had just landed, so Chat alone streamed fresh on every
+// visit — and paid a skeleton for it on every single tab tap.
+//
+// The trade was never forced. A stale window only hides a new message if
+// nothing tells the cache one arrived, and `ChatRealtime` is subscribed to
+// precisely that: it now calls `syncChatAction`, which drops `chatTag` in this
+// browser and re-renders. Messages from the other side are covered by the same
+// path — that is the case a server action of *this* member's could not reach.
+//
+// So both halves hold: the list paints from cache the moment the tab is
+// tapped, and it is never more than a socket round-trip behind. The Suspense
+// boundary stays for the genuine first visit, when there is nothing cached yet.
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
@@ -36,7 +42,7 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
 async function Inbox() {
   const { user } = await requireUser();
-  const conversations = visibleConversations(await getConversations());
+  const conversations = visibleConversations(await getCachedConversations(user.id));
   return <ConversationList conversations={conversations} meId={user.id} />;
 }
 

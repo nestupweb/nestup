@@ -1,5 +1,4 @@
 import { SettingsLink } from "@/components/ui/GearIcon";
-import { signOutAction } from "@/app/actions/auth";
 
 /**
  * The gear and Log out pair in the site header — what a signed-in member gets
@@ -15,7 +14,13 @@ export function MemberActions() {
   return (
     <>
       <SettingsLink />
-      <form action={signOutAction}>
+      {/* Posts to a Route Handler, not a Server Action. A server action's
+          `redirect()` is a soft navigation, which leaves this browser's
+          `use cache: private` entries and its router cache of already-rendered
+          pages alive after the session ends — see `app/auth/signout/route.ts`.
+          A form post that answers 303 is a real document load, and that is what
+          empties them. Markup and classes are unchanged. */}
+      <form action="/auth/signout" method="post">
         {/* Hover matches the gear beside it and Edit Profile: border and label
             both go to --accent (green on light, gold on dark). */}
         <button className="rounded-full border border-hairline px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent">

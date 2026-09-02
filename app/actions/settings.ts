@@ -1,11 +1,15 @@
 "use server";
 
 import { refresh, updateTag } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { LISTINGS_TAG, deckTag, listingTag, profileTag } from "@/lib/cache-tags";
 
-export type ToggleState = { error?: string };
+/**
+ * `done` is set only by `deleteAccountAction`, and only on success. It exists
+ * because closing an account has to end in a full document load rather than a
+ * soft `redirect()` — see the comment there.
+ */
+export type ToggleState = { error?: string; done?: boolean };
 
 const SAVE_FAILED = "Could not save. Please try again.";
 
@@ -101,5 +105,10 @@ export async function deleteAccountAction(_prev: ToggleState, formData: FormData
     return { error: "Could not delete the account. Please try again." };
   }
   await supabase.auth.signOut();
-  redirect("/");
+  // Not `redirect("/")`. That is a soft navigation, so the member's cached deck,
+  // profile tabs and inbox — and the router's rendered copies of those pages —
+  // would still be sitting in the tab after the account they belong to had been
+  // deleted. `DangerZone` takes this flag and does a real document load, which
+  // is what empties them. Same reasoning as `app/auth/signout/route.ts`.
+  return { done: true };
 }

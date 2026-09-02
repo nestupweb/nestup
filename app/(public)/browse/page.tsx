@@ -146,8 +146,20 @@ async function Results({ searchParams }: { searchParams: Promise<Record<string, 
             )
           ) : (
             <div className="mt-4 flex flex-col gap-4">
-              {listings.map((l) => (
-                <ListingCard key={l.id} listing={l} signedIn={Boolean(user)} saved={savedIds.has(l.id)} />
+              {/* The first three covers are the ones on screen when the page
+                  paints, so they are fetched with the page rather than at the
+                  lazy-load threshold — the rest stay lazy. Three, not twenty:
+                  preloading a whole page of photos would compete with the ones
+                  the member is actually looking at, which is the same rule
+                  `SwipeDeck` follows when it warms one card ahead. */}
+              {listings.map((l, i) => (
+                <ListingCard
+                  key={l.id}
+                  listing={l}
+                  signedIn={Boolean(user)}
+                  saved={savedIds.has(l.id)}
+                  priority={i < 3}
+                />
               ))}
             </div>
           )}

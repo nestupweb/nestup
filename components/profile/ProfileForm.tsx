@@ -307,7 +307,7 @@ export function ProfileForm({
                 <input name="lifestyle" maxLength={200} defaultValue={d?.lifestyle ?? ""} placeholder="e.g. work from home, gym in the evenings" className={input} />
               </label>
               <label className={label}>Cooking habits
-                <input name="cooking" maxLength={120} defaultValue={d?.cooking ?? ""} placeholder="e.g. cook most evenings, love hosting" className={input} />
+                <input name="cooking" maxLength={120} defaultValue={d?.cooking ?? ""} placeholder="e.g. cook most evenings" className={input} />
               </label>
               <label className={label}>Pet details
                 <input name="pet_details" maxLength={120} defaultValue={d?.pet_details ?? ""} placeholder="Which pet? (if you have one)" className={input} />
@@ -329,7 +329,7 @@ export function ProfileForm({
         <Section
           step={stepNo()}
           title="Default Message"
-          hint="Your opening line fills the message box when you contact a lister, and you can edit it before sending."
+          hint="Your default greeting when reaching out to listings. Editable before sending."
         >
           <label className={label}>Default hello message
             <textarea

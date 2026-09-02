@@ -9,10 +9,18 @@ export function ListingCard({
   listing,
   signedIn = false,
   saved = false,
+  priority = false,
 }: {
   listing: Listing;
   signedIn?: boolean;
   saved?: boolean;
+  /**
+   * Fetch this cover immediately instead of waiting for the lazy-load
+   * threshold. Set by the results list for the handful of cards that are
+   * above the fold — see `app/(public)/browse/page.tsx`. Off by default: it is
+   * a preload hint, and a page that marks every image priority has marked none.
+   */
+  priority?: boolean;
 }) {
   const meta = [
     propertyTypeLabel(listing.property_type),
@@ -42,6 +50,7 @@ export function ListingCard({
               src={listing.photo_urls[0]}
               alt=""
               fill
+              priority={priority}
               sizes="(min-width: 1024px) 320px, (min-width: 768px) 288px, (min-width: 640px) 224px, 128px"
               className="object-cover"
             />

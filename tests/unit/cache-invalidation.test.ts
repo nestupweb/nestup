@@ -105,11 +105,12 @@ test("swiping drops the member's deck so the room cannot come back", async () =>
 });
 
 /**
- * The whole point of the change. Chat has its own tag-free, always-fresh
- * reads, and no listing mutation may invalidate it — that was the behaviour
+ * Chat has a cache of its own now (`chatTag`), but it stays Chat's: no listing
+ * mutation may reach into it. Hearting a room or swiping is not a reason to
+ * throw away the member's inbox — that blanket invalidation was the behaviour
  * that made an unrelated tab reload.
  */
-test("no mutation reaches into chat", async () => {
+test("no listing mutation reaches into chat", async () => {
   const { setSavedAction } = await import("@/app/actions/saved");
   const { recordSwipeAction } = await import("@/app/actions/swipe");
 
@@ -177,13 +178,17 @@ test("pausing a room drops the public list, the room, and the owner's own caches
 });
 
 /**
- * The other half of the rule, and the one that matters most for Chat: sending a
- * message expires no cache at all. It reruns the route in view via `refresh`
- * and leaves Swipe, Listings and Profile exactly as they were — which is what
- * `revalidatePath("/chat")` could not do, since in a Server Action it forced
- * every visited page to refetch on its next visit.
+ * The other half of the rule. Sending a message expires the sender's own inbox
+ * — it moved the thread to the top of the list and changed its preview line —
+ * and nothing else. Swipe, Listings and Profile are left exactly as they were,
+ * which is what `revalidatePath("/chat")` could not do: in a Server Action it
+ * forced every visited page to refetch on its next visit.
+ *
+ * This test used to assert the opposite (`tags()` empty), because the inbox was
+ * uncached and there was nothing to clear. Caching it is what bought Chat its
+ * instant return; this is the invalidation that keeps it honest.
  */
-test("sending a message expires no cached data and only reruns the current route", async () => {
+test("sending a message drops the sender's own inbox and nothing else", async () => {
   const { sendMessageAction } = await import("@/app/actions/chat");
   const result = await sendMessageAction({
     conversationId: CHAT,
@@ -192,8 +197,65 @@ test("sending a message expires no cached data and only reruns the current route
   });
 
   expect(result.ok).toBe(true);
-  expect(tags()).toEqual([]);
+  expect(tags()).toEqual([`chat:${ME}`]);
   expect(refresh).toHaveBeenCalledTimes(1);
+});
+
+/**
+ * A message changes the *recipient's* inbox too, and no action of theirs runs
+ * for it. That gap is covered by their own browser calling `syncChatAction`
+ * off the realtime socket — which must clear their tag and no one else's.
+ * A sender who could expire another member's cache from their own write would
+ * be a cross-user reach, which is exactly what the tags exist to prevent.
+ */
+test("the realtime sync clears only the caller's own inbox", async () => {
+  const { syncChatAction } = await import("@/app/actions/chat");
+  await syncChatAction();
+
+  expect(tags()).toEqual([`chat:${ME}`]);
+  expect(refresh).toHaveBeenCalledTimes(1);
+});
+
+/** Opening a thread clears its unread count, which lives on the cached row. */
+test("marking a thread read drops the inbox that carries its unread count", async () => {
+  const { markReadAction } = await import("@/app/actions/chat");
+  await markReadAction(CHAT);
+
+  expect(tags()).toEqual([`chat:${ME}`]);
+});
+
+/** Deleting a chat removes a row from the cached list, so the list has to go. */
+test("deleting a chat drops the cached inbox holding it", async () => {
+  const { deleteConversationAction } = await import("@/app/actions/chat");
+  const result = await deleteConversationAction(CHAT);
+
+  expect(result.ok).toBe(true);
+  expect(tags()).toEqual([`chat:${ME}`]);
+});
+
+/**
+ * The scoping rule from above, extended to the tag added for Chat. `chat:` is
+ * per-member like `deck:`, `profile:` and `saved:` — a tag that forgot the id
+ * would be one shared key for every inbox in the app.
+ */
+test("the chat tag is scoped to the member who acted", async () => {
+  const { syncChatAction } = await import("@/app/actions/chat");
+  await syncChatAction();
+
+  for (const tag of tags()) expect(tag).toBe(`chat:${ME}`);
+  expect(tags().every((t) => t.endsWith(`:${ME}`))).toBe(true);
+});
+
+/**
+ * And the converse of "no listing mutation reaches into chat": a chat mutation
+ * must not reach into Swipe, Listings or Profile either. Sending a message is
+ * no reason to rebuild a deck.
+ */
+test("a chat mutation never touches the deck, the room list or the profile", async () => {
+  const { sendMessageAction } = await import("@/app/actions/chat");
+  await sendMessageAction({ conversationId: CHAT, clientId: MESSAGE, content: "hello" });
+
+  for (const tag of tags()) expect(tag).not.toMatch(/^(deck|profile|saved|listing|listings)/);
 });
 
 /** Blocking removes their rooms from the deck — and touches nothing shared. */

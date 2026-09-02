@@ -1,7 +1,8 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { chatTag } from "@/lib/cache-tags";
 import { clearConversation, markConversationRead } from "@/lib/chat";
 import { messageSchema } from "@/lib/validation/message";
 import type { Message } from "@/lib/types";
@@ -72,12 +73,24 @@ export async function sendMessageAction(input: SendMessageInput): Promise<SendMe
   if (!message) return { ok: false, error: GENERIC };
 
   await markConversationRead(supabase, conversationId);
-  // `refresh`, not `revalidatePath`. Chat's reads are deliberately uncached, so
-  // there was never a cache entry here to clear — but `revalidatePath` inside a
-  // Server Action also makes every previously visited page re-fetch on its next
-  // visit, so every message sent threw away the Swipe, Listings and Profile
-  // payloads the member had already paid for. `refresh` reruns the dynamic reads
-  // for the route in view and leaves those alone.
+  // One tag and a rerun, and nothing wider than that.
+  //
+  // `updateTag(chatTag)` is new: the inbox is cached now, and this write moved
+  // the thread to the top of it and changed its preview line, so the sender's
+  // own copy has to go. It is `updateTag` rather than `revalidateTag` because
+  // this is read-your-own-writes — the member must see their message land, not
+  // a stale list for another 300 seconds.
+  //
+  // Still not `revalidatePath`: inside a Server Action that makes every
+  // previously visited page re-fetch on its next visit, so every message sent
+  // threw away the Swipe, Listings and Profile payloads the member had already
+  // paid for. This drops exactly one member's inbox and reruns the route in
+  // view.
+  //
+  // The *recipient's* inbox is not touched here, and cannot be — their cache
+  // lives in their browser. Their `ChatRealtime` sees the insert and calls
+  // `syncChatAction` for itself.
+  updateTag(chatTag(user.id));
   refresh();
   return { ok: true, message };
 }
@@ -93,12 +106,14 @@ export async function deleteConversationAction(
   conversationId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!UUID_RE.test(conversationId)) return { ok: false, error: "Could not delete this chat." };
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   // RLS: the cutoff only inserts for a conversation this member takes part in.
   const ok = await clearConversation(supabase, conversationId);
   if (!ok) return { ok: false, error: "Could not delete this chat. Please try again." };
-  // The inbox lives in the chat layout and is read fresh on every render, so
-  // rerunning the current route is enough to drop the thread from the list.
+  // The inbox is cached now, so rerunning the route is no longer enough on its
+  // own — the cached list still holds the row this just cleared. Drop the tag
+  // first, then rerun.
+  updateTag(chatTag(user.id));
   refresh();
   return { ok: true };
 }
@@ -106,10 +121,33 @@ export async function deleteConversationAction(
 /** Called when a thread is opened so the unread badge clears. */
 export async function markReadAction(conversationId: string): Promise<void> {
   if (!UUID_RE.test(conversationId)) return;
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   await markConversationRead(supabase, conversationId);
-  // The badge and the inbox row are both uncached reads in the tree currently
-  // on screen, so this is the one rerun that has to happen — and now it costs
-  // only that, instead of the whole session's caches.
+  // The unread count is part of the cached inbox row, so clearing it has to
+  // drop the tag as well as rerun — otherwise opening a thread would leave the
+  // blue count sitting on the row behind it.
+  updateTag(chatTag(user.id));
+  refresh();
+}
+
+/**
+ * "Something changed in my chats" — called by `ChatRealtime` when the socket
+ * reports a message or viewing this member can see.
+ *
+ * This exists because Chat is the one cache that a *different* member's write
+ * invalidates. Everywhere else the member who changed something is the member
+ * whose cache is wrong, and their own action clears it. Here the other side
+ * sends a message and this browser's inbox is instantly out of date with no
+ * action of its own running. The socket event is the signal, and this is the
+ * only place a `use cache: private` entry can be dropped from — `updateTag`
+ * runs in Server Actions and nowhere else.
+ *
+ * Deliberately takes no arguments and trusts nothing from the caller: it reads
+ * the session server-side and clears that session's tag. A client that called
+ * it in a loop would only ever expire its own inbox.
+ */
+export async function syncChatAction(): Promise<void> {
+  const { user } = await requireUser();
+  updateTag(chatTag(user.id));
   refresh();
 }

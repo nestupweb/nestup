@@ -32,11 +32,22 @@ const nextConfig: NextConfig = {
      * Every signed-in route is dynamic (`lib/supabase/server.ts` reads cookies)
      * and has a `loading.tsx`, and for that combination Next's client cache TTL
      * defaults to 0 — so every Swipe→Chat→Profile tap threw the payload away and
-     * re-fetched from scratch. 30s is long enough that moving between the four
-     * tabs reuses what was just loaded, short enough that nothing looks stale;
-     * a mutation clears this cache immediately regardless (see the actions).
+     * re-fetched from scratch.
+     *
+     * 300s, raised from 30. Thirty seconds covers a tab-to-tab flick and
+     * nothing else: read one chat thread, spend a minute on a listing, and
+     * going back to Swipe was a cold navigation with the skeleton again — the
+     * exact "I already loaded this page" case this is supposed to answer. It
+     * now matches the `stale: 300` on the reads themselves, so the router cache
+     * and the data caches expire together instead of one undercutting the other.
+     *
+     * This is a *client* cache of rendered payloads, and unlike the `use cache`
+     * entries it is not keyed by member — which is why `signOutAction` forces a
+     * full document load rather than a soft redirect. Widening the window
+     * without that would have widened how long one member's rendered pages sit
+     * in the tab after they sign out. A mutation still clears this immediately.
      */
-    staleTimes: { dynamic: 30, static: 180 },
+    staleTimes: { dynamic: 300, static: 180 },
   },
   images: {
     remotePatterns: [

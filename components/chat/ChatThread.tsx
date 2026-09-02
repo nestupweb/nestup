@@ -192,11 +192,20 @@ export function ChatThread({
 
   // Opening a thread is what marks it read. This used to happen while the page
   // rendered, which a cached render cannot do — a write must not be skipped on a
-  // cache hit or replayed on every miss. The action stamps the read and calls
-  // `refresh()`, which reruns this route's uncached reads — the inbox and the
-  // unread badge — without expiring any of the caches behind the other tabs.
+  // cache hit or replayed on every miss. The action stamps the read, drops this
+  // member's `chatTag` and calls `refresh()`, so the unread count leaves the
+  // inbox row without expiring the caches behind the other tabs.
+  //
+  // The empty-thread case is the second reason this fires. "Message the
+  // roommate(s)" creates the conversation inside a *page*, and a page cannot
+  // call `updateTag` — so the seeker lands here on a thread the cached inbox
+  // beside them has never heard of. A thread with nothing in it is exactly that
+  // situation (a real conversation always has at least one message), so it
+  // takes the same trip and the list catches up immediately.
   useEffect(() => {
-    if (conversation.unread_count > 0) void markReadAction(conversation.id);
+    if (conversation.unread_count > 0 || timeline.length === 0) {
+      void markReadAction(conversation.id);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

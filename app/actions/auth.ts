@@ -169,11 +169,15 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
   redirect(sanitizeNextPath(next));
 }
 
-export async function signOutAction(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/");
-}
+/**
+ * Signing out lives in `app/auth/signout/route.ts`, not here.
+ *
+ * It has to end in a full document load: a Server Action's `redirect()` is a
+ * soft navigation, so the member's cached deck, inbox and profile tabs — and
+ * the router's rendered copies of those pages — survived it in the tab. A
+ * Route Handler answering 303 rebuilds the client from nothing, which is the
+ * only thing that clears them.
+ */
 
 /**
  * Public origin the reset link should come back to. `NEXT_PUBLIC_SITE_URL`

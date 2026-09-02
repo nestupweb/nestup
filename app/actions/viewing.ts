@@ -1,8 +1,9 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
+import { chatTag } from "@/lib/cache-tags";
 import { fitsAvailability, normalizeSlots } from "@/lib/availability";
 import {
   VIEWING_DURATIONS,
@@ -94,10 +95,12 @@ export async function proposeViewingAction(
     };
   }
 
-  // Viewings live inside a chat thread, and chat is read fresh rather than
-  // cached, so rerunning the route in view is the whole job. `revalidatePath`
-  // here also expired every other page the member had visited — a viewing
-  // request is no reason to throw away their deck.
+  // A viewing puts the "Viewing scheduled" chip on the conversation's inbox
+  // row, so the cached inbox has to go with it — the thread alone is not the
+  // whole surface this changed. Still nothing wider: `revalidatePath` here
+  // expired every other page the member had visited, and a viewing request is
+  // no reason to throw away their deck.
+  updateTag(chatTag(user.id));
   refresh();
   return { done: Date.now() };
 }
@@ -179,6 +182,8 @@ export async function respondViewingAction(
     if (conv) warning = await mirrorToGoogle(supabase, user, { ...viewing, status }, conv, timeZone.slice(0, 64));
   }
 
+  // Approving or declining flips the same inbox chip the proposal raised.
+  updateTag(chatTag(user.id));
   refresh();
   return { ok: true, warning };
 }

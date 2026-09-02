@@ -1,6 +1,8 @@
 import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthContext } from "@/lib/auth";
+import { chatTag } from "@/lib/cache-tags";
 import type { Conversation, ConversationSummary } from "@/lib/types";
 
 /**
@@ -19,6 +21,42 @@ export const getConversations = cache(async (): Promise<ConversationSummary[]> =
   const rows = (data as ConversationSummary[] | null) ?? [];
   return rows.map((r) => ({ ...r, unread_count: Number(r.unread_count) }));
 });
+
+/**
+ * The same inbox rows, cached in the member's own browser.
+ *
+ * This is what stops Chat painting a skeleton on every single visit. Swipe,
+ * Listings and Profile were all cached; Chat was deliberately left out on the
+ * grounds that a stale window could hide a message that had just arrived. That
+ * trade is not actually forced — the stale window only hides a message if
+ * nothing tells the cache a message landed, and `ChatRealtime` is already
+ * subscribed to exactly that event. So the inbox is cached and
+ * `syncChatAction` drops `chatTag` the moment the socket fires, which gives
+ * both halves: instant on return, and current within a round-trip of any
+ * message, from either side.
+ *
+ * `use cache: private`, never the shared `use cache`: these rows are one
+ * member's conversations, the other participant's name and photo, and their
+ * unread counts. A private cache lives only in the requesting browser, and
+ * `userId` keys the entry inside it, so a second member signing in to the same
+ * browser cannot hit the first one's inbox.
+ *
+ * Note what is NOT cached: the messages themselves. The thread page reads
+ * those fresh on every render (see `chat/[id]/page.tsx`), because that is the
+ * surface where "one message behind" is actually visible to someone typing.
+ * The inbox is a list of who and when — cheap to refresh, costly to re-fetch
+ * on every tab tap.
+ */
+export async function getCachedConversations(userId: string): Promise<ConversationSummary[]> {
+  "use cache: private";
+  cacheTag(chatTag(userId));
+  // stale >= 300 is the threshold that lets this ride along in the route's App
+  // Shell, so the prefetched Chat tab arrives with the inbox already in it
+  // rather than a hole behind the skeleton. See `cacheLife` prerendering rules.
+  cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
+
+  return getConversations();
+}
 
 /**
  * What the Chats list shows: everything except a chat this member deleted that

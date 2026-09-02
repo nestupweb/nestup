@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { deleteAccountAction, type ToggleState } from "@/app/actions/settings";
 import { Card } from "@/components/settings/Card";
 import { Avatar } from "@/components/ui/Avatar";
@@ -25,6 +25,15 @@ export function DangerZone({ email, heirs }: { email: string; heirs: ListingHeir
   const [choosing, setChoosing] = useState(false);
   const [state, form, pending] = useStickyForm<ToggleState>(deleteAccountAction, {});
   const armed = typed.trim().toLowerCase() === email.trim().toLowerCase();
+
+  // The account is gone; the browser must not keep rendering pages built from
+  // it. A full document load is the only thing that drops the `use cache:
+  // private` entries (deck, profile tabs, inbox) and the router's cached copies
+  // of those pages — a soft `redirect()` from the action left both alive. The
+  // same reason logging out posts to a Route Handler.
+  useEffect(() => {
+    if (state.done) window.location.replace("/");
+  }, [state.done]);
 
   const able = heirs.filter((h) => h.eligible);
   const blocked = heirs.filter((h) => !h.eligible);

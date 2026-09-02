@@ -2,7 +2,8 @@
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
 import { Suspense } from "react";
-import { getConversations, visibleConversations } from "@/lib/chat";
+import { requireUser } from "@/lib/auth";
+import { getCachedConversations, visibleConversations } from "@/lib/chat";
 
 export const instant = false;
 
@@ -24,9 +25,16 @@ export default function ChatIndexPage() {
   );
 }
 
-/** "Pick one" once there are chats; how to start one when there are none. */
+/**
+ * "Pick one" once there are chats; how to start one when there are none.
+ *
+ * Reads the same cached inbox the list beside it does, so the desktop
+ * placeholder costs no extra round-trip — it is one `use cache: private` entry
+ * answering both.
+ */
 async function Hint() {
-  const hasChats = visibleConversations(await getConversations()).length > 0;
+  const { user } = await requireUser();
+  const hasChats = visibleConversations(await getCachedConversations(user.id)).length > 0;
   return (
     <p className="mt-1 max-w-xs text-sm text-muted">
       {hasChats

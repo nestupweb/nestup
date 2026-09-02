@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { updateTag } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { deckTag, profileTag, savedTag } from "@/lib/cache-tags";
+import { chatTag, deckTag, profileTag, savedTag } from "@/lib/cache-tags";
 import { findOrCreateConversation, markConversationRead } from "@/lib/chat";
 import { messageSchema } from "@/lib/validation/message";
 import type { SwipeDirection } from "@/lib/types";
@@ -66,6 +66,10 @@ export async function sendIntroAction(
   if (error) return { ok: false, error: "Could not send the message. Please try again." };
 
   await markConversationRead(supabase, conversation.id);
+  // A hello starts a conversation that was not in the cached inbox a moment
+  // ago, so the seeker's own copy has to go — otherwise they land in the thread
+  // with an inbox beside it that does not list it.
+  updateTag(chatTag(user.id));
   return { ok: true, conversationId: conversation.id };
 }
 
