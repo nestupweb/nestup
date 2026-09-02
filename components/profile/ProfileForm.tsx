@@ -304,7 +304,7 @@ export function ProfileForm({
                 <input name="languages" defaultValue={(d?.languages ?? []).join(", ")} placeholder="Hebrew, English, …" className={input} />
               </label>
               <label className={label}>Daily lifestyle
-                <input name="lifestyle" maxLength={200} defaultValue={d?.lifestyle ?? ""} placeholder="e.g. work from home, gym in the evenings" className={input} />
+                <input name="lifestyle" maxLength={200} defaultValue={d?.lifestyle ?? ""} placeholder="e.g. work from home" className={input} />
               </label>
               <label className={label}>Cooking habits
                 <input name="cooking" maxLength={120} defaultValue={d?.cooking ?? ""} placeholder="e.g. cook most evenings" className={input} />

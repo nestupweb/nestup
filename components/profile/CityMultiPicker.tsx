@@ -14,7 +14,7 @@ export function CityMultiPicker({ name, initial }: { name: string; initial: stri
       ))}
       <CityCombobox
         id={`${name}-picker`}
-        placeholder="Add a city — e.g. hai → Haifa"
+        placeholder="Add a city"
         clearOnSelect
         onSelect={(city) => setCities((prev) => (prev.includes(city) ? prev : [...prev, city]))}
       />
