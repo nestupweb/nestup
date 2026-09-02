@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ChangeEvent } from "react";
 import { resendConfirmationAction, verifyCodeAction, type AuthState } from "@/app/actions/auth";
+import { AuthBackLink } from "@/components/auth/AuthBackLink";
 import { CodeInput } from "@/components/auth/CodeInput";
 import { useStickyForm } from "@/lib/hooks";
 import { useRef, useState } from "react";
@@ -139,67 +140,68 @@ function CheckInbox({
   const codeFormRef = useRef<HTMLFormElement>(null);
 
   return (
-    <div className="mx-auto mt-16 w-full max-w-md px-4 text-center sm:px-6">
-      <h1 className="text-3xl font-bold">Check your inbox</h1>
-      <p className="mt-3 text-sm text-muted">
-        We sent a 6-digit code{email ? " to " : ""}
-        {email ? <strong className="font-semibold text-ink">{email}</strong> : ""}. Enter it below to finish creating
-        your account &mdash; until then, logging in won&rsquo;t work.
-      </p>
-      {throttled ? (
-        <p role="status" className="mt-2 text-sm text-muted">
-          One went out to this address a moment ago, so we didn&rsquo;t send another. Give it a minute to land.
+    <>
+      {/* The way back out of this screen. It replaced "Wrong address?", which
+          only ever went to /signup — the arrow returns to whatever page the
+          member actually came from, and lands on the signup form when this tab
+          has no history of its own. */}
+      <AuthBackLink fallback="/signup" />
+      <div className="mx-auto mt-6 w-full max-w-md px-4 text-center sm:px-6">
+        <h1 className="text-3xl font-bold">Check your inbox</h1>
+        <p className="mt-3 text-sm text-muted">
+          We sent a 6-digit code{email ? " to " : ""}
+          {email ? <strong className="font-semibold text-ink">{email}</strong> : ""}. Enter it below to finish creating
+          your account &mdash; until then, logging in won&rsquo;t work.
         </p>
-      ) : null}
-      <p className="mt-2 text-sm text-muted">Not there? Have a look in your spam folder.</p>
-
-      {mode === "signup" && email ? (
-        <form {...codeForm} ref={codeFormRef} className="mt-6">
-          <input type="hidden" name="email" value={email} />
-          <CodeInput
-            disabled={verifying}
-            invalid={Boolean(codeState.error)}
-            // Six digits is the whole form, so submit as soon as they're there
-            // rather than making the member hunt for a button.
-            onComplete={() => codeFormRef.current?.requestSubmit()}
-          />
-          {codeState.error ? (
-            <p role="alert" className="mt-3 text-sm text-danger">{codeState.error}</p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={verifying}
-            className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            {verifying ? "Checking…" : "Confirm"}
-          </button>
-        </form>
-      ) : null}
-
-      {mode === "signup" && email ? (
-        <form {...resendForm} className="mt-5">
-          <input type="hidden" name="email" value={email} />
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-full border border-hairline px-5 py-2 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent disabled:opacity-60"
-          >
-            {pending ? "Sending…" : "Send a new code"}
-          </button>
-          {state.error ? <p role="alert" className="mt-3 text-sm text-danger">{state.error}</p> : null}
-          {state.sent ? <p role="status" className="mt-3 text-sm text-accent">A new code is on its way.</p> : null}
-        </form>
-      ) : null}
-
-      <p className="mt-6 text-sm">
-        <Link href="/login" className="text-accent underline">Already confirmed? Log in</Link>
-        {mode === "signup" ? (
-          <>
-            <span className="mx-2 text-muted">&middot;</span>
-            <Link href="/signup" className="text-accent underline">Wrong address?</Link>
-          </>
+        {throttled ? (
+          <p role="status" className="mt-2 text-sm text-muted">
+            One went out to this address a moment ago, so we didn&rsquo;t send another. Give it a minute to land.
+          </p>
         ) : null}
-      </p>
-    </div>
+        <p className="mt-2 text-sm text-muted">Not there? Have a look in your spam folder.</p>
+
+        {mode === "signup" && email ? (
+          <form {...codeForm} ref={codeFormRef} className="mt-6">
+            <input type="hidden" name="email" value={email} />
+            <CodeInput
+              disabled={verifying}
+              invalid={Boolean(codeState.error)}
+              // Six digits is the whole form, so submit as soon as they're there
+              // rather than making the member hunt for a button.
+              onComplete={() => codeFormRef.current?.requestSubmit()}
+            />
+            {codeState.error ? (
+              <p role="alert" className="mt-3 text-sm text-danger">{codeState.error}</p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={verifying}
+              className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {verifying ? "Checking…" : "Confirm"}
+            </button>
+          </form>
+        ) : null}
+
+        {mode === "signup" && email ? (
+          <form {...resendForm} className="mt-5">
+            <input type="hidden" name="email" value={email} />
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded-full border border-hairline px-5 py-2 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent disabled:opacity-60"
+            >
+              {pending ? "Sending…" : "Send a new code"}
+            </button>
+            {state.error ? <p role="alert" className="mt-3 text-sm text-danger">{state.error}</p> : null}
+            {state.sent ? <p role="status" className="mt-3 text-sm text-accent">A new code is on its way.</p> : null}
+          </form>
+        ) : null}
+
+        <p className="mt-6 text-sm">
+          <Link href="/login" className="text-accent underline">Already confirmed? Log in</Link>
+        </p>
+      </div>
+    </>
   );
 }
