@@ -28,7 +28,7 @@ const note = "font-normal normal-case tracking-normal";
  * it hangs off and bold — because it carries the one thing Swipe waits for, and
  * it is doing the job the red `*` deliberately does not do here.
  */
-const needNote = "normal-case tracking-normal text-[13px] font-bold";
+const needNote = "normal-case tracking-normal text-[13px] font-bold text-accent";
 
 /** The mark on a label the form will not save without. */
 function Req() {
