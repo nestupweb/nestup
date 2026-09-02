@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getOwnProfile } from "@/lib/auth";
+import { requireCachedProfile } from "@/lib/auth";
 import { FINISH_APARTMENT_PREFS, NEEDS_CITY, hasPreferredCity } from "@/lib/apartment-prefs";
 import { getCachedDeck } from "@/lib/swipe-deck";
 import { SwipeDeck } from "@/components/swipe/SwipeDeck";
@@ -18,7 +18,9 @@ export default async function SwipePage({
 }: {
   searchParams: Promise<{ saved?: string; needs?: string }>;
 }) {
-  const [{ profile }, { saved, needs }] = await Promise.all([getOwnProfile(), searchParams]);
+  // Cached: the uncached `auth.getUser()` this used to start with was the one
+  // read keeping the rest of the page out of its App Shell.
+  const [{ profile }, { saved, needs }] = await Promise.all([requireCachedProfile(), searchParams]);
   // A profile save that left something unfinished sends the member here with a
   // flag, and the flag rides above whatever the page shows — including the gates
   // below, which a save can perfectly well land on.

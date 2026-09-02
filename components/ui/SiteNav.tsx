@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { UnreadBadge } from "@/components/ui/UnreadBadge";
-import { getAuthContext } from "@/lib/auth";
+import { getCachedSession } from "@/lib/auth";
 
 /**
  * The bottom nav, mounted once from the ROOT layout.
@@ -16,16 +16,17 @@ import { getAuthContext } from "@/lib/auth";
  *
  * From the root layout it sits above both groups, so a client-side navigation
  * never unmounts it — the tab highlight just moves. The auth check costs
- * nothing extra: `getAuthContext` is `cache()`d per request and every signed-in
- * page already awaits it, so this shares that one round-trip.
+ * nothing extra: this is the cached session, so on a warm cache it costs no
+ * round-trip at all. It used to be `getAuthContext()` — an uncached
+ * `auth.getUser()` in the ROOT layout, and therefore on every route in the app.
  *
  * Kept out of `<PageTransition>` on purpose. That is keyed on the pathname, so
  * anything inside it is part of the exit/enter pair; the nav has to be the one
  * fixed thing the pages move behind.
  */
 export async function SiteNav() {
-  const { user } = await getAuthContext();
-  if (!user) return null;
+  const session = await getCachedSession();
+  if (!session) return null;
 
   return (
     <BottomNav

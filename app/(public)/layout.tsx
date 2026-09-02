@@ -4,7 +4,7 @@ import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { MemberActions } from "@/components/ui/MemberActions";
 import { Suspense } from "react";
-import { getAuthContext } from "@/lib/auth";
+import { getCachedSession } from "@/lib/auth";
 
 /**
  * Not async, unlike the version this replaces.
@@ -57,8 +57,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
  * Log in / Sign up.
  */
 async function SessionActions() {
-  const { user } = await getAuthContext();
-  if (user) return <MemberActions />;
+  // Cached: this was the last uncached `auth.getUser()` on the Listings route,
+  // and /browse is the page most worth prerendering.
+  const session = await getCachedSession();
+  if (session) return <MemberActions />;
   return (
     <>
       <Link href="/login" className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-contrast">Log in</Link>

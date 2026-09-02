@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getAuthContext } from "@/lib/auth";
+import { getCachedSession } from "@/lib/auth";
 import { listingFiltersSchema } from "@/lib/validation/filters";
 import { getSavedListingIds, queryListings } from "@/lib/listings";
 import { FilterBar } from "@/components/listings/FilterBar";
@@ -81,12 +81,17 @@ function ResultsSkeleton() {
 
 async function Results({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const filters = listingFiltersSchema.parse(await searchParams);
-  const [{ listings, total }, { user }] = await Promise.all([
+  // `getCachedSession`, not `getAuthContext`. The latter is an uncached
+  // `auth.getUser()` round-trip, and the App Shell prerender stops at the first
+  // uncached read — so it kept this whole results list out of the shell and
+  // made Listings paint its skeleton on every visit even though `queryListings`
+  // was cached and hitting.
+  const [{ listings, total }, session] = await Promise.all([
     queryListings(filters),
-    getAuthContext(),
+    getCachedSession(),
   ]);
   // Signed-in hearts come from the account (Profile › Liked); visitors use localStorage.
-  const savedIds = user ? await getSavedListingIds(user.id) : new Set<string>();
+  const savedIds = session ? await getSavedListingIds(session.id) : new Set<string>();
   const filtersActive = FILTER_KEYS.some((k) => filters[k] !== undefined);
   const lastPage = Math.max(1, Math.ceil(total / filters.page_size));
 
@@ -156,7 +161,7 @@ async function Results({ searchParams }: { searchParams: Promise<Record<string, 
                 <ListingCard
                   key={l.id}
                   listing={l}
-                  signedIn={Boolean(user)}
+                  signedIn={Boolean(session)}
                   saved={savedIds.has(l.id)}
                   priority={i < 3}
                 />

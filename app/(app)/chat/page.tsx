@@ -2,7 +2,7 @@
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
 import { Suspense } from "react";
-import { requireUser } from "@/lib/auth";
+import { requireCachedSession } from "@/lib/auth";
 import { getCachedInbox, visibleConversations } from "@/lib/chat";
 
 export const instant = false;
@@ -33,13 +33,10 @@ export default function ChatIndexPage() {
  * answering both.
  */
 async function Hint() {
-  // `requireUser()` stays here even though the inbox no longer needs it. This
-  // route is the one place under /chat with no deeper page to enforce the
-  // suspension gate, and that check is deliberately never cached. It costs an
-  // uncached read, but it sits behind this component's own `<Suspense>` whose
-  // fallback is a blank spacer rather than a skeleton — so it delays one line
-  // of text, not the inbox beside it.
-  await requireUser();
+  // The gate stays here — this route is the one place under /chat with no
+  // deeper page to enforce it — but it is the cached form now, so it costs no
+  // round-trip and does not hold up the shell.
+  await requireCachedSession();
   const { conversations } = await getCachedInbox();
   const hasChats = visibleConversations(conversations).length > 0;
   return (

@@ -18,6 +18,10 @@ const verifyOtp = vi.fn();
 vi.mock("@/lib/auth-mail", () => ({ sendConfirmationMail, sendRecoveryMail: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser, verifyOtp } }) }));
 vi.mock("next/headers", () => ({ headers: async () => ({ get: () => null }) }));
+// Confirming a code signs the member in, so the action now drops `SESSION_TAG`
+// — and `updateTag` throws outside a request Next is rendering. The shared stub
+// covers the whole `next/cache` surface so this does not go stale again.
+vi.mock("next/cache", async () => await import("../helpers/next-cache-stub"));
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
     throw new Error(`REDIRECT:${to}`);

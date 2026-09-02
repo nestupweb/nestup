@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getAuthContext, getOwnProfile } from "@/lib/auth";
+import { requireCachedProfile } from "@/lib/auth";
 import { ContactRow } from "@/components/profile/ContactRow";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
@@ -60,7 +60,13 @@ function ProfileSkeleton() {
 }
 
 async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
-  const { profile, userId } = await getOwnProfile();
+  // One cached read for identity, suspension and the profile row together.
+  // These used to be `getOwnProfile()` plus a second `getAuthContext()` for the
+  // e-mail — two uncached `auth.getUser()` round-trips in front of the cached
+  // tab data, and the App Shell prerender stops at the first uncached read, so
+  // they kept this page out of its own shell entirely.
+  const { session, profile } = await requireCachedProfile();
+  const userId = session.id;
   const { onboarding, next, tab, published } = await searchParams;
 
   // First-run (or explicit onboarding link): the form is the whole page.
@@ -74,7 +80,6 @@ async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
     );
   }
 
-  const { user } = await getAuthContext();
   // One cached, tagged read for the whole tab set — see `lib/profile-data.ts`.
   const { mine, liked, history, details, invites, shared } = await getProfileTabData(userId);
 
@@ -108,7 +113,7 @@ async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
             facebook={details?.facebook}
             linkedin={details?.linkedin}
             phone={details?.phone}
-            email={details?.contact_email || user?.email || ""}
+            email={details?.contact_email || session.email}
           />
         </div>
       </div>
@@ -125,7 +130,7 @@ async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
           liked={liked}
           history={history}
           initial={initial}
-          about={{ profile, details, email: user?.email ?? "", readOnly: PROFILE_EDIT_ON_PENCIL_PAGE }}
+          about={{ profile, details, email: session.email, readOnly: PROFILE_EDIT_ON_PENCIL_PAGE }}
           invites={invites}
           shared={shared}
         />

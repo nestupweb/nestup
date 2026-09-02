@@ -2,10 +2,11 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendConfirmationMail, sendEmailChangeMail, sendRecoveryMail } from "@/lib/auth-mail";
 import { requireUser } from "@/lib/auth";
+import { SESSION_TAG } from "@/lib/cache-tags";
 import { sanitizeNextPath } from "@/lib/redirect";
 import { SUSPENDED_MESSAGE } from "@/lib/moderation";
 
@@ -132,6 +133,8 @@ export async function verifyCodeAction(_prev: AuthState, formData: FormData): Pr
     }
     return { error: "That code is wrong or has expired. Check the email, or send a new one.", email };
   }
+  // Confirming the code signs the member in, so the cached "nobody" has to go.
+  updateTag(SESSION_TAG);
   redirect("/profile?onboarding=1");
 }
 
@@ -166,6 +169,12 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
       return { error: SUSPENDED_MESSAGE };
     }
   }
+  // A session now exists where the cached answer may still be "nobody".
+  // `redirect()` from an action is a soft navigation, so without this a
+  // visitor who had browsed Listings signed out would go on being treated as a
+  // visitor — no hearts, Log in / Sign up in the header — until the window ran
+  // out. See `SESSION_TAG`.
+  updateTag(SESSION_TAG);
   redirect(sanitizeNextPath(next));
 }
 
@@ -294,8 +303,9 @@ export async function verifyEmailChangeCodeAction(_prev: AccountState, formData:
     }
     return { error: "That code is wrong or has expired. Send a new one.", email };
   }
-  // Settings reads the session's address fresh on every render, so rerunning
-  // this route shows the new one. Nothing cached carries the e-mail address.
+  // The cached session DOES carry the address now (`getCachedSession`), so the
+  // rerun is no longer enough on its own — this drops it first.
+  updateTag(SESSION_TAG);
   refresh();
   return { done: true };
 }
