@@ -133,17 +133,18 @@ export async function upsertProfileAction(
   updateTag(deckTag(user.id));
   // Onboarding entered from a gated page (e.g. chat) returns there; default /swipe.
   const target = sanitizeNextPath(String(formData.get("next") ?? ""));
-  // An unfinished Daily life table no longer blocks anything (2026-08-30), but
-  // the member is still told what it costs them — on the profile page, never on
-  // the form (user, 2026-09-02). Save always ends the form: staying on it to
-  // display a note read as if the save had failed.
+  // Save ends the form and confirms on the page it lands on (user, 2026-09-02).
+  // Both halves of that matter: a note left sitting on the form read as if the
+  // save had failed, and a silent jump to the profile read as if nothing had
+  // happened at all. So every save from the profile carries word of itself —
+  // the Daily-life nudge when the table is short of answers, a plain "saved"
+  // when it is not. The profile page is the only thing that renders either.
   //
-  // The note therefore rides the redirect, and only to the profile page, which
-  // is the one place that renders it. A save heading anywhere else — onboarding
-  // into the deck or into a chat — goes there as promised and says nothing;
-  // nothing is gated on the table, so there is nothing to interrupt them with.
-  if (!isDailyLifeComplete(parsed.data) && target === "/profile") {
-    redirect("/profile?saved=daily-life");
+  // A save heading anywhere else — onboarding into the deck or into a chat —
+  // goes there as promised and stays quiet; those pages have nowhere to say it,
+  // and nothing is gated on the table anyway.
+  if (target === "/profile") {
+    redirect(isDailyLifeComplete(parsed.data) ? "/profile?saved=1" : "/profile?saved=daily-life");
   }
   redirect(target);
 }

@@ -5,7 +5,7 @@ import { ContactRow } from "@/components/profile/ContactRow";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
-import { DAILY_LIFE_GAPS_NOTICE } from "@/lib/constants";
+import { DAILY_LIFE_GAPS_NOTICE, PROFILE_SAVED_NOTICE } from "@/lib/constants";
 import { PROFILE_EDIT_ON_PENCIL_PAGE } from "@/lib/feature-flags";
 import { getProfileTabData } from "@/lib/profile-data";
 
@@ -114,11 +114,12 @@ async function ProfileBody({ searchParams }: { searchParams: ProfileSearch }) {
         </div>
       </div>
 
-      {/* Sent here by Save on the edit form when Daily life is still short of
-          answers — the save worked, this is what it left behind. */}
-      {saved === "daily-life" ? (
+      {/* Sent here by Save on the edit form. Every save says one of these two:
+          the nudge when Daily life is short of answers, otherwise a plain
+          confirmation — arriving on a new page with no word is worse. */}
+      {saved === "daily-life" || saved === "1" ? (
         <p role="status" className="mt-6 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-accent">
-          {DAILY_LIFE_GAPS_NOTICE}
+          {saved === "daily-life" ? DAILY_LIFE_GAPS_NOTICE : PROFILE_SAVED_NOTICE}
         </p>
       ) : null}
 

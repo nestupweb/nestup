@@ -264,6 +264,13 @@ export const DAILY_LIFE_GAPS_NOTICE =
   "Your profile was saved, but completing the Daily Life section will improve the quality of your matches.";
 
 /**
+ * The same confirmation when there is nothing to add to it. Every save from the
+ * edit form says one of these two on the profile page — a save that moved the
+ * member to another page and then said nothing read as if it had not happened.
+ */
+export const PROFILE_SAVED_NOTICE = "Your profile was saved.";
+
+/**
  * The most roommates a home of this size can hold: one of its rooms is the
  * living room, the rest are bedrooms. A 5-room flat tops out at 4 (user rule,
  * 2026-09-01).

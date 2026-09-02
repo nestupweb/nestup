@@ -133,11 +133,16 @@ test("editing from the profile: a half-answered table saves and goes back, carry
   expect(upsert).toHaveBeenCalledTimes(1);
 });
 
-test("a whole table from the profile goes back with nothing to report", async () => {
+/**
+ * The complete case still has to say something. It is the shape the user's own
+ * account is in, and a save that jumped to the profile in silence was read as
+ * the feature not working at all.
+ */
+test("a whole table from the profile goes back confirming the save", async () => {
   vi.resetModules();
   const { upsertProfileAction } = await import("@/app/actions/profile");
   await expect(upsertProfileAction({}, validForm({ next: "/profile" })))
-    .rejects.toThrow("REDIRECT:/profile");
+    .rejects.toThrow("REDIRECT:/profile?saved=1");
   expect(upsert).toHaveBeenCalledTimes(1);
 });
 
