@@ -83,6 +83,21 @@ export function BottomNav({ unreadSlot }: { unreadSlot?: ReactNode }) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
+              // Full runtime prefetch, not just the route's App Shell.
+              //
+              // The default under `partialPrefetching` fetches one shell per
+              // route — enough to paint the frame, but the page's own data
+              // still streams in after the click, which is the skeleton flash
+              // this is trying to remove. `prefetch` pulls the page content
+              // alongside the shell and moves the link onto `staleTimes.static`
+              // rather than `dynamic`.
+              //
+              // The docs warn this costs a server invocation per *visible*
+              // link, so it is wrong for a grid of cards. Here it is four
+              // links, fixed, always on screen, and they are the four
+              // destinations every member actually uses — the case the
+              // trade-off is meant for.
+              prefetch
               transitionTypes={navTransitionTypes(pathname, item.href)}
               className={`relative isolate flex min-w-[4.5rem] flex-col items-center gap-1 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
                 active ? "text-accent" : "text-muted hover:text-ink"
