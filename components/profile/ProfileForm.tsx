@@ -178,7 +178,7 @@ export function ProfileForm({
         </div>
       </div>
 
-      <Section step={stepNo()} title="Bio & About me" hint="The short line goes under your name; the longer text is your introduction on your profile.">
+      <Section step={stepNo()} title="Bio & About me" hint="The short line shows under your name and the longer text on your profile.">
         <label className={label}>Bio · one line
           <input name="bio" maxLength={500} defaultValue={profile?.bio ?? ""} placeholder="e.g. Early riser, plant person, cooks a mean shakshuka." className={input} />
         </label>
@@ -197,7 +197,7 @@ export function ProfileForm({
       </Section>
 
       {about ? (
-        <Section step={stepNo()} title="Contact" hint="Phone and e-mail stay private. Social usernames show on your profile as links.">
+        <Section step={stepNo()} title="Contact" hint="Phone and email stay private, while social usernames become links on your profile.">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <PhoneField defaultValue={d?.phone ?? ""} labelClassName={label} inputClassName={input.replace("mt-1 w-full ", "")} />
             <label className={label}>Email address
@@ -215,8 +215,8 @@ export function ProfileForm({
         title="Apartment preferences"
         hint={
           needsCity
-            ? "Swipe matches by location: add at least one preferred city before it can suggest anything. Budget, move-in and amenities only sharpen the ranking — they never hold the deck shut."
-            : "Powers the budget, city and move-in parts of your Lifestyle match. Amenities are what the room itself should have."
+            ? "Swipe needs at least one preferred city, and everything else here is optional."
+            : "Budget, cities and timing feed your Lifestyle match, while amenities describe the room itself."
         }
       >
         <div className="rounded-2xl border border-hairline bg-surface px-4 py-4 sm:px-5">
@@ -285,8 +285,8 @@ export function ProfileForm({
         title="Daily life"
         hint={
           dailyLifeLeft > 0
-            ? `How you live on the left, what you're looking for in roommates on the right. ${dailyLifeLeft} still to answer — optional, but every answer sharpens your matches.`
-            : "How you live on the left, what you're looking for in roommates on the right — both count toward the Lifestyle match."
+            ? `Both columns feed your Lifestyle match, with ${dailyLifeLeft} still to answer.`
+            : "Both columns feed your Lifestyle match."
         }
       >
         <DailyLifeFields profile={profile} />
@@ -317,11 +317,11 @@ export function ProfileForm({
         ) : null}
       </Section>
 
-      <Section step={stepNo()} title="Household chores" hint="Tick the chores you're happy to take on — roommates see these on your profile.">
+      <Section step={stepNo()} title="Household chores" hint="Tick the chores you're happy to take on, and they show on your profile.">
         <ChoresPicker initial={profile?.chores ?? []} />
       </Section>
 
-      <Section step={stepNo()} title="Interests" hint="Pick what you're into — shared interests power your Social match.">
+      <Section step={stepNo()} title="Interests" hint="The interests you pick power your Social match.">
         <InterestsPicker initial={profile?.interests ?? []} />
       </Section>
 
@@ -329,7 +329,7 @@ export function ProfileForm({
         <Section
           step={stepNo()}
           title="Default Message"
-          hint="Your opening line, ready to edit: it fills the message box when you reach out from a listing and when you like a room in Swipe — you can always change it before sending."
+          hint="Your opening line fills the message box when you contact a lister, and you can edit it before sending."
         >
           <label className={label}>Default hello message
             <textarea
