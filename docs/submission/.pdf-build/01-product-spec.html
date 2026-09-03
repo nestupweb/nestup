@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Product Specification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+@page {
+  size: A4;
+  margin: 20mm 18mm 18mm;
+}
+
+:root {
+  --ink: #201d1a;
+  --muted: #5c5751;
+  --accent: #2e7d5e;
+  --hairline: #e2ddd4;
+  --rail: #f2efe8;
+  --paper: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 10.5pt;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---- cover ------------------------------------------------------------ */
+.cover {
+  page-break-after: always;
+  height: 245mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cover .project {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 46pt;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0 0 6mm;
+}
+.cover .doctitle {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 22pt;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0 0 3mm;
+}
+.cover .sub { font-size: 12pt; color: var(--muted); max-width: 120mm; margin: 0 0 14mm; }
+.cover .rule { border: 0; border-top: 2px solid var(--accent); width: 26mm; margin: 0 0 14mm; }
+.cover .meta { font-size: 9.5pt; color: var(--muted); line-height: 1.9; }
+.cover .meta strong { color: var(--ink); font-weight: 600; }
+
+/* ---- headings --------------------------------------------------------- */
+h1, h2, h3, h4 {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  page-break-after: avoid;
+}
+/* The document's own H1 duplicates the cover, so it is dropped. */
+body > h1:first-of-type { display: none; }
+h2 {
+  font-size: 16pt;
+  font-weight: 600;
+  margin: 11mm 0 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px solid var(--hairline);
+}
+h3 { font-size: 12pt; font-weight: 600; margin: 7mm 0 2mm; }
+h4 { font-size: 10.5pt; font-weight: 600; margin: 5mm 0 1.5mm; color: var(--muted); }
+
+p { margin: 0 0 3.2mm; orphans: 3; widows: 3; }
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+ul, ol { margin: 0 0 3.2mm; padding-left: 6mm; }
+li { margin-bottom: 1.4mm; }
+
+a { color: var(--accent); text-decoration: none; }
+
+blockquote {
+  margin: 4mm 0;
+  padding: 2mm 0 2mm 5mm;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+hr { border: 0; border-top: 1px solid var(--hairline); margin: 8mm 0; }
+
+/* ---- code ------------------------------------------------------------- */
+code {
+  font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  font-size: 0.87em;
+  background: var(--rail);
+  padding: 0.1em 0.35em;
+  border-radius: 2pt;
+}
+pre {
+  background: var(--rail);
+  border: 1px solid var(--hairline);
+  border-radius: 3pt;
+  padding: 3mm 4mm;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  font-size: 8.5pt;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---- tables ----------------------------------------------------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 5mm;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+thead { display: table-header-group; }
+th {
+  text-align: left;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8pt;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+}
+td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+  vertical-align: top;
+}
+tr { page-break-inside: avoid; }
+
+/* Keep a heading with the block that follows it. */
+h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
+</style></head><body>
+<section class="cover">
+  <p class="doctitle">Product Specification</p>
+  <h1 class="project">NestUp</h1>
+  <hr class="rule">
+  <p class="sub">The problem, the users, and what the product is for</p>
+  <div class="meta">
+    <strong>Internet Technologies — Become a Full-Stack Engineer</strong><br>
+    RUNI CS 2026 · Final project<br><br>
+    Live product &nbsp;<strong>nestup-kappa.vercel.app</strong><br>
+    Repository &nbsp;<strong>github.com/nestupweb/nestup</strong>
+  </div>
+</section>
+<h1>NestUp — Product Specification</h1>
+<p><strong>Course:</strong> Internet Technologies — Become a Full-Stack Engineer, RUNI CS 2026
+<strong>Live product:</strong> https://nestup-kappa.vercel.app
+<strong>Repository:</strong> https://github.com/nestupweb/nestup</p>
+<hr />
+<h2>1. The problem</h2>
+<p>Finding a room in a shared apartment is not actually a search problem. The listings themselves are easy to find, since they are published on Facebook groups, on Yad2 and in WhatsApp groups. The real difficulty is that <strong>the room is not what a person is choosing. The people are.</strong></p>
+<p>Existing tools approach this from the wrong direction. They index apartments according to rent, number of rooms, size in square meters and neighborhood. All of the factors that actually determine whether a shared apartment will work, such as sleeping hours, how frequently guests arrive, how clean the kitchen is kept, whether someone smokes indoors, and whether the apartment keeps Shabbat, are either missing entirely or written in free text which cannot be filtered.</p>
+<p>The result is a process which wastes time on both sides:</p>
+<ul>
+<li><strong>The seeker</strong> sends messages to thirty listings, receives eight replies, visits four apartments, and only then discovers the incompatibility in person, after having traveled across the city.</li>
+<li><strong>The household</strong> receives dozens of nearly identical messages asking whether the room is still available, repeats the same screening questions to each one of them, and nevertheless ends up meeting people who were never suitable in the first place.</li>
+</ul>
+<p>Both sides therefore perform manual filtering which a computer could perform on their behalf, and both sides perform it <em>after</em> the expensive step of traveling and meeting, rather than before it.</p>
+<p>There is a second problem, which is less obvious. Once a conversation does begin, it normally begins with <strong>one</strong> roommate, usually the person who published the advertisement, even though the decision belongs to the entire household. The remaining roommates receive only a summary of what was said. For this reason NestUp treats the household, and not the individual poster, as the counterparty.</p>
+<h2>2. Who the users are</h2>
+<p>NestUp is a <strong>two-sided product</strong>. The same person may be on both sides at different stages of life, and a single account supports both roles without requiring the user to switch between modes.</p>
+<h3>Side A — the Seeker</h3>
+<p>A person who is looking for a room in an existing shared apartment.</p>
+<ul>
+<li>Typically between the ages of 22 and 35: students, young professionals, and people relocating for work.</li>
+<li>Cares about monthly rent, location, move-in date, and, which is the part that other products ignore, the identity of the people he or she will be living with.</li>
+<li>The scarce resource of this user is <strong>time and travel</strong>. Every apartment visit costs an entire evening.</li>
+<li>The main fear of this user is committing to a full year with people who turn out to be impossible to live with.</li>
+</ul>
+<h3>Side B — the Household (Lister)</h3>
+<p>An existing shared apartment which has a room to fill.</p>
+<ul>
+<li>One member publishes the room, but the room belongs to the household as a whole.</li>
+<li>Cares about filling the room quickly, and about filling it with a person who will not disrupt an apartment which already functions well.</li>
+<li>The scarce resource of this user is <strong>attention</strong>. A household cannot interview forty candidates.</li>
+<li>The main fear of this user is accepting an unsuitable roommate and then being unable to remove him or her.</li>
+</ul>
+<h3>Who the customer is</h3>
+<p>In this project the <strong>user and the customer are the same person</strong>, and the product is free at the point of use. This decision is deliberate. A two-sided marketplace has no value for either side until it achieves liquidity on both sides, and therefore charging money at an early stage would suppress the very mechanism which makes the product work.</p>
+<p>The customer that NestUp would eventually be built toward is the <strong>household with a vacancy</strong>, because this is the side which has urgency and a measurable cost of failure. An empty room represents rent which somebody is paying out of pocket for every month that it remains empty. This is therefore the side with a genuine willingness to pay, and the monetization discussion below assumes exactly this.</p>
+<h2>3. Business goals</h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Why it matters</th>
+<th>How the product serves it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Reduce wasted first meetings</strong></td>
+<td>This is the core value promise. If a seeker visits three apartments instead of ten and still finds a home, the product has already justified itself in saved evenings.</td>
+<td>Compatibility scoring, together with a swipe deck which presents strong matches only</td>
+</tr>
+<tr>
+<td><strong>Build two-sided liquidity</strong></td>
+<td>A matching product which has rooms but no seekers, or seekers but no rooms, provides no value at all.</td>
+<td>Public browsing without a registration barrier; listing creation with low friction</td>
+</tr>
+<tr>
+<td><strong>Make the household the counterparty</strong></td>
+<td>This is both a differentiator and a genuinely better process.</td>
+<td>Household-wide chat threads; co-owned listings; a listing which survives its original poster</td>
+</tr>
+<tr>
+<td><strong>Keep members inside the product</strong></td>
+<td>If the conversation moves to WhatsApp immediately after first contact, the product loses the relationship and every signal associated with it.</td>
+<td>In-app chat with realtime delivery, photo and video sharing, and viewing scheduling built directly into the thread</td>
+</tr>
+<tr>
+<td><strong>Earn trust</strong></td>
+<td>Members are sharing where they live and who they are. A single bad incident costs more than ten successful matches produce.</td>
+<td>Real authentication, per-row access control, reporting, blocking, and suspension</td>
+</tr>
+</tbody>
+</table>
+<h3>How the product would generate revenue (not implemented; stated as intent)</h3>
+<p>The natural model is <strong>paid promotion on the household side</strong>. A listing which is not filling could pay in order to be positioned higher in the decks of seekers. This model is aligned with the value that is actually delivered, because the product only charges money when it is demonstrably performing the work, and it charges the side which has urgency. A secondary revenue line would be a verification badge, offered to both sides.</p>
+<p>It should be emphasized that nothing in the current product charges anybody. Both the database schema and the ranking function would need to be modified in order to support this, and this fact is stated honestly in the scale document as future work rather than presented as something which already exists.</p>
+<h2>4. Software capabilities required</h2>
+<p>Working backwards from the goals described above, the following are the capabilities which the product was required to have.</p>
+<h3>4.1 Identity and trust</h3>
+<ul>
+<li>Email and password authentication with <strong>mandatory email confirmation</strong>. This is a deliberate decision, since it is the least expensive barrier against disposable accounts in a product where people eventually meet in real life.</li>
+<li>Password recovery.</li>
+<li>A profile which carries sufficient information about a person to allow matching.</li>
+<li>Reporting, blocking, and account suspension.</li>
+<li>Account deletion which does not destroy the data of other members.</li>
+</ul>
+<h3>4.2 Supply: rooms</h3>
+<ul>
+<li>Creating, editing, pausing, marking as taken and removing a listing.</li>
+<li>Photographs, including a check that a photograph of a bedroom genuinely shows a bedroom.</li>
+<li>A real geographic location.</li>
+<li>Support for multiple roommates who co-own a single listing.</li>
+</ul>
+<h3>4.3 Demand: discovery</h3>
+<ul>
+<li>Public browsing, with filtering and sorting, which does not require an account.</li>
+<li>A map showing every room which has a placed location.</li>
+<li>A personalized swipe deck for signed-in members who have completed their profile.</li>
+</ul>
+<h3>4.4 The matching itself</h3>
+<ul>
+<li>A <strong>Lifestyle</strong> score, calculated from budget, city, move-in date, smoking, pets, cleanliness, sleep schedule, guests, noise, diet and Shabbat.</li>
+<li>A <strong>Social</strong> score, calculated from shared interests.</li>
+<li>A threshold which causes the deck to present strong matches only, rather than presenting everything in sorted order.</li>
+</ul>
+<h3>4.5 Communication</h3>
+<ul>
+<li>One chat thread per (listing, seeker) pair, which contains the <strong>entire household</strong>.</li>
+<li>Realtime delivery, read state, and unread counters.</li>
+<li>Photo and video messages.</li>
+<li>Viewing proposal and approval inside the thread, with optional export to Google Calendar.</li>
+</ul>
+<h2>5. Main user flows</h2>
+<h3>5.1 Seeker: discover, match, and meet</h3>
+<ol>
+<li><strong>Browsing without an account.</strong> The <code>/browse</code> route is public. The user can filter by city, rent, move-in date, lease length, number of roommates, pets, smoking, balcony, air conditioning, parking, elevator, furnishing and safe room, and can sort by newest or by price. The map view presents every placed room at once.</li>
+<li><strong>Opening a room.</strong> The user sees photographs, full details, the identity of the people who already live there, and a map showing the room together with its neighbors.</li>
+<li><strong>Registering and building a profile.</strong> The user provides name, age, occupation, biography and photograph; budget, preferred cities, move-in date and lease length; the Daily-life questionnaire, which describes how the user personally lives; roommate preferences, which describe what the user expects from others; and interests.</li>
+<li><strong>Swiping.</strong> The <code>/swipe</code> route presents a ranked deck of rooms whose combined score is 60 or above. The user may like or skip each one. A like optionally opens a chat containing a pre-filled greeting.</li>
+<li><strong>Chatting with the household.</strong> Every roommate participates in the thread.</li>
+<li><strong>Scheduling a viewing</strong> from inside the chat. The household approves the proposal, and either side may export it to Google Calendar.</li>
+</ol>
+<h3>5.2 Household: publish, screen, and fill</h3>
+<ol>
+<li><strong>Creating a listing.</strong> The household provides an address, which is geocoded automatically or positioned by dragging the pin, together with rent, number of rooms, size, available-from date, lease term, amenities, house rules and up to five photographs.</li>
+<li><strong>Tagging the roommates</strong> who live in the apartment. Each of them receives an invitation, and accepting it makes that person a co-owner who may edit the listing and who appears as part of the household.</li>
+<li><strong>Receiving interest</strong>, meaning likes and messages, all of which arrive in a single inbox.</li>
+<li><strong>Screening with real information.</strong> Every seeker who writes a message has a profile which carries a compatibility score against the specific room.</li>
+<li><strong>Approving a viewing</strong> from within the chat.</li>
+<li><strong>Closing the room</strong>, by marking it as taken, pausing it or removing it. Existing conversations continue to exist in all three cases.</li>
+</ol>
+<h3>5.3 Cross-cutting flows</h3>
+<ul>
+<li><strong>Account management:</strong> notification settings and contact-visibility settings, the list of blocked members, changing the email address or password, and account deletion, which transfers a shared listing to a roommate instead of deleting it.</li>
+<li><strong>Moderation:</strong> reporting a member or a listing. Blocking is mutual and removes the blocked member from both decks, and a suspension closes the application immediately.</li>
+</ul>
+<h2>6. What is deliberately outside the scope</h2>
+<p>Stating these items is as important as stating the feature list, because the assignment asks for clear thinking rather than for the maximum possible surface area.</p>
+<ul>
+<li><strong>No payments.</strong> There are no deposits, no rent collection and no escrow. Money moves outside the product.</li>
+<li><strong>No contracts and no electronic signature.</strong> A lease is a legal instrument, and producing an imitation of one would be worse than omitting it entirely.</li>
+<li><strong>No identity verification.</strong> Only email confirmation is performed. Genuine KYC requires an external vendor and a budget.</li>
+<li><strong>No native mobile application.</strong> The web application is mobile-first and can be installed as a PWA.</li>
+<li><strong>No machine learning in the recommendations.</strong> Ranking is performed by a deterministic scoring function and not by a trained model. Consequently it is explainable, testable and debuggable, which at this stage is more valuable than being marginally more accurate.</li>
+</ul>
+<h2>7. How success would be measured</h2>
+<p>If this were a real product, the following are the metrics which would matter. They were chosen specifically so that the product cannot appear successful while it is in fact failing its users.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Why this metric was chosen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Viewings per successful match</td>
+<td>This is the core promise of the product, and a lower value is better.</td>
+</tr>
+<tr>
+<td>Proportion of decks which are not empty</td>
+<td>An empty personalized deck is the principal failure mode of a strict matching threshold.</td>
+</tr>
+<tr>
+<td>Time from publication of a listing until the room is filled</td>
+<td>This is the actual problem of the household.</td>
+</tr>
+<tr>
+<td>Reply rate to the first message</td>
+<td>This indicates whether the two sides are genuinely well matched, and not merely matched.</td>
+</tr>
+<tr>
+<td>Reports per thousand conversations</td>
+<td>This measures trust. An increase in this metric outweighs an improvement in all of the others.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</body></html>

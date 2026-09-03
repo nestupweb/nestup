@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Technical Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+@page {
+  size: A4;
+  margin: 20mm 18mm 18mm;
+}
+
+:root {
+  --ink: #201d1a;
+  --muted: #5c5751;
+  --accent: #2e7d5e;
+  --hairline: #e2ddd4;
+  --rail: #f2efe8;
+  --paper: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 10.5pt;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---- cover ------------------------------------------------------------ */
+.cover {
+  page-break-after: always;
+  height: 245mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cover .project {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 46pt;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0 0 6mm;
+}
+.cover .doctitle {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 22pt;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0 0 3mm;
+}
+.cover .sub { font-size: 12pt; color: var(--muted); max-width: 120mm; margin: 0 0 14mm; }
+.cover .rule { border: 0; border-top: 2px solid var(--accent); width: 26mm; margin: 0 0 14mm; }
+.cover .meta { font-size: 9.5pt; color: var(--muted); line-height: 1.9; }
+.cover .meta strong { color: var(--ink); font-weight: 600; }
+
+/* ---- headings --------------------------------------------------------- */
+h1, h2, h3, h4 {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  page-break-after: avoid;
+}
+/* The document's own H1 duplicates the cover, so it is dropped. */
+body > h1:first-of-type { display: none; }
+h2 {
+  font-size: 16pt;
+  font-weight: 600;
+  margin: 11mm 0 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px solid var(--hairline);
+}
+h3 { font-size: 12pt; font-weight: 600; margin: 7mm 0 2mm; }
+h4 { font-size: 10.5pt; font-weight: 600; margin: 5mm 0 1.5mm; color: var(--muted); }
+
+p { margin: 0 0 3.2mm; orphans: 3; widows: 3; }
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+ul, ol { margin: 0 0 3.2mm; padding-left: 6mm; }
+li { margin-bottom: 1.4mm; }
+
+a { color: var(--accent); text-decoration: none; }
+
+blockquote {
+  margin: 4mm 0;
+  padding: 2mm 0 2mm 5mm;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+hr { border: 0; border-top: 1px solid var(--hairline); margin: 8mm 0; }
+
+/* ---- code ------------------------------------------------------------- */
+code {
+  font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  font-size: 0.87em;
+  background: var(--rail);
+  padding: 0.1em 0.35em;
+  border-radius: 2pt;
+}
+pre {
+  background: var(--rail);
+  border: 1px solid var(--hairline);
+  border-radius: 3pt;
+  padding: 3mm 4mm;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  font-size: 8.5pt;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---- tables ----------------------------------------------------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 5mm;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+thead { display: table-header-group; }
+th {
+  text-align: left;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8pt;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+}
+td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+  vertical-align: top;
+}
+tr { page-break-inside: avoid; }
+
+/* Keep a heading with the block that follows it. */
+h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
+</style></head><body>
+<section class="cover">
+  <p class="doctitle">Technical Design</p>
+  <h1 class="project">NestUp</h1>
+  <hr class="rule">
+  <p class="sub">Architecture, data model, business logic, and how it is built</p>
+  <div class="meta">
+    <strong>Internet Technologies — Become a Full-Stack Engineer</strong><br>
+    RUNI CS 2026 · Final project<br><br>
+    Live product &nbsp;<strong>nestup-kappa.vercel.app</strong><br>
+    Repository &nbsp;<strong>github.com/nestupweb/nestup</strong>
+  </div>
+</section>
+<h1>NestUp — Technical Design</h1>
+<p><strong>Stack:</strong> Next.js 16.3.2 (App Router) · TypeScript · Supabase (Postgres + Auth + Realtime + Storage) · Tailwind CSS v4 · Vercel</p>
+<hr />
+<h2>1. Architecture overview</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│ Browser                                                      │
+│  Server Components (HTML/RSC)  ·  Client Components (JS)     │
+│  Supabase Realtime socket (chat)  ·  MapLibre GL (on demand) │
+└───────────────┬──────────────────────────┬──────────────────┘
+                │ RSC / Server Actions      │ Realtime (WSS)
+┌───────────────▼──────────────────────────┼──────────────────┐
+│ Vercel — Next.js runtime                 │                  │
+│  proxy.ts (edge auth gate)               │                  │
+│  Server Components · Server Actions · Route Handlers         │
+│  Cache Components: &quot;use cache&quot; / &quot;use cache: private&quot;        │
+└───────────────┬──────────────────────────┼──────────────────┘
+                │ postgrest + RPC (JWT)     │
+┌───────────────▼──────────────────────────▼──────────────────┐
+│ Supabase (eu-central-1)                                      │
+│  Postgres 17 — 21 tables, RLS on every one, 72 policies      │
+│  36 SQL functions · 20 indexes · triggers                    │
+│  Auth (email+password) · Storage (photos, chat media)        │
+│  Realtime (messages, viewings)                               │
+└──────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>The central architectural decision is the following:</strong> the browser never queries the database as a trusted client. Every read passes through a Server Component and every write passes through a Server Action, and <em>underneath both of them</em>, Postgres Row Level Security decides what the caller is actually permitted to see or to modify. In other words, authorization is enforced in the database and not in the application. Therefore a bug in a page or in an action cannot expose the data of another member.</p>
+<h3>Why this stack was chosen</h3>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Next.js App Router</strong></td>
+<td>Server Components allow the data-heavy pages, such as a list of 20 rooms or a ranked deck, to render on the server and to send HTML instead of JSON followed by a client-side fetch. In addition, Server Actions remove the need to write an API layer manually for every mutation.</td>
+</tr>
+<tr>
+<td><strong>TypeScript</strong></td>
+<td>The domain contains many shapes which are nearly identical, such as <code>Profile</code>, <code>Listing</code> and <code>ConversationSummary</code>. Types catch exactly the confusions which a compiler is able to see. It is also required by the assignment.</td>
+</tr>
+<tr>
+<td><strong>Supabase</strong></td>
+<td>The decisive reason is Postgres with RLS. It provides a genuine relational database <em>together with</em> an authorization model which lives next to the data. Moreover, the fact that Auth, Storage and Realtime belong to the same product removes three separate integrations.</td>
+</tr>
+<tr>
+<td><strong>Zod</strong></td>
+<td>One schema is defined per input shape, and it is used both for validation and for deriving the TypeScript type. Consequently the two cannot drift apart.</td>
+</tr>
+<tr>
+<td><strong>Tailwind v4</strong></td>
+<td>Semantic design tokens are used (<code>bg-paper</code>, <code>text-ink</code>, <code>border-hairline</code>, <code>accent</code>) rather than raw palette colors, and this is what makes two themes possible without maintaining a second stylesheet.</td>
+</tr>
+<tr>
+<td><strong>MapLibre + CARTO</strong></td>
+<td>This combination is keyless and served through our own worker. Therefore there is no map vendor API key which could leak, and no dependency on a third-party CDN at runtime.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>2. Folder structure</h2>
+<pre><code>Final-Project/
+├── app/                        # Next.js App Router
+│   ├── (public)/               # No session required
+│   │   ├── page.tsx            #   / → redirects to /browse
+│   │   └── browse/             #   Listings index, room page, &quot;message the household&quot;
+│   ├── (app)/                  # Signed-in area (gated at the edge by proxy.ts)
+│   │   ├── swipe/              #   Personalized deck
+│   │   ├── chat/               #   Inbox layout + thread
+│   │   ├── profile/            #   Profile + edit
+│   │   ├── people/[id]/        #   Another member's profile
+│   │   ├── listing/            #   Create / edit a room
+│   │   ├── settings/           #   Account, privacy, notifications, danger zone
+│   │   └── loading.tsx         #   Route-group skeleton
+│   ├── (auth)/                 # Login, signup, verify, forgot/reset password
+│   ├── actions/                # 14 Server Action modules — every mutation
+│   ├── api/                    # Route Handlers (JSON, or non-action side effects)
+│   ├── auth/                   # confirm (email links) · signout (303 → full reload)
+│   └── layout.tsx              # Root layout: fonts, theme, nav, view transitions
+├── components/                 # 99 components, grouped by feature
+│   ├── auth/ (8)   chat/ (10)   listings/ (15)   map/ (11)
+│   └── profile/ (24)  settings/ (8)  swipe/ (4)  ui/ (19)
+├── lib/                        # 53 modules — domain logic, no JSX
+│   ├── supabase/               #   4 clients: server, browser, public (anon), middleware
+│   ├── validation/             #   6 Zod schemas
+│   ├── compatibility.ts        #   The scoring function
+│   ├── swipe.ts / swipe-deck.ts#   Deck construction (client-safe / server-only)
+│   ├── cache-tags.ts           #   Every cache tag in one place
+│   └── auth.ts                 #   Session helpers + cached readers
+├── supabase/
+│   ├── migrations/             # 43 SQL migrations, all applied to production
+│   └── templates/              # Auth email templates (versioned, not clicked into a UI)
+├── tests/unit/                 # 97 files, 740 tests
+├── scripts/                    # Seeding, geocoding, real-browser checks
+└── docs/submission/            # These documents
+</code></pre>
+<p><strong>The organizing rule is the following:</strong> <code>app/</code> decides <em>what a given URL renders</em>, <code>components/</code> is responsible for presentation, and <code>lib/</code> contains the domain logic which could be tested without a browser at all. Every module which touches <code>cookies()</code> is marked as <code>server-only</code>, so that it cannot be pulled into a client bundle by mistake.</p>
+<h3>Route groups, and the reason there are three of them</h3>
+<p>The groups <code>(public)</code>, <code>(app)</code> and <code>(auth)</code> do not appear in the URLs. They exist so that each set of pages can have its own layout and its own assumption regarding access. The <code>(app)</code> group is gated at the edge; the <code>(public)</code> group renders for anybody and reveals session-specific elements only inside a <code>&lt;Suspense&gt;</code> boundary; and the <code>(auth)</code> group has no navigation chrome at all.</p>
+<hr />
+<h2>3. Database design</h2>
+<p>The database contains 21 tables, with <strong>RLS enabled on every single one of them</strong>, 72 policies, 36 SQL functions and 20 indexes.</p>
+<h3>Core entities</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Rows (prod)</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>profiles</code></td>
+<td>845</td>
+<td>One row per member, holding identity, how the member lives, and what the member expects from roommates. The primary key is <code>auth.users.id</code>.</td>
+</tr>
+<tr>
+<td><code>profile_details</code></td>
+<td>8</td>
+<td>Private additional information: phone, contact email, social links, introduction template and visibility flags. It is a separate table because its RLS is stricter than that of <code>profiles</code>.</td>
+</tr>
+<tr>
+<td><code>listings</code></td>
+<td>824</td>
+<td>A room in a shared apartment. It is owned by one member and co-owned through <code>listing_residents</code>.</td>
+</tr>
+<tr>
+<td><code>listing_residents</code></td>
+<td>1,290</td>
+<td>The members who live in the household of a listing. This table is what turns a listing from the advertisement of one person into the advertisement of a household.</td>
+</tr>
+<tr>
+<td><code>listing_invites</code></td>
+<td>0</td>
+<td>Co-poster invitations. <strong>There is no insert, update or delete policy</strong> on this table; it is written only by two SECURITY DEFINER functions.</td>
+</tr>
+<tr>
+<td><code>conversations</code></td>
+<td>29</td>
+<td>One thread per (listing, seeker) pair, with a unique constraint on that pair.</td>
+</tr>
+<tr>
+<td><code>messages</code></td>
+<td>57</td>
+<td>Chat messages, including a <code>client_id</code> which allows an idempotent retry.</td>
+</tr>
+<tr>
+<td><code>conversation_reads</code></td>
+<td>29</td>
+<td>The read cursor of each member, which is what produces the unread counters.</td>
+</tr>
+<tr>
+<td><code>conversation_deletes</code></td>
+<td>12</td>
+<td>The "delete chat" cutoff of each member. The semantics are those of WhatsApp, meaning that the history is hidden for one side only.</td>
+</tr>
+<tr>
+<td><code>viewings</code></td>
+<td>17</td>
+<td>Apartment viewings which were proposed and approved inside a chat.</td>
+</tr>
+<tr>
+<td><code>swipes</code></td>
+<td>117</td>
+<td>Like and skip decisions, unique on (seeker, listing), so that a room never returns to the deck.</td>
+</tr>
+<tr>
+<td><code>saved_listings</code></td>
+<td>33</td>
+<td>Hearts, presented in the interface as "Liked".</td>
+</tr>
+<tr>
+<td><code>listing_views</code></td>
+<td>883</td>
+<td>History of which listings a member opened.</td>
+</tr>
+<tr>
+<td><code>listing_dwell</code></td>
+<td>24</td>
+<td>How long a card was actually looked at, which serves as an engagement signal.</td>
+</tr>
+<tr>
+<td><code>blocks</code></td>
+<td>2</td>
+<td>A mutual block, which removes both directions from the decks and from the search.</td>
+</tr>
+<tr>
+<td><code>reports</code></td>
+<td>0</td>
+<td>Reported members and listings.</td>
+</tr>
+<tr>
+<td><code>suspensions</code></td>
+<td>0</td>
+<td><strong>There is no write policy at all</strong> on this table; it is written only by <code>apply_report_suspension()</code>. Therefore a member cannot remove his or her own suspension.</td>
+</tr>
+<tr>
+<td><code>google_tokens</code></td>
+<td>0</td>
+<td>OAuth tokens used for calendar export. Accessible to the owner only.</td>
+</tr>
+<tr>
+<td><code>app_config</code></td>
+<td>1</td>
+<td>Server-side configuration values. It has no RLS policies, and it is reachable only through SECURITY DEFINER functions.</td>
+</tr>
+<tr>
+<td><code>auth_mail_throttle</code></td>
+<td>10</td>
+<td>Rate limiting for outgoing authentication email.</td>
+</tr>
+<tr>
+<td><code>matches</code></td>
+<td>0</td>
+<td>Reserved for mutual-match semantics; in practice it was superseded by conversations.</td>
+</tr>
+</tbody>
+</table>
+<h3>Design decisions which are worth defending</h3>
+<p><strong>The column <code>profiles.user_id</code> is simultaneously the primary key and a foreign key to <code>auth.users</code>.</strong> There is no separate profile identifier. As a result, every RLS policy in the schema is a comparison against <code>auth.uid()</code> without any join, and account deletion cascades correctly by construction.</p>
+<p><strong>Two tables are used for a single person, namely <code>profiles</code> and <code>profile_details</code>.</strong> The table <code>profiles</code> is readable by other members, since it is what the deck and the room page render. The table <code>profile_details</code> holds the phone number and the contact email and is accessible to the owner only, together with a <code>public_profile_details()</code> function which returns only those fields that the owner explicitly chose to expose. The consequence of this split is that the <em>default</em> is privacy: a new column added to <code>profile_details</code> does not accidentally become readable by the entire world.</p>
+<p><strong>The columns <code>household_size</code> and <code>household_gender</code> on <code>listings</code> are denormalized.</strong> They are maintained by triggers over <code>listing_residents</code>. They exist because both the browse filter and the deck require them on every row, and computing them per row would transform a single query into 800 queries.</p>
+<p><strong>Deletion is soft rather than hard.</strong> This is implemented through <code>listings.removed_at</code>, <code>listings.taken_at</code> and <code>conversation_deletes.cleared_at</code>. A room which no longer exists must not take its conversations with it, because the people who discussed that room still own that history. This is also the reason that there are two SELECT policies on <code>listings</code>: one for the public list, and one for the case of "I am linked to this listing through a conversation".</p>
+<p><strong>The column <code>messages.client_id</code>.</strong> The browser generates a UUID before sending the message. A retry which carries the same identifier collides with a unique index and returns the existing row instead of posting the message twice. This is precisely what makes the optimistic user interface safe on an unstable connection.</p>
+<h3>Indexes</h3>
+<p>There are 20 indexes, placed at the points where the query planner would otherwise perform a scan: <code>swipes(seeker_id, listing_id)</code>, <code>messages(conversation_id, created_at)</code>, <code>listings(is_active, city)</code>, <code>listing_views(user_id, viewed_at)</code>, <code>saved_listings(user_id)</code>, <code>blocks(blocker_id)</code>, <code>viewings(conversation_id)</code> and others. They are discussed in greater detail in the <a href="04-scale.md">Scale</a> document.</p>
+<hr />
+<h2>4. Key CRUD operations</h2>
+<p>Every mutation is implemented as a <strong>Server Action</strong>. There are no client-side database writes anywhere in the product.</p>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Create</th>
+<th>Read</th>
+<th>Update</th>
+<th>Delete</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Profile</strong></td>
+<td><code>saveProfileAction</code> (first save = onboarding)</td>
+<td><code>getCachedOwnProfile</code>, <code>/people/[id]</code></td>
+<td><code>saveProfileAction</code>, <code>saveAboutAction</code></td>
+<td><code>deleteAccountAction</code> (RPC <code>delete_own_account</code>)</td>
+</tr>
+<tr>
+<td><strong>Listing</strong></td>
+<td><code>saveListingAction</code></td>
+<td><code>queryListings</code>, <code>getListing</code></td>
+<td><code>saveListingAction</code></td>
+<td><code>removeListingAction</code> (soft), <code>setListingActiveAction</code> (pause), <code>markTakenAction</code></td>
+</tr>
+<tr>
+<td><strong>Photos</strong></td>
+<td><code>checkAndUploadPhotoAction</code> (AI-checked, then Storage)</td>
+<td>Public bucket URL</td>
+<td>Reorder in form</td>
+<td>Remove in form</td>
+</tr>
+<tr>
+<td><strong>Swipe</strong></td>
+<td><code>recordSwipeAction</code></td>
+<td><code>getCachedDeck</code></td>
+<td>Upsert on conflict</td>
+<td>— (a decision is permanent)</td>
+</tr>
+<tr>
+<td><strong>Saved</strong></td>
+<td><code>setSavedAction</code></td>
+<td><code>getSavedListingIds</code></td>
+<td>—</td>
+<td><code>setSavedAction(false)</code></td>
+</tr>
+<tr>
+<td><strong>Conversation</strong></td>
+<td><code>findOrCreateConversation</code></td>
+<td><code>getCachedInbox</code>, thread page</td>
+<td><code>markReadAction</code></td>
+<td><code>deleteConversationAction</code> (per-member cutoff)</td>
+</tr>
+<tr>
+<td><strong>Message</strong></td>
+<td><code>sendMessageAction</code></td>
+<td>Thread page + Realtime</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Viewing</strong></td>
+<td><code>proposeViewingAction</code></td>
+<td>Thread page</td>
+<td><code>respondViewingAction</code></td>
+<td>Cancel via status</td>
+</tr>
+<tr>
+<td><strong>Invite</strong></td>
+<td><code>inviteRoommates</code> (RPC)</td>
+<td><code>getPendingInvites</code></td>
+<td><code>respondToInviteAction</code> (RPC)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Moderation</strong></td>
+<td><code>reportAction</code>, <code>blockUserAction</code></td>
+<td><code>getBlocked</code></td>
+<td>—</td>
+<td><code>unblockUserAction</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The reason for preferring Server Actions over REST for mutations</strong> is that an action is a typed function which the component imports directly. Hence there is no URL which must be kept synchronized, no request or response shape which must be written by hand, and no possibility of calling the action without the framework attaching the session to it. The four Route Handlers which nevertheless do exist are exactly those cases in which an action does not fit.</p>
+<hr />
+<h2>5. API surface</h2>
+<h3>Route Handlers (<code>app/api/</code>, <code>app/auth/</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Method</th>
+<th>Why it is a handler and not an action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/listings</code></td>
+<td>GET</td>
+<td>It is queried by client-side code and therefore requires a JSON response</td>
+</tr>
+<tr>
+<td><code>/api/listings/pins</code></td>
+<td>GET</td>
+<td>All placed rooms for the map, approximately 150 KB, fetched only when the map is opened</td>
+</tr>
+<tr>
+<td><code>/api/listings/[id]/invites</code></td>
+<td>GET</td>
+<td>Co-poster state for the listing form</td>
+</tr>
+<tr>
+<td><code>/api/invites</code>, <code>/api/invites/[id]</code></td>
+<td>GET/POST</td>
+<td>The invitation list and the response to an invitation</td>
+</tr>
+<tr>
+<td><code>/api/places</code></td>
+<td>GET</td>
+<td>Proxies Overpass for cafés and shops near a room, and therefore <strong>keeps the upstream call on the server side</strong></td>
+</tr>
+<tr>
+<td><code>/api/google/connect</code>, <code>/api/google/callback</code></td>
+<td>GET</td>
+<td>The OAuth redirect flow, which requires the browser to be redirected to this location</td>
+</tr>
+<tr>
+<td><code>/auth/confirm</code></td>
+<td>GET</td>
+<td>The destination at which every emailed authentication link arrives</td>
+</tr>
+<tr>
+<td><code>/auth/signout</code></td>
+<td>POST</td>
+<td>It must answer with <strong>303</strong>, so that the browser performs a full document load and consequently discards all client caches</td>
+</tr>
+</tbody>
+</table>
+<p><strong>API routes verify authorization inside the handler itself.</strong> The edge proxy protects page routes only, because an API caller must receive a JSON 401 response and not an HTML redirect to <code>/login</code>.</p>
+<h3>SQL functions (RPC)</h3>
+<p>There are 36 functions. The important ones are declared as <code>SECURITY DEFINER</code>, meaning that they run with elevated rights precisely in order that the <em>table</em> itself may have no write policy whatsoever:</p>
+<ul>
+<li><code>my_conversations()</code> and <code>my_unread_count()</code>, which produce the inbox and the badge and are scoped by RLS internally</li>
+<li><code>mark_conversation_read()</code> and <code>clear_conversation()</code>, which handle the read cursor and the per-member delete</li>
+<li><code>delete_own_account(p_heir)</code>, which deletes the account and <strong>transfers a shared listing to a roommate within the same transaction</strong></li>
+<li><code>invite_listing_roommates()</code> and <code>respond_to_listing_invite()</code>, which are the only writers to <code>listing_invites</code></li>
+<li><code>apply_report_suspension()</code>, which is the only writer to <code>suspensions</code></li>
+<li><code>public_profile_details()</code>, which returns only those fields that a member chose to expose</li>
+<li><code>blocked_user_ids()</code>, <code>is_blocked()</code>, <code>is_suspended()</code> and <code>linked_to_listing()</code>, which serve as policy helpers</li>
+</ul>
+<p>This is the pattern which is most worth explaining: <strong>when a table must only ever be written in one specific manner, it should be given no write policy at all and exactly one definer function.</strong> Under this arrangement there is simply no path which leads to an incorrect write, which is a stronger guarantee than a policy that attempts to enumerate every possible incorrect write.</p>
+<hr />
+<h2>6. Core business logic</h2>
+<h3>6.1 Compatibility scoring (<code>lib/compatibility.ts</code>)</h3>
+<p>There are two independent scores, and both of them range from 0 to 100.</p>
+<p><strong>Lifestyle</strong> is a weighted sum whose weights add up to 100:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Weight</th>
+<th>Component</th>
+<th>Weight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Budget</td>
+<td>20</td>
+<td>Sleep schedule</td>
+<td>6</td>
+</tr>
+<tr>
+<td>City</td>
+<td>18</td>
+<td>Guests</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Move-in date</td>
+<td>10</td>
+<td>Noise</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Smoking</td>
+<td>10</td>
+<td>Diet</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Cleanliness</td>
+<td>10</td>
+<td>Shabbat</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Pets</td>
+<td>8</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Social</strong> is the overlap between the declared interests of the two sides.</p>
+<p>Two conventions carry most of the design:</p>
+<ol>
+<li><strong>A missing preference receives approximately 60% of its weight rather than zero.</strong> The statement "I did not answer" is not equivalent to the statement "we disagree". Scoring it as a mismatch would penalize incomplete profiles and would cause the deck to reward the filling of forms rather than genuine fit.</li>
+<li><strong>Scoring is directional.</strong> The <code>Perspective</code> parameter is either <code>"seeker"</code> or <code>"lister"</code>, because each side evaluates <em>its own</em> preferences against <em>the reality of the other side</em>. A seeker who tolerates guests, together with a household which hosts guests frequently, constitutes a good match from the point of view of the seeker; the reverse question is a different question entirely.</li>
+</ol>
+<h3>6.2 The deck (<code>lib/swipe.ts</code>, <code>lib/swipe-deck.ts</code>)</h3>
+<ol>
+<li><strong>Hard filters.</strong> The city of the room must be one of the preferred cities of the seeker. In addition, the system excludes rooms which were already swiped, rooms belonging to the seeker, rooms which are paused, removed or taken, and anything belonging to a blocked member.</li>
+<li><strong>Scoring</strong> of both dimensions.</li>
+<li><strong>Threshold:</strong> if <code>sortKey(lifestyle, social) &lt; MIN_DECK_SCORE (60)</code>, the room is dropped entirely.</li>
+<li><strong>Ranking</strong> by <code>sortKey</code>, with a cap at <code>DECK_SIZE</code>, which equals 60.</li>
+</ol>
+<p>The threshold is the product decision. It is the reason that the deck may legitimately be empty, and therefore the reason that a "no strong matches yet" state had to be designed properly rather than treated as an error condition.</p>
+<p>The division into two modules is a real technical constraint and not merely tidiness. The module <code>lib/swipe.ts</code> is imported by client components and must therefore be safe inside a browser bundle, whereas <code>lib/swipe-deck.ts</code> is marked <code>server-only</code> and holds the Supabase client which reads cookies.</p>
+<h3>6.3 Household semantics</h3>
+<ul>
+<li>One person has one home: a unique index guarantees that an owner has at most one active listing.</li>
+<li>The owner of a listing cannot be reassigned through a normal <code>UPDATE</code>, because a trigger refuses this. Only the account-deletion handover, which opens a transaction-local GUC, is permitted to perform it.</li>
+<li>Deleting an account transfers a co-owned listing to an eligible roommate instead of cascading it away.</li>
+</ul>
+<hr />
+<h2>7. State management</h2>
+<p>The project contains <strong>no state management library</strong>. There is no Redux, no Zustand and no React Query. This is a deliberate choice, and the reasoning behind it is the clearest example of the model of the App Router producing a real benefit:</p>
+<table>
+<thead>
+<tr>
+<th>Kind of state</th>
+<th>Where it lives</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Server data</strong></td>
+<td>Server Components. It is not client state at all; it is rendered output.</td>
+</tr>
+<tr>
+<td><strong>Cached server data</strong></td>
+<td>Next.js Cache Components, using <code>"use cache"</code> for shared data and <code>"use cache: private"</code> for per-browser data, invalidated by tag.</td>
+</tr>
+<tr>
+<td><strong>Form state</strong></td>
+<td><code>useActionState</code>, wrapped by <code>useStickyForm</code>, so that a rejected form retains whatever the user typed.</td>
+</tr>
+<tr>
+<td><strong>Ephemeral UI state</strong></td>
+<td><code>useState</code>, used for open dialogs, the current swipe card and filter drafts.</td>
+</tr>
+<tr>
+<td><strong>URL state</strong></td>
+<td><code>searchParams</code>, used for filters, sorting, page number and the active tab. It is therefore shareable and correct with respect to the back button by construction.</td>
+</tr>
+<tr>
+<td><strong>Realtime</strong></td>
+<td>A Supabase subscription which invalidates a cache tag, after which the server re-renders.</td>
+</tr>
+</tbody>
+</table>
+<p>Adding a client cache library would have meant maintaining a second copy of the data of the server, together with its own separate invalidation rules. The cache-tag system already performs that role, in a single place (<code>lib/cache-tags.ts</code>), while the server remains the single source of truth.</p>
+<h3>The caching layer</h3>
+<p>There are five cached reads, each of which has a tag and a lifetime:</p>
+<table>
+<thead>
+<tr>
+<th>Read</th>
+<th>Cache</th>
+<th>Tag</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>queryListings</code></td>
+<td>shared</td>
+<td><code>listings</code></td>
+</tr>
+<tr>
+<td><code>getSavedListingIds</code></td>
+<td>private</td>
+<td><code>saved:&lt;userId&gt;</code></td>
+</tr>
+<tr>
+<td><code>getProfileTabData</code></td>
+<td>private</td>
+<td><code>profile:&lt;userId&gt;</code></td>
+</tr>
+<tr>
+<td><code>getCachedDeck</code></td>
+<td>private</td>
+<td><code>deck:&lt;userId&gt;</code></td>
+</tr>
+<tr>
+<td><code>getCachedInbox</code></td>
+<td>private</td>
+<td><code>chat:&lt;userId&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Results produced under <code>"use cache: private"</code> live <strong>only in the memory of the requesting browser</strong> and are never written into a shared server store, which is exactly what makes it safe to cache the deck and the inbox of an individual member. Every mutation calls <code>updateTag</code> for precisely what it modified, and therefore adding a room to the liked list does not discard the chats of that member.</p>
+<hr />
+<h2>8. Error handling</h2>
+<p><strong>Server Actions return errors; they do not throw them.</strong> Every action returns a discriminated union, either <code>{ ok: true, … } | { ok: false, error: string }</code> or <code>{ error?: string }</code>, so that the form is able to render the message next to the relevant field. A thrown error would produce an error boundary, which is the correct response to a bug but the incorrect response to a wrong password.</p>
+<p>Error handling is layered:</p>
+<ol>
+<li><strong>Database constraints and RLS</strong> form the last line of defense. A refused write returns an error code which the action translates. For example, <code>delete_own_account</code> raises the hints <code>pick_heir</code> and <code>bad_heir</code>, which the action converts into the message "Choose which roommate takes over your listing."</li>
+<li><strong>Server Actions</strong> validate using Zod, return field-level messages, and never expose internal details. As a special case, <code>sendMessageAction</code> treats Postgres error <code>23505</code>, which indicates a unique violation, as <em>success</em>, because that identifier had already been delivered.</li>
+<li><strong>Route Handlers</strong> return JSON together with an appropriate status code, and specifically 401 for unauthenticated API callers.</li>
+<li><strong>React error boundaries</strong>, for example <code>app/(public)/browse/error.tsx</code>.</li>
+<li><strong>Deliberate non-failures.</strong> The function <code>getUnreadCount()</code> catches everything and returns 0. It is only a decoration on a badge and is handed to the layout without being awaited; an unhandled rejection there would bring down an entire page merely because of a number.</li>
+</ol>
+<p><strong>Error messages state what the user should do next.</strong> The message "That code is wrong or has expired. Check the email, or send a new one" is considerably more useful than the message "Invalid OTP".</p>
+<hr />
+<h2>9. Input validation</h2>
+<p><strong>Every input is validated twice, in two different places, and this is intentional.</strong></p>
+<ol>
+<li><strong>Client side.</strong> HTML constraints together with immediate feedback. This exists for convenience only and is assumed to be bypassable.</li>
+<li><strong>Server side, using Zod.</strong> There are six schemas in <code>lib/validation/</code>, namely <code>profile</code>, <code>listing</code>, <code>message</code>, <code>filters</code>, <code>about</code> and <code>report</code>. The Server Action parses the input before touching the database. The TypeScript type is <em>inferred from the schema</em>, and therefore validation and types cannot drift apart.</li>
+<li><strong>Database level.</strong> <code>CHECK</code> constraints are used (<code>age between 18 and 120</code>, <code>bio &lt;= 500</code>, <code>cleanliness between 1 and 5</code>, <code>budget_max = 0 or budget_max &gt;= budget_min</code>), together with enums, foreign keys and unique indexes.</li>
+</ol>
+<p>The following hardening measures are worth naming explicitly:</p>
+<ul>
+<li><strong>URL parameters are parsed rather than trusted.</strong> The schema <code>listingFiltersSchema</code> uses <code>.catch()</code> throughout, so that a manually edited parameter such as <code>?safe_room=nonsense</code> falls back to the value "unset" instead of producing an error.</li>
+<li><strong>Open redirects are prevented.</strong> The function <code>sanitizeNextPath()</code> guards every <code>?next=</code> parameter, and only same-site paths survive it.</li>
+<li><strong>File uploads.</strong> The type and the size are checked on the client and then re-checked on the server. Furthermore, a chat photo must reside under the storage prefix of its own conversation.</li>
+<li><strong>Photo content.</strong> The action <code>checkAndUploadPhotoAction</code> sends the bytes to Gemini and stores the file <strong>only if</strong> the image genuinely matches its declared tag. Consequently a bedroom slot cannot contain a picture of a car.</li>
+</ul>
+<hr />
+<h2>10. UX design</h2>
+<h3>Principles</h3>
+<ul>
+<li><strong>Mobile first.</strong> Most people search for a room using a phone. The interface therefore uses a floating pill bottom navigation, and the navigation hides itself while a chat thread is open so that the composer owns the bottom edge of the screen.</li>
+<li><strong>Two themes.</strong> Editorial, which is the light theme, and Noir, which is the dark theme and in which the accent color becomes gold. Both are driven entirely by semantic tokens.</li>
+<li><strong>A single typeface</strong>, namely Inter, is used everywhere.</li>
+<li><strong>Nothing renders as "empty by accident".</strong> Every empty state explains what happened and what the user should do about it. An empty deck is the result of a strict filter and not the result of a broken page.</li>
+</ul>
+<h3>Navigation</h3>
+<p>There are four destinations: <strong>Swipe, Listings, Chat and Profile.</strong> Movement from one tab to another slides left or right according to the tab order, using the View Transitions API, whereas every other navigation performs a crossfade.</p>
+<h3>Perceived performance</h3>
+<p>The pages are structured so that the static frame is sent first and only the member-specific portion is streamed afterwards:</p>
+<ul>
+<li>The layouts read no session at all, and therefore the shell is included in the prerender.</li>
+<li>Data-heavy sections are placed behind <code>&lt;Suspense&gt;</code> together with skeletons shaped like the real content, so that the replacement is experienced as a fill rather than as a jump.</li>
+<li>Cached reads travel together with the prefetched App Shell, and consequently returning to Swipe, Chat or Profile takes <strong>approximately 60 ms with no skeleton at all</strong>, as measured on production.</li>
+</ul>
+<h3>Deliberate restraint</h3>
+<p><strong>No map is drawn until an icon is pressed.</strong> MapLibre is a large dependency, and the majority of visits never open a map. Loading it eagerly would therefore impose a cost on every visit for the sake of a feature which is used only on some of them.</p>
+<hr />
+</body></html>

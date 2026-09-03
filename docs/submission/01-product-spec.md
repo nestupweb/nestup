@@ -8,142 +8,147 @@
 
 ## 1. The problem
 
-Finding a room in a shared apartment is not really a search problem. The listings are easy to find — they are on Facebook groups, Yad2 and WhatsApp. What is hard is that **a room is not the thing you are choosing. The people are.**
+Finding a room in a shared apartment is not actually a search problem. The listings themselves are easy to find, since they are published on Facebook groups, on Yad2 and in WhatsApp groups. The real difficulty is that **the room is not what a person is choosing. The people are.**
 
-The existing tools get this backwards. They index apartments: rent, rooms, square metres, neighbourhood. Everything that actually decides whether a shared flat works — when people sleep, how often guests come over, whether the kitchen is kept clean, whether someone smokes indoors, whether the flat keeps Shabbat — is either missing or buried in free text that nobody can filter on.
+Existing tools approach this from the wrong direction. They index apartments according to rent, number of rooms, size in square meters and neighborhood. All of the factors that actually determine whether a shared apartment will work, such as sleeping hours, how frequently guests arrive, how clean the kitchen is kept, whether someone smokes indoors, and whether the apartment keeps Shabbat, are either missing entirely or written in free text which cannot be filtered.
 
-The result is a process that wastes everyone's time on both sides:
+The result is a process which wastes time on both sides:
 
-- **The seeker** messages thirty listings, gets eight replies, visits four apartments, and discovers the incompatibility in person — after travelling across the city.
-- **The household** fields dozens of near-identical "hi, is it still available?" messages, repeats the same screening questions to each one, and still ends up meeting people who were never going to fit.
+- **The seeker** sends messages to thirty listings, receives eight replies, visits four apartments, and only then discovers the incompatibility in person, after having traveled across the city.
+- **The household** receives dozens of nearly identical messages asking whether the room is still available, repeats the same screening questions to each one of them, and nevertheless ends up meeting people who were never suitable in the first place.
 
-Both sides are doing manual filtering that a computer could do for them, and both sides are doing it *after* the expensive step (travelling, meeting) rather than before it.
+Both sides therefore perform manual filtering which a computer could perform on their behalf, and both sides perform it *after* the expensive step of traveling and meeting, rather than before it.
 
-There is a second, quieter problem. Once a conversation does start, it usually starts with **one** roommate — normally whoever posted the ad — while the decision belongs to the whole household. The other roommates hear a summary. NestUp treats the household, not the poster, as the counterparty.
+There is a second problem, which is less obvious. Once a conversation does begin, it normally begins with **one** roommate, usually the person who published the advertisement, even though the decision belongs to the entire household. The remaining roommates receive only a summary of what was said. For this reason NestUp treats the household, and not the individual poster, as the counterparty.
 
 ## 2. Who the users are
 
-NestUp is a **two-sided product**. The same person can be on both sides at different points in their life, and the same account supports both without switching modes.
+NestUp is a **two-sided product**. The same person may be on both sides at different stages of life, and a single account supports both roles without requiring the user to switch between modes.
 
 ### Side A — the Seeker
 
-Someone looking for a room in an existing shared apartment.
+A person who is looking for a room in an existing shared apartment.
 
-- Typically 22–35: students, young professionals, people relocating for work.
-- Cares about: monthly rent, location, move-in date, and — the part other products ignore — who they will be living with.
-- Their scarce resource is **time and travel**. Every apartment visit costs an evening.
-- Their fear is committing to a year with people they cannot live with.
+- Typically between the ages of 22 and 35: students, young professionals, and people relocating for work.
+- Cares about monthly rent, location, move-in date, and, which is the part that other products ignore, the identity of the people he or she will be living with.
+- The scarce resource of this user is **time and travel**. Every apartment visit costs an entire evening.
+- The main fear of this user is committing to a full year with people who turn out to be impossible to live with.
 
 ### Side B — the Household (Lister)
 
-An existing shared apartment with a room to fill.
+An existing shared apartment which has a room to fill.
 
-- One member posts the room, but the room belongs to the household.
-- Cares about: filling the room quickly, and filling it with someone who will not disrupt a flat that already works.
-- Their scarce resource is **attention**. They cannot interview forty people.
-- Their fear is a bad roommate they are then stuck with.
+- One member publishes the room, but the room belongs to the household as a whole.
+- Cares about filling the room quickly, and about filling it with a person who will not disrupt an apartment which already functions well.
+- The scarce resource of this user is **attention**. A household cannot interview forty candidates.
+- The main fear of this user is accepting an unsuitable roommate and then being unable to remove him or her.
 
 ### Who the customer is
 
-For this project the **user and the customer are the same person**, and the product is free at the point of use. This is deliberate: a two-sided marketplace has no value to either side until it has liquidity on both, so charging early would suppress the very thing that makes it work.
+In this project the **user and the customer are the same person**, and the product is free at the point of use. This decision is deliberate. A two-sided marketplace has no value for either side until it achieves liquidity on both sides, and therefore charging money at an early stage would suppress the very mechanism which makes the product work.
 
-The customer NestUp would be *built toward* is the **household with a vacancy**, because that is the side with urgency and a measurable cost of failure — an empty room is rent someone is paying out of pocket every month it stays empty. That is the side with willingness to pay, and the monetisation section below assumes it.
+The customer that NestUp would eventually be built toward is the **household with a vacancy**, because this is the side which has urgency and a measurable cost of failure. An empty room represents rent which somebody is paying out of pocket for every month that it remains empty. This is therefore the side with a genuine willingness to pay, and the monetization discussion below assumes exactly this.
 
 ## 3. Business goals
 
 | Goal | Why it matters | How the product serves it |
 |---|---|---|
-| **Reduce wasted first meetings** | The core value promise. If a seeker visits three apartments instead of ten and still finds a home, the product has paid for itself in evenings. | Compatibility scoring, and a swipe deck that only shows strong matches |
-| **Build two-sided liquidity** | A matching product with rooms and no seekers, or seekers and no rooms, is worth nothing. | Public browsing with no signup wall; low-friction listing creation |
-| **Make the household the counterparty** | Differentiator, and a genuinely better process. | Household-wide chat threads; co-posted listings; listing survives its poster |
-| **Keep members inside the product** | If the conversation moves to WhatsApp on first contact, we lose the relationship and every signal with it. | In-app chat with realtime delivery, photo/video sharing, and viewing scheduling built into the thread |
-| **Earn trust** | People are sharing where they live and who they are. One bad incident costs more than ten good matches earn. | Real authentication, per-row access control, reporting, blocking, suspension |
+| **Reduce wasted first meetings** | This is the core value promise. If a seeker visits three apartments instead of ten and still finds a home, the product has already justified itself in saved evenings. | Compatibility scoring, together with a swipe deck which presents strong matches only |
+| **Build two-sided liquidity** | A matching product which has rooms but no seekers, or seekers but no rooms, provides no value at all. | Public browsing without a registration barrier; listing creation with low friction |
+| **Make the household the counterparty** | This is both a differentiator and a genuinely better process. | Household-wide chat threads; co-owned listings; a listing which survives its original poster |
+| **Keep members inside the product** | If the conversation moves to WhatsApp immediately after first contact, the product loses the relationship and every signal associated with it. | In-app chat with realtime delivery, photo and video sharing, and viewing scheduling built directly into the thread |
+| **Earn trust** | Members are sharing where they live and who they are. A single bad incident costs more than ten successful matches produce. | Real authentication, per-row access control, reporting, blocking, and suspension |
 
-### How this would make money (not built — stated as intent)
+### How the product would generate revenue (not implemented; stated as intent)
 
-The natural model is **paid promotion on the household side**: a listing that is not filling can pay to be placed higher in seekers' decks. It aligns with the value delivered — the product only charges when it is demonstrably doing the work — and it charges the side with urgency. A secondary line is a verification badge for both sides.
+The natural model is **paid promotion on the household side**. A listing which is not filling could pay in order to be positioned higher in the decks of seekers. This model is aligned with the value that is actually delivered, because the product only charges money when it is demonstrably performing the work, and it charges the side which has urgency. A secondary revenue line would be a verification badge, offered to both sides.
 
-Nothing in the current product charges anyone. The schema and the ranking function would both need to change to support it, and that is noted honestly in the scale document as future work rather than implied to exist.
+It should be emphasized that nothing in the current product charges anybody. Both the database schema and the ranking function would need to be modified in order to support this, and this fact is stated honestly in the scale document as future work rather than presented as something which already exists.
 
 ## 4. Software capabilities required
 
-Working backwards from the goals above, these are the capabilities the product had to have.
+Working backwards from the goals described above, the following are the capabilities which the product was required to have.
 
 ### 4.1 Identity and trust
-- Email + password authentication with **mandatory email confirmation** (a deliberate decision — it is the cheapest barrier against throwaway accounts in a product where people meet in real life).
+
+- Email and password authentication with **mandatory email confirmation**. This is a deliberate decision, since it is the least expensive barrier against disposable accounts in a product where people eventually meet in real life.
 - Password recovery.
-- A profile that carries enough about a person to match on.
+- A profile which carries sufficient information about a person to allow matching.
 - Reporting, blocking, and account suspension.
-- Account deletion that does not destroy other people's data.
+- Account deletion which does not destroy the data of other members.
 
 ### 4.2 Supply: rooms
-- Create, edit, pause, mark-as-taken and remove a listing.
-- Photos, with a check that a photo of a bedroom is actually a bedroom.
+
+- Creating, editing, pausing, marking as taken and removing a listing.
+- Photographs, including a check that a photograph of a bedroom genuinely shows a bedroom.
 - A real geographic location.
-- Multiple roommates able to co-own one listing.
+- Support for multiple roommates who co-own a single listing.
 
 ### 4.3 Demand: discovery
-- Public browsing, filterable and sortable, with no account required.
-- A map of every placed room.
-- A personalised swipe deck for signed-in members with a complete profile.
+
+- Public browsing, with filtering and sorting, which does not require an account.
+- A map showing every room which has a placed location.
+- A personalized swipe deck for signed-in members who have completed their profile.
 
 ### 4.4 The matching itself
-- A **Lifestyle** score: budget, city, move-in date, smoking, pets, cleanliness, sleep schedule, guests, noise, diet, Shabbat.
-- A **Social** score: shared interests.
-- A gate so the deck shows strong matches only, rather than everything sorted.
+
+- A **Lifestyle** score, calculated from budget, city, move-in date, smoking, pets, cleanliness, sleep schedule, guests, noise, diet and Shabbat.
+- A **Social** score, calculated from shared interests.
+- A threshold which causes the deck to present strong matches only, rather than presenting everything in sorted order.
 
 ### 4.5 Communication
-- One chat thread per (listing, seeker) pair, containing the **whole household**.
-- Realtime delivery, read state, unread counts.
+
+- One chat thread per (listing, seeker) pair, which contains the **entire household**.
+- Realtime delivery, read state, and unread counters.
 - Photo and video messages.
-- Viewing proposal / approval inside the thread, with optional Google Calendar export.
+- Viewing proposal and approval inside the thread, with optional export to Google Calendar.
 
 ## 5. Main user flows
 
-### 5.1 Seeker: discover → match → meet
+### 5.1 Seeker: discover, match, and meet
 
-1. **Browse without an account.** `/browse` is public. Filter by city, rent, move-in date, lease length, roommate count, pets, smoking, balcony, A/C, parking, elevator, furnished, safe room. Sort by newest or price. Open the map to see every placed room at once.
-2. **Open a room.** Photos, full details, who already lives there, and a map of the room and its neighbours.
-3. **Sign up and build a profile.** Name, age, occupation, bio, photo; budget, preferred cities, move-in date, lease length; the Daily-life questionnaire (how *I* live) and roommate preferences (what I want in others); interests.
-4. **Swipe.** `/swipe` shows a ranked deck of rooms scoring ≥ 60 combined. Like or skip. A like optionally opens a chat with a pre-filled hello.
-5. **Chat with the household.** Every roommate is in the thread.
-6. **Schedule a viewing** inside the chat. The household approves, and either side can export it to Google Calendar.
+1. **Browsing without an account.** The `/browse` route is public. The user can filter by city, rent, move-in date, lease length, number of roommates, pets, smoking, balcony, air conditioning, parking, elevator, furnishing and safe room, and can sort by newest or by price. The map view presents every placed room at once.
+2. **Opening a room.** The user sees photographs, full details, the identity of the people who already live there, and a map showing the room together with its neighbors.
+3. **Registering and building a profile.** The user provides name, age, occupation, biography and photograph; budget, preferred cities, move-in date and lease length; the Daily-life questionnaire, which describes how the user personally lives; roommate preferences, which describe what the user expects from others; and interests.
+4. **Swiping.** The `/swipe` route presents a ranked deck of rooms whose combined score is 60 or above. The user may like or skip each one. A like optionally opens a chat containing a pre-filled greeting.
+5. **Chatting with the household.** Every roommate participates in the thread.
+6. **Scheduling a viewing** from inside the chat. The household approves the proposal, and either side may export it to Google Calendar.
 
-### 5.2 Household: list → screen → fill
+### 5.2 Household: publish, screen, and fill
 
-1. **Create a listing.** Address (geocoded, or drag the pin), rent, rooms, size, available-from date, lease term, amenities, house rules, up to five photos.
-2. **Tag the roommates** who live there. Each gets an invitation; accepting makes them a co-owner who can edit the listing and appears in the household.
-3. **Receive interest** — likes and messages, all in one inbox.
-4. **Screen with real information.** Every seeker who writes has a profile with a compatibility score against the room.
-5. **Approve a viewing** from within the chat.
-6. **Close the room** — mark taken, pause, or remove. Existing chats survive.
+1. **Creating a listing.** The household provides an address, which is geocoded automatically or positioned by dragging the pin, together with rent, number of rooms, size, available-from date, lease term, amenities, house rules and up to five photographs.
+2. **Tagging the roommates** who live in the apartment. Each of them receives an invitation, and accepting it makes that person a co-owner who may edit the listing and who appears as part of the household.
+3. **Receiving interest**, meaning likes and messages, all of which arrive in a single inbox.
+4. **Screening with real information.** Every seeker who writes a message has a profile which carries a compatibility score against the specific room.
+5. **Approving a viewing** from within the chat.
+6. **Closing the room**, by marking it as taken, pausing it or removing it. Existing conversations continue to exist in all three cases.
 
 ### 5.3 Cross-cutting flows
 
-- **Account management:** notification and contact-visibility settings, blocked-member list, email/password change, account deletion (which hands a shared listing to a roommate rather than deleting it).
-- **Moderation:** report a member or a listing; blocking is mutual and removes them from both decks; a suspension closes the app immediately.
+- **Account management:** notification settings and contact-visibility settings, the list of blocked members, changing the email address or password, and account deletion, which transfers a shared listing to a roommate instead of deleting it.
+- **Moderation:** reporting a member or a listing. Blocking is mutual and removes the blocked member from both decks, and a suspension closes the application immediately.
 
-## 6. What is deliberately not in scope
+## 6. What is deliberately outside the scope
 
-Stating these matters as much as the feature list — the assignment asks for clear thinking, not maximum surface area.
+Stating these items is as important as stating the feature list, because the assignment asks for clear thinking rather than for the maximum possible surface area.
 
-- **No payments.** No deposits, no rent collection, no escrow. Money moves outside the product.
-- **No contracts or e-signature.** A lease is a legal instrument; faking one would be worse than omitting it.
-- **No identity verification.** Email confirmation only. Real KYC needs a vendor and a budget.
-- **No native mobile app.** The web app is mobile-first and installable as a PWA.
-- **No recommendation learning.** Ranking is a deterministic scoring function, not a trained model. It is explainable, testable, and debuggable — which at this stage is worth more than being marginally better.
+- **No payments.** There are no deposits, no rent collection and no escrow. Money moves outside the product.
+- **No contracts and no electronic signature.** A lease is a legal instrument, and producing an imitation of one would be worse than omitting it entirely.
+- **No identity verification.** Only email confirmation is performed. Genuine KYC requires an external vendor and a budget.
+- **No native mobile application.** The web application is mobile-first and can be installed as a PWA.
+- **No machine learning in the recommendations.** Ranking is performed by a deterministic scoring function and not by a trained model. Consequently it is explainable, testable and debuggable, which at this stage is more valuable than being marginally more accurate.
 
 ## 7. How success would be measured
 
-Were this real, these are the numbers that would matter — chosen so that the product cannot look successful while failing its users.
+If this were a real product, the following are the metrics which would matter. They were chosen specifically so that the product cannot appear successful while it is in fact failing its users.
 
-| Metric | Why this one |
+| Metric | Why this metric was chosen |
 |---|---|
-| Viewings per successful match | The core promise. Lower is better. |
-| Share of decks that are not empty | A personalised deck that shows nothing is the main failure mode of a strict match gate. |
-| Time from listing published to room filled | The household's actual problem. |
-| Reply rate to first message | Whether the two sides are genuinely well matched, or just matched. |
-| Reports per thousand conversations | Trust. A rise here outweighs a rise in everything else. |
+| Viewings per successful match | This is the core promise of the product, and a lower value is better. |
+| Proportion of decks which are not empty | An empty personalized deck is the principal failure mode of a strict matching threshold. |
+| Time from publication of a listing until the room is filled | This is the actual problem of the household. |
+| Reply rate to the first message | This indicates whether the two sides are genuinely well matched, and not merely matched. |
+| Reports per thousand conversations | This measures trust. An increase in this metric outweighs an improvement in all of the others. |
 
 ---
 

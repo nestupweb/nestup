@@ -26,7 +26,7 @@ DOCS = {
     "02-technical-design.md": ("Technical Design", "Architecture, data model, business logic, and how it is built"),
     "03-test-spec.md": ("Test Specification", "What is tested, why, and what is not"),
     "04-scale.md": ("Scale", "Heavy queries, indexes, caching, measured results, and limits"),
-    "05-security.md": ("Security", "Authentication, authorisation, secrets, and remaining risks"),
+    "05-security.md": ("Security", "Authentication, authorization, secrets, and remaining risks"),
 }
 
 CSS = """

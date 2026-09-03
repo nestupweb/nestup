@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Test Specification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+@page {
+  size: A4;
+  margin: 20mm 18mm 18mm;
+}
+
+:root {
+  --ink: #201d1a;
+  --muted: #5c5751;
+  --accent: #2e7d5e;
+  --hairline: #e2ddd4;
+  --rail: #f2efe8;
+  --paper: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 10.5pt;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---- cover ------------------------------------------------------------ */
+.cover {
+  page-break-after: always;
+  height: 245mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cover .project {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 46pt;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0 0 6mm;
+}
+.cover .doctitle {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 22pt;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0 0 3mm;
+}
+.cover .sub { font-size: 12pt; color: var(--muted); max-width: 120mm; margin: 0 0 14mm; }
+.cover .rule { border: 0; border-top: 2px solid var(--accent); width: 26mm; margin: 0 0 14mm; }
+.cover .meta { font-size: 9.5pt; color: var(--muted); line-height: 1.9; }
+.cover .meta strong { color: var(--ink); font-weight: 600; }
+
+/* ---- headings --------------------------------------------------------- */
+h1, h2, h3, h4 {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  page-break-after: avoid;
+}
+/* The document's own H1 duplicates the cover, so it is dropped. */
+body > h1:first-of-type { display: none; }
+h2 {
+  font-size: 16pt;
+  font-weight: 600;
+  margin: 11mm 0 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px solid var(--hairline);
+}
+h3 { font-size: 12pt; font-weight: 600; margin: 7mm 0 2mm; }
+h4 { font-size: 10.5pt; font-weight: 600; margin: 5mm 0 1.5mm; color: var(--muted); }
+
+p { margin: 0 0 3.2mm; orphans: 3; widows: 3; }
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+ul, ol { margin: 0 0 3.2mm; padding-left: 6mm; }
+li { margin-bottom: 1.4mm; }
+
+a { color: var(--accent); text-decoration: none; }
+
+blockquote {
+  margin: 4mm 0;
+  padding: 2mm 0 2mm 5mm;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+hr { border: 0; border-top: 1px solid var(--hairline); margin: 8mm 0; }
+
+/* ---- code ------------------------------------------------------------- */
+code {
+  font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  font-size: 0.87em;
+  background: var(--rail);
+  padding: 0.1em 0.35em;
+  border-radius: 2pt;
+}
+pre {
+  background: var(--rail);
+  border: 1px solid var(--hairline);
+  border-radius: 3pt;
+  padding: 3mm 4mm;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  font-size: 8.5pt;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---- tables ----------------------------------------------------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 5mm;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+thead { display: table-header-group; }
+th {
+  text-align: left;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8pt;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+}
+td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+  vertical-align: top;
+}
+tr { page-break-inside: avoid; }
+
+/* Keep a heading with the block that follows it. */
+h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
+</style></head><body>
+<section class="cover">
+  <p class="doctitle">Test Specification</p>
+  <h1 class="project">NestUp</h1>
+  <hr class="rule">
+  <p class="sub">What is tested, why, and what is not</p>
+  <div class="meta">
+    <strong>Internet Technologies — Become a Full-Stack Engineer</strong><br>
+    RUNI CS 2026 · Final project<br><br>
+    Live product &nbsp;<strong>nestup-kappa.vercel.app</strong><br>
+    Repository &nbsp;<strong>github.com/nestupweb/nestup</strong>
+  </div>
+</section>
+<h1>NestUp — Test Specification</h1>
+<p><strong>Suite:</strong> 97 test files · 740 tests · Vitest + React Testing Library (jsdom) + Playwright (real browser)
+<strong>Run:</strong> <code>npm test</code> — see §8 for the reason that <code>npx vitest</code> must never be used directly.</p>
+<hr />
+<h2>1. What "working" means for this product</h2>
+<p>Before listing the tests themselves, it is worth stating explicitly what the suite is actually defending, because this determines what is tested and what is not tested.</p>
+<p>NestUp can fail in three ways which matter, presented here in descending order of cost:</p>
+<ol>
+<li><strong>A member sees the data of another member.</strong> This failure is unrecoverable, because the entire trust proposition of the product collapses.</li>
+<li><strong>A core flow silently performs the wrong operation.</strong> For example, a message which does not arrive, a swiped room which returns to the deck, or an edit to a listing which also erases the chats of the owner.</li>
+<li><strong>A screen is incorrect or unattractive.</strong> This is embarrassing, but it is inexpensive to correct.</li>
+</ol>
+<p>The suite is weighted accordingly. Access control and business rules are tested rigorously, whereas presentation is tested only where it encodes an actual rule, such as a button which must be disabled, rather than for the sake of its appearance.</p>
+<p><strong>The following is deliberately not tested:</strong> every line of every component, the exact wording of the copy, the exact colors (except in cases where a rule depends on them, as in <code>map-basemap.test.ts</code>), and third-party libraries. The assignment requires that the main flows be tested and not that every line be tested. Moreover, a suite which asserts on wording eventually becomes a suite which nobody is willing to modify.</p>
+<hr />
+<h2>2. Feature tests — the main flows</h2>
+<h3>Authentication and onboarding</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auth-form.test.tsx</code></td>
+<td>The sign-up and sign-in forms, including field state, submission and error display</td>
+</tr>
+<tr>
+<td><code>signup-confirmation.test.ts</code></td>
+<td>Registration must <strong>not</strong> return a usable session. The row is created, a code is mailed, and access waits for confirmation</td>
+</tr>
+<tr>
+<td><code>auth-password-actions.test.ts</code></td>
+<td>The forgot-password and reset flows</td>
+</tr>
+<tr>
+<td><code>auth-confirm-route.test.ts</code></td>
+<td>Every shape of emailed link arrives correctly: signup leads to onboarding, recovery leads to reset, and an invalid link leads to <code>/login</code> with the appropriate notice</td>
+</tr>
+<tr>
+<td><code>auth-email-templates.test.ts</code>, <code>auth-mail.test.ts</code>, <code>mail.test.ts</code></td>
+<td>The mail templates and the sender behave as intended</td>
+</tr>
+<tr>
+<td><code>password-input.test.tsx</code></td>
+<td>The show and hide toggle</td>
+</tr>
+<tr>
+<td><code>redirect.test.ts</code></td>
+<td>The function <code>sanitizeNextPath</code>, which provides open-redirect hardening</td>
+</tr>
+</tbody>
+</table>
+<h3>Profile</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>profile-action.test.ts</code></td>
+<td>Saving a profile writes the correct rows and invalidates the correct caches</td>
+</tr>
+<tr>
+<td><code>profile-required-fields.test.tsx</code></td>
+<td>Which fields prevent a save, together with the banner which explains this</td>
+</tr>
+<tr>
+<td><code>profile-form-sticky.test.tsx</code></td>
+<td>A rejected form retains whatever the member typed. React 19 resets forms by default, and this test is the guard against that behavior</td>
+</tr>
+<tr>
+<td><code>about.test.tsx</code>, <code>contact-row.test.tsx</code></td>
+<td>Private details and contact visibility</td>
+</tr>
+<tr>
+<td><code>daily-life.test.tsx</code>, <code>daily-life-reminder.test.tsx</code></td>
+<td>The lifestyle questionnaire and the reminder to complete it</td>
+</tr>
+<tr>
+<td><code>profile-amenities.test.ts</code>, <code>profile-safe-room</code>, <code>interests-picker.test.tsx</code></td>
+<td>The preference inputs</td>
+</tr>
+<tr>
+<td><code>profile-avatar.test.tsx</code>, <code>photo-picker.test.tsx</code>, <code>photo-order.test.tsx</code></td>
+<td>Photo upload, ordering and the lightbox</td>
+</tr>
+<tr>
+<td><code>profile-tabs-history.test.tsx</code>, <code>my-listing.test.tsx</code></td>
+<td>The profile tabs</td>
+</tr>
+<tr>
+<td><code>people.test.ts</code></td>
+<td>The public profile of another member</td>
+</tr>
+</tbody>
+</table>
+<h3>Listings</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>listing-query.test.ts</code></td>
+<td>The browse query, including filters, sorting and pagination</td>
+</tr>
+<tr>
+<td><code>listing-actions.test.tsx</code>, <code>listing-status-action.test.ts</code></td>
+<td>Publishing, pausing and resuming</td>
+</tr>
+<tr>
+<td><code>delete-listing-action.test.ts</code></td>
+<td>Soft removal</td>
+</tr>
+<tr>
+<td><code>mark-taken.test.tsx</code>, <code>listing-taken.test.ts</code></td>
+<td>The "taken" state</td>
+</tr>
+<tr>
+<td><code>listing-title.test.ts</code>, <code>property-tile.test.tsx</code>, <code>listing-gallery.test.tsx</code></td>
+<td>The presentation of a room</td>
+</tr>
+<tr>
+<td><code>filter-bar.test.tsx</code>, <code>sort-menu.test.tsx</code></td>
+<td>The filter and sort controls</td>
+</tr>
+<tr>
+<td><code>save-button.test.tsx</code></td>
+<td>Hearts, both in the signed-in state and in the signed-out state</td>
+</tr>
+<tr>
+<td><code>roommate-tag-picker.test.tsx</code>, <code>roommate-count.test.ts</code>, <code>roommates-fit-rooms.test.ts</code></td>
+<td>The rules governing household composition</td>
+</tr>
+<tr>
+<td><code>co-posters.test.ts</code>, <code>co-posters-action.test.ts</code>, <code>co-poster-invites.test.tsx</code></td>
+<td>Co-ownership and invitations</td>
+</tr>
+</tbody>
+</table>
+<h3>Matching</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>compatibility.test.ts</code></td>
+<td>The scoring function, including each weighted component and the convention that a missing preference receives approximately 60%</td>
+</tr>
+<tr>
+<td><code>swipe-rank.test.ts</code></td>
+<td>Deck ordering and the <code>MIN_DECK_SCORE</code> threshold</td>
+</tr>
+<tr>
+<td><code>swipe-deck.test.tsx</code></td>
+<td>The deck interface, the like and skip operations, and the empty state</td>
+</tr>
+<tr>
+<td><code>affinity.test.ts</code></td>
+<td>Interest overlap</td>
+</tr>
+<tr>
+<td><code>apartment-prefs.test.ts</code>, <code>no-city-prompt.test.tsx</code></td>
+<td>The requirement of a preferred city, together with its prompt</td>
+</tr>
+<tr>
+<td><code>seed-data.test.ts</code></td>
+<td><strong>Measures the real deck across all 124 cities</strong>, so that a town cannot silently become unmatchable</td>
+</tr>
+</tbody>
+</table>
+<h3>Chat and viewings</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>send-message-action.test.ts</code></td>
+<td>Sending a message, and the idempotent retry of an identical <code>client_id</code></td>
+</tr>
+<tr>
+<td><code>chat-realtime.test.tsx</code></td>
+<td>The token reaches the socket <em>before</em> the channel joins, and there is exactly one invalidation per burst</td>
+</tr>
+<tr>
+<td><code>chat-visible.test.ts</code></td>
+<td>The per-member "delete chat" cutoff</td>
+</tr>
+<tr>
+<td><code>chat-outbox.test.ts</code>, <code>message-composer.test.tsx</code>, <code>chat-media.test.ts</code>, <code>chat-format.test.ts</code></td>
+<td>Optimistic sending, attachments and formatting</td>
+</tr>
+<tr>
+<td><code>message-owner.test.tsx</code></td>
+<td>The "message the household" entry point</td>
+</tr>
+<tr>
+<td><code>viewing-card.test.tsx</code>, <code>viewing-details.test.tsx</code>, <code>availability.test.ts</code>, <code>calendar.test.ts</code></td>
+<td>Proposing, approving, availability windows and calendar export</td>
+</tr>
+</tbody>
+</table>
+<h3>Settings and moderation</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>account-actions.test.ts</code>, <code>account-section.test.tsx</code></td>
+<td>Changing the email address and the password</td>
+</tr>
+<tr>
+<td><code>danger-zone.test.tsx</code></td>
+<td>Account deletion, <strong>including the listing-handover picker in all three of its shapes</strong>, namely no heir, exactly one heir, and several heirs</td>
+</tr>
+<tr>
+<td><code>setting-toggle.test.tsx</code>, <code>settings-gear.test.tsx</code></td>
+<td>The settings controls</td>
+</tr>
+<tr>
+<td><code>moderation.test.ts</code></td>
+<td>Reporting, blocking, unblocking and suspension</td>
+</tr>
+<tr>
+<td><code>notify.test.ts</code></td>
+<td>The new-match notification</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. Invalid-input tests</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>What is asserted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>validation.test.ts</code></td>
+<td>Every Zod schema, including required fields, lengths, ranges, enums and coercion</td>
+</tr>
+<tr>
+<td><code>profile-required-fields.test.tsx</code></td>
+<td>A save which is missing a required field is refused together with a field-level message</td>
+</tr>
+<tr>
+<td><code>send-message-action.test.ts</code></td>
+<td>An empty message, an over-length message, a malformed conversation identifier, and a photo path located outside the folder of the conversation itself</td>
+</tr>
+<tr>
+<td><code>listing-query.test.ts</code></td>
+<td>Meaningless query strings fall back to the default values instead of producing an error, because <code>.catch()</code> is applied to every filter</td>
+</tr>
+<tr>
+<td><code>amount-input.test.tsx</code>, <code>phone-field.test.tsx</code>, <code>date-picker.test.tsx</code>, <code>city-combobox.test.tsx</code></td>
+<td>The rejection of non-numeric rent, malformed telephone numbers, impossible dates and unknown cities</td>
+</tr>
+<tr>
+<td><code>photo-rules.test.ts</code>, <code>photo-check.test.ts</code></td>
+<td>An incorrect file type, an oversized file, and a photograph whose <strong>content</strong> does not correspond to its declared tag</td>
+</tr>
+<tr>
+<td><code>redirect.test.ts</code></td>
+<td>Targets such as <code>?next=https://evil.example</code>, and other off-site destinations, are rejected</td>
+</tr>
+<tr>
+<td><code>image-client.test.ts</code></td>
+<td>The boundaries of client-side compression and of HEIC conversion</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>4. Business-process tests</h2>
+<p>These tests assert the rules which make the product itself correct, and not merely the code.</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Where it is asserted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A swiped room never returns to the deck</td>
+<td><code>swipe-rank.test.ts</code>, <code>cache-invalidation.test.ts</code></td>
+</tr>
+<tr>
+<td>Only rooms scoring 60 or above enter the deck</td>
+<td><code>swipe-rank.test.ts</code></td>
+</tr>
+<tr>
+<td>A seeker who has no preferred city receives no deck</td>
+<td><code>apartment-prefs.test.ts</code></td>
+</tr>
+<tr>
+<td>One person may have one active listing</td>
+<td><code>roommates-fit-rooms.test.ts</code>, <code>co-posters.test.ts</code></td>
+</tr>
+<tr>
+<td>The number of roommates cannot exceed the number of rooms</td>
+<td><code>roommates-fit-rooms.test.ts</code></td>
+</tr>
+<tr>
+<td>Deleting an account <strong>transfers</strong> a shared listing rather than destroying it</td>
+<td><code>danger-zone.test.tsx</code></td>
+</tr>
+<tr>
+<td>A member who already has a live listing cannot inherit a second one</td>
+<td><code>danger-zone.test.tsx</code></td>
+</tr>
+<tr>
+<td>Deleting a chat hides it for one side only, and the next message restores it</td>
+<td><code>chat-visible.test.ts</code></td>
+</tr>
+<tr>
+<td>A blocked member disappears from the decks and from the search in both directions</td>
+<td><code>moderation.test.ts</code></td>
+</tr>
+<tr>
+<td>A retried message carrying the same <code>client_id</code> is not posted twice</td>
+<td><code>send-message-action.test.ts</code></td>
+</tr>
+<tr>
+<td>Every city is able to fill a deck</td>
+<td><code>seed-data.test.ts</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Cache invalidation treated as a business rule</h3>
+<p>The file <code>cache-invalidation.test.ts</code> deserves a separate explanation. It asserts the <strong>scope of impact</strong> of every mutation: that adding a room to the liked list touches exactly <code>saved:&lt;me&gt;</code> and <code>profile:&lt;me&gt;</code> and nothing further; that no listing mutation reaches into the chat data; and that no chat mutation reaches into the deck or into the room list.</p>
+<p>This test exists because of a genuine defect which occurred earlier. Mutations used to respond to every write with a large number of <code>revalidatePath</code> calls, and consequently editing a room also discarded the chats and the profile of that member. The test encodes the rule which replaced that behavior.</p>
+<hr />
+<h2>5. Permission tests</h2>
+<p>This is the category with the highest value, since the most severe failure mode of the product is the exposure of data across members.</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cache-invalidation.test.ts</code>, specifically the case <em>"every per-member tag is scoped to the member who acted"</em></td>
+<td>Every <code>deck:</code>, <code>profile:</code>, <code>saved:</code> and <code>chat:</code> tag carries the identifier of the acting member. A tag which omitted that identifier would become <strong>a single shared cache key for the entire application</strong>, which is precisely the form that a cross-user leak takes</td>
+</tr>
+<tr>
+<td><code>cached-session-boundary.test.ts</code></td>
+<td><strong>No Server Action is permitted to authorize itself using the cached session.</strong> Identity is cached for the purpose of <em>rendering</em> only, and every write still performs the uncached check. Both spellings compile successfully, and therefore only a test is able to enforce this boundary</td>
+</tr>
+<tr>
+<td><code>cached-session-boundary.test.ts</code> (continued)</td>
+<td>The suspension check still reads the <code>suspensions</code> table, and both gates still redirect on the basis of it</td>
+</tr>
+<tr>
+<td><code>signout-clears-cache.test.ts</code></td>
+<td>Signing out answers with <strong>303</strong>, which forces a full document load, and this is the only mechanism which empties the private caches held by the browser. The test also asserts that there is <strong>no GET handler</strong>, so that a logout cannot be triggered from another site</td>
+</tr>
+<tr>
+<td><code>member-actions.test.tsx</code></td>
+<td>The Log out button posts to the route handler rather than to a Server Action, since a soft redirect would leave the caches alive</td>
+</tr>
+<tr>
+<td><code>moderation.test.ts</code></td>
+<td>A member cannot remove his or her own suspension, and blocking is mutual</td>
+</tr>
+<tr>
+<td><code>profile-action.test.ts</code></td>
+<td>Only the owner is able to edit a profile</td>
+</tr>
+<tr>
+<td><code>co-posters-action.test.ts</code></td>
+<td>Only a member who was invited is able to accept an invitation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The layer which these tests cannot reach</strong> is RLS itself, which is enforced by Postgres, whereas the unit suite mocks the Supabase client. RLS is therefore verified by the real-browser checks described in §7, and by the fact that the policies constitute the <em>only</em> path to the data. This is discussed further in the <a href="05-security.md">Security</a> document.</p>
+<hr />
+<h2>6. Database tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>seed-data.test.ts</code></td>
+<td>A <strong>sha256 fingerprint</strong> computed over the first 92 seed records. Consequently, re-running <code>npm run seed</code> can never silently modify existing demo data</td>
+</tr>
+<tr>
+<td><code>seed-data.test.ts</code> (continued)</td>
+<td>Re-measures deck coverage across all 124 cities using the real <code>buildDeck</code> function</td>
+</tr>
+<tr>
+<td><code>city-centres.test.ts</code></td>
+<td>Protects all 124 generated city coordinates against drift</td>
+</tr>
+<tr>
+<td><code>listing-query.test.ts</code></td>
+<td>The translation from filters into SQL, including the arithmetic of the pagination <code>range()</code></td>
+</tr>
+<tr>
+<td><code>cache-lifetimes.test.ts</code></td>
+<td>Every <code>cacheLife</code> declaration specifies <code>stale ≥ 300s</code>, which is the App Shell threshold, and the router cache is not shorter than the data caches</td>
+</tr>
+<tr>
+<td><code>roommates-fit-rooms.test.ts</code>, <code>roommate-count.test.ts</code></td>
+<td>The denormalized household columns which are maintained by triggers</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>7. Edge cases</h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>An empty deck, either because every room was already swiped or because no room reaches a score of 60</td>
+<td><code>swipe-deck.test.tsx</code>, <code>swipe-rank.test.ts</code></td>
+</tr>
+<tr>
+<td>An empty inbox, and a chat which was deleted and then revived by a new message</td>
+<td><code>chat-visible.test.ts</code></td>
+</tr>
+<tr>
+<td>A room which is removed while a conversation about it is open</td>
+<td><code>listing-taken.test.ts</code>, together with the second <code>listings</code> SELECT policy</td>
+</tr>
+<tr>
+<td>Concurrent creation of a conversation, producing a unique-constraint race</td>
+<td><code>findOrCreateConversation</code> falls back to re-reading the row</td>
+</tr>
+<tr>
+<td>A duplicated message send</td>
+<td><code>send-message-action.test.ts</code></td>
+</tr>
+<tr>
+<td>Account deletion with zero, one or several eligible heirs</td>
+<td><code>danger-zone.test.tsx</code></td>
+</tr>
+<tr>
+<td>The realtime socket joining before the token arrives</td>
+<td><code>chat-realtime.test.tsx</code></td>
+</tr>
+<tr>
+<td>A failing realtime synchronization must not throw inside an effect</td>
+<td><code>chat-realtime.test.tsx</code></td>
+</tr>
+<tr>
+<td>A stale <code>?needs=cities</code> parameter remaining in the URL after the member has already corrected it</td>
+<td><code>no-city-prompt.test.tsx</code></td>
+</tr>
+<tr>
+<td>A listing which has no photographs</td>
+<td><code>listing-gallery.test.tsx</code></td>
+</tr>
+<tr>
+<td>Navigation must remain within a single tab</td>
+<td><code>same-tab-navigation.test.ts</code> together with <code>npm run check:nav</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Real-browser checks (Playwright)</h3>
+<p>Certain properties cannot be asserted inside jsdom, because they require a real engine, a real GPU canvas, or the real deployment.</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>What it proves</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>npm run check:map</code></td>
+<td>Both themes render correctly, and the script counts red pixels <strong>directly from the WebGL canvas</strong>, since a GL layer has no DOM which could be queried</td>
+</tr>
+<tr>
+<td><code>npm run check:nav</code></td>
+<td>No internal link opens a new tab</td>
+</tr>
+<tr>
+<td><code>.superpowers/e2e/nav-cache.mjs</code></td>
+<td><strong>21 assertions executed against the live site:</strong> signing out destroys the JavaScript context; <code>/swipe</code> redirects after a logout; the back button cannot restore a signed-in page; and a second member using the same tab sees only his or her own data</td>
+</tr>
+<tr>
+<td><code>.superpowers/e2e/chat-freshness.mjs</code></td>
+<td>A real message reaches the thread <em>and</em> updates the cached inbox row, and it survives navigating away and returning</td>
+</tr>
+<tr>
+<td><code>.superpowers/e2e/skeleton-duration.mjs</code></td>
+<td>Measures how long a loading skeleton is actually visible on screen, per tab</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>8. How to run the suite</h2>
+<pre><code class="language-bash">npm test                              # 97 files, 740 tests
+npm test -- --testTimeout=25000       # use this if userEvent tests time out (see below)
+npx tsc --noEmit                      # types
+npx eslint                            # lint
+</code></pre>
+<p>There are two environment traps, both of which were discovered through experience, and both of which are worth knowing before accepting a red result as genuine:</p>
+<ol>
+<li><strong>Always use <code>npm test</code>, and never <code>npx vitest run</code>.</strong> The npm script sets <code>NODE_OPTIONS=--no-experimental-webstorage</code>. Without this flag, Node 25 installs its own inert <code>localStorage</code> global which jsdom does not replace, and consequently <code>theme-toggle.test.tsx</code> fails with <code>localStorage.clear is not a function</code>, which is a failure that says nothing at all about the component itself.</li>
+<li><strong>OneDrive synchronization starves <code>userEvent</code>.</strong> The project resides in a synchronized folder, and when OneDrive is busy, approximately half a dozen interaction tests exceed the default limit of 5 seconds. The suite should therefore be re-run with <code>--testTimeout=25000</code> before a timeout is treated as a real failure.</li>
+</ol>
+<hr />
+<h2>9. Known gaps</h2>
+<p>These are stated plainly, because a test document which claims complete coverage is not credible.</p>
+<ul>
+<li><strong>The RLS policies are not exercised by the unit suite.</strong> The suite mocks the Supabase client, and therefore the policies themselves are covered only by the real-browser checks and by manual review. A future improvement would be a test which executes real queries as two different members against a dedicated test project.</li>
+<li><strong>There is no automated end-to-end journey.</strong> Playwright is used for targeted checks rather than for a complete script covering registration, profile creation, swiping, chatting and scheduling a viewing.</li>
+<li><strong>Email delivery is mocked.</strong> The templates and the sender are tested, whereas actual arrival in an inbox is verified manually.</li>
+<li><strong>The Gemini photo check is mocked.</strong> Its contract is tested, but the judgment of the model itself is not.</li>
+<li><strong>Load has not been measured.</strong> The reasoning about scale is analytical; see the <a href="04-scale.md">Scale</a> document.</li>
+</ul>
+<hr />
+</body></html>

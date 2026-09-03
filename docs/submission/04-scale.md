@@ -5,9 +5,9 @@
 
 ---
 
-## 1. Where the product is today
+## 1. Where the product stands today
 
-Worth stating first, because it changes what the honest answers below are: this is not a toy dataset. The seed is 838 accounts and 824 live rooms across 124 cities — roughly the size of a real product's first city. So the queries described here are running against realistic row counts, not three test records, and the measurements are from the live deployment.
+This should be stated first, because it changes what the honest answers below actually are. The dataset is not a toy dataset. The seed contains 838 accounts and 824 live rooms distributed across 124 cities, which is approximately the size of the first city of a real product. Therefore the queries described in this document are executed against realistic row counts and not against three test records, and all of the measurements presented here were taken from the live deployment.
 
 ---
 
@@ -15,118 +15,121 @@ Worth stating first, because it changes what the honest answers below are: this 
 
 ### Tens of concurrent users
 
-No problem, and no change needed. Vercel runs each request in its own serverless invocation, so concurrency is handled by the platform rather than by a process pool. The database sits well inside Supabase's pooled connection limits. The heaviest read — the Listings index — is a **shared cache entry** served identically to everyone.
+There is no problem in this range, and no change is required. Vercel executes each request inside its own serverless invocation, and consequently concurrency is handled by the platform rather than by a process pool. The database remains well inside the pooled connection limits of Supabase. The heaviest read, which is the Listings index, is a **shared cache entry** that is served identically to every user.
 
 ### Hundreds of concurrent users
 
-Still fine, with one caveat worth naming.
+This range is still acceptable, although there is one reservation which is worth naming explicitly.
 
-What holds up well:
-- **The public room list scales with content, not traffic.** `queryListings` is a shared `"use cache"` keyed on the filter set, so a thousand people opening Listings with default filters cause **one** database query, not a thousand.
-- **Per-member data never touches a shared store.** Decks, profile tabs, saved ids and inboxes are `"use cache: private"` — held in each member's own browser. They cost nothing on the server and cannot contend.
-- **Pages ship HTML, not a client-side fetch waterfall.**
+The following aspects hold up well:
 
-What would show strain first:
-- **Realtime connections.** Every open chat holds a WebSocket. Supabase's free tier caps concurrent connections, and this is the first ceiling the product would hit — before CPU, before storage, before query time.
-- **Deck construction.** See §3 — it is the one genuinely expensive read, and it cannot be shared between members.
+- **The public room list scales with the amount of content and not with the amount of traffic.** The function `queryListings` is a shared `"use cache"` entry keyed on the filter set, and therefore a thousand people who open Listings with the default filters cause **one** database query rather than a thousand.
+- **Per-member data never reaches a shared store.** Decks, profile tabs, saved identifiers and inboxes are all declared as `"use cache: private"` and are held inside the browser of each individual member. They therefore cost nothing on the server and cannot contend with one another.
+- **Pages send HTML rather than producing a waterfall of client-side fetches.**
 
-### Thousands
+The following aspects would show strain first:
 
-Requires the work in §8. Chiefly: the deck must stop scoring in application code, and Realtime needs a plan.
+- **Realtime connections.** Every open chat holds a WebSocket. The free tier of Supabase limits the number of concurrent connections, and this is the first ceiling which the product would reach, before CPU, before storage and before query time.
+- **Deck construction.** This is discussed in §3. It is the single genuinely expensive read, and it cannot be shared between members.
+
+### Thousands of concurrent users
+
+This range requires the work described in §8. Principally, the deck must cease to perform its scoring in application code, and Realtime requires a concrete plan.
 
 ---
 
 ## 3. Heavy queries, and what was done about them
 
-### 3.1 The swipe deck — by far the most expensive
+### 3.1 The swipe deck, which is by far the most expensive
 
-Building one member's deck was originally **~9 round-trips in 3 dependent waves**: candidate rooms, then owners and residents, then blocked ids and attention history. Every one of them is scoped to a single member, so nothing can be shared.
+Building the deck of a single member originally required **approximately 9 round-trips arranged in 3 dependent waves**: first the candidate rooms, then the owners and the residents, and finally the blocked identifiers and the attention history. Every one of these queries is scoped to one specific member, and therefore nothing can be shared between members.
 
-Three things keep it acceptable:
+Three mechanisms keep this acceptable:
 
-1. **Hard filters run in SQL, before scoring.** The city filter, `is_active`, `removed_at is null` and the already-swiped exclusion all happen in Postgres. Only survivors are scored. Scoring 824 rooms in Node for every deck view would be the naive version of this.
-2. **A deck cap.** `DECK_SIZE = 60`.
-3. **The whole result is cached per member** (`getCachedDeck`, tagged `deck:<userId>`), invalidated only when the member swipes or changes a room of their own.
+1. **The hard filters are executed in SQL, before any scoring takes place.** The city filter, `is_active`, `removed_at is null` and the exclusion of already-swiped rooms are all evaluated inside Postgres. Only the surviving rows are scored. The naive alternative would be to score all 824 rooms inside Node for every single deck view.
+2. **A cap on the deck size**, namely `DECK_SIZE = 60`.
+3. **The entire result is cached per member** through `getCachedDeck`, tagged as `deck:<userId>`, and it is invalidated only when the member swipes or modifies a room belonging to that member.
 
-**Honest limitation:** the scoring itself is JavaScript over the filtered candidate set. That is fine at 824 rooms in one city; at 50,000 it is not, and §8 says what replaces it.
+**An honest limitation:** the scoring itself is JavaScript executed over the filtered candidate set. This is acceptable with 824 rooms in a single city, but it is not acceptable with 50,000 rooms, and §8 describes what would replace it.
 
 ### 3.2 The Listings index
 
-`select * from listings where is_active` plus filters, with `count: 'exact'` for pagination.
+This query is `select * from listings where is_active`, combined with the filters, together with `count: 'exact'` in order to support pagination.
 
-- Backed by `listings_browse_idx on (city, rent, available_from) where is_active` — a **partial** index, so it only covers rows that can actually appear.
-- Paginated at 20, and the page is applied in SQL via `range()`, never in JavaScript.
-- Shared-cached, so repeat traffic is free.
+- It is backed by `listings_browse_idx on (city, rent, available_from) where is_active`, which is a **partial** index and therefore covers only those rows which are actually capable of appearing in the result.
+- It is paginated at 20 rows per page, and the page is applied inside SQL through `range()` and never inside JavaScript.
+- It is stored in the shared cache, and consequently repeated traffic is free.
 
-**Honest limitation:** `count: 'exact'` makes Postgres count every matching row on every uncached query, which degrades as the table grows. An estimated count is the standard fix, deferred because "824 rooms available" being exactly right is worth more than the milliseconds at this size.
+**An honest limitation:** the option `count: 'exact'` causes Postgres to count every matching row on every uncached query, and this degrades as the table grows. The standard remedy is an estimated count. It was deferred because at the present size, the fact that "824 rooms available" is exactly correct is worth more than the milliseconds which would be saved.
 
-### 3.3 The map — all pins at once
+### 3.3 The map, which loads all pins at once
 
-`/api/listings/pins` returns **every** placed room (~824), about 150 KB. That is a deliberate product decision: the map is meant to show everything, not the current filter.
+The endpoint `/api/listings/pins` returns **every** placed room, which is approximately 824 rooms and about 150 KB. This is a deliberate product decision, since the map is intended to display everything rather than the current filter.
 
-The cost is contained by only paying it when it is needed:
-- The endpoint selects **only** `id, lat, lng, rent, title, city, neighborhood, photo_urls[0]` — not `select *`.
-- **No map renders until an icon is pressed.** MapLibre and the pin payload are both loaded on first open, and kept for the rest of the visit. Most visits never open a map and never pay for it.
+The cost is contained by paying it only when it is genuinely required:
+
+- The endpoint selects **only** the columns `id, lat, lng, rent, title, city, neighborhood, photo_urls[0]`, and it does not perform `select *`.
+- **No map is rendered until an icon is pressed.** Both MapLibre and the pin payload are loaded on the first opening of the map and are then retained for the remainder of the visit. The majority of visits never open a map and therefore never pay this cost at all.
 
 ### 3.4 The chat inbox
 
-`my_conversations()` — one SQL function returning every thread with its last message, unread count and the other party. One round-trip, not one query per conversation.
+The function `my_conversations()` is a single SQL function which returns every thread together with its last message, its unread count and the identity of the other party. It therefore requires one round-trip rather than one query per conversation.
 
-Backed by `messages_conversation_idx (conversation_id, created_at)`.
+It is backed by `messages_conversation_idx (conversation_id, created_at)`.
 
 ### 3.5 Household size and gender
 
-Needed on every row of the browse list and every deck candidate. Computing them per row would turn one query into hundreds, so they are **denormalised onto `listings`** and maintained by triggers over `listing_residents`. Classic write-cost-for-read-benefit trade, and the right way round here: rooms are read far more often than households change.
+These values are required on every row of the browse list and on every deck candidate. Computing them per row would transform a single query into hundreds of queries, and therefore they are **denormalized onto `listings`** and maintained by triggers over `listing_residents`. This is the classic trade of write cost in exchange for read benefit, and in this case it is oriented in the correct direction, since rooms are read far more frequently than households change.
 
 ---
 
 ## 4. Indexes
 
-**20 indexes**, each placed against a query that exists. The ones that carry the product:
+There are **20 indexes**, and each one of them is placed against a query which actually exists. The following are the indexes which carry the product:
 
-| Index | Serves |
+| Index | What it serves |
 |---|---|
-| `listings_browse_idx (city, rent, available_from) WHERE is_active` | The Listings index and every deck's hard filter. Partial — inactive rooms are not in it |
-| `one_active_listing_per_owner (owner_id) WHERE is_active` | **Unique.** Enforces "one person, one home" as a constraint, not a check |
-| `swipes_by_seeker_idx (seeker_id)` | Excluding already-swiped rooms — read on every deck build |
-| `swipes_likes_by_listing_idx (listing_id) WHERE direction = 'like'` | Interest counts per room. Partial: skips are the majority and are never counted |
+| `listings_browse_idx (city, rent, available_from) WHERE is_active` | The Listings index and the hard filter of every deck. It is partial, and therefore inactive rooms are not present in it |
+| `one_active_listing_per_owner (owner_id) WHERE is_active` | **Unique.** It enforces the rule of "one person, one home" as a constraint rather than as a check |
+| `swipes_by_seeker_idx (seeker_id)` | The exclusion of already-swiped rooms, which is read on every deck build |
+| `swipes_likes_by_listing_idx (listing_id) WHERE direction = 'like'` | Interest counts per room. It is partial, since skips constitute the majority and are never counted |
 | `messages_conversation_idx (conversation_id, created_at)` | Thread history and last-message lookups |
-| `messages_client_id_uniq` | **Unique.** Idempotent retry — the reason a resend cannot double-post |
-| `listing_views_recent_idx (user_id, viewed_at DESC)` | Profile › History, `LIMIT 30`. `DESC` matches the query's order |
+| `messages_client_id_uniq` | **Unique.** It implements the idempotent retry, and it is the reason that a resend cannot post a message twice |
+| `listing_views_recent_idx (user_id, viewed_at DESC)` | The History section of the profile, with `LIMIT 30`. The `DESC` direction matches the ordering of the query |
 | `viewings_by_conversation_idx (conversation_id, created_at)` | Viewings inside a thread |
 | `saved_listings_by_listing_idx (listing_id)` | Save counts |
-| `blocks_blocked_idx (blocked_id)` | `blocked_user_ids()` — called on every deck build |
-| `listing_invites_pending_idx (invitee_id) WHERE status = 'pending'` | Pending invitations. Partial: answered invites are dead weight |
-| `profiles_full_name_trgm_idx` | **Trigram** index for roommate-name search — a `LIKE '%name%'` cannot use a B-tree |
-| `listings_household_size_idx`, `listings_household_gender_idx`, `listings_wanted_gender_idx` | The denormalised filter columns |
+| `blocks_blocked_idx (blocked_id)` | The function `blocked_user_ids()`, which is called on every deck build |
+| `listing_invites_pending_idx (invitee_id) WHERE status = 'pending'` | Pending invitations. It is partial, since invitations which have already been answered are of no further use |
+| `profiles_full_name_trgm_idx` | A **trigram** index for searching roommates by name, because a `LIKE '%name%'` pattern cannot use a B-tree |
+| `listings_household_size_idx`, `listings_household_gender_idx`, `listings_wanted_gender_idx` | The denormalized filter columns |
 
-The pattern worth pointing at: **six of these are partial or expression indexes.** A partial index on `WHERE is_active` is smaller and stays hot in cache, because it never contains the rows the query cannot return anyway.
+The pattern which is worth pointing out is that **six of these indexes are partial or expression indexes.** A partial index on `WHERE is_active` is smaller and remains resident in cache, precisely because it never contains the rows which the query would be unable to return in any case.
 
 ---
 
 ## 5. Avoiding unnecessary loading
 
-This is where most of the recent engineering went, and it is measurable.
+This is the area in which most of the recent engineering effort was invested, and the result is measurable.
 
 ### 5.1 Server-side caching
 
-Five cached reads, each tagged so a write invalidates exactly what it changed:
+There are five cached reads, each of which is tagged so that a write invalidates exactly what it modified:
 
 | Read | Cache | Tag | Invalidated by |
 |---|---|---|---|
-| `queryListings` | **shared** | `listings` | Publishing, editing, pausing, removing a room |
-| `getSavedListingIds` | private | `saved:<id>` | Hearting |
-| `getProfileTabData` | private | `profile:<id>` | Profile/listing/heart/invite changes |
-| `getCachedDeck` | private | `deck:<id>` | Swiping; own-room changes |
-| `getCachedInbox` | private | `chat:<id>` | Sending, reading, deleting a chat; **and the other side's message, via Realtime** |
+| `queryListings` | **shared** | `listings` | Publishing, editing, pausing or removing a room |
+| `getSavedListingIds` | private | `saved:<id>` | Adding a room to the liked list |
+| `getProfileTabData` | private | `profile:<id>` | Changes to the profile, the listing, the hearts or the invitations |
+| `getCachedDeck` | private | `deck:<id>` | Swiping, and changes to a room owned by the member |
+| `getCachedInbox` | private | `chat:<id>` | Sending, reading or deleting a chat, **and also a message written by the other side, through Realtime** |
 
-That last row is the interesting one. A member's inbox changes when *someone else* writes, and no action of theirs runs. The Realtime socket calls a Server Action that drops their own tag — which is what makes caching an inbox safe rather than stale.
+The last row of this table is the interesting one. The inbox of a member changes when *somebody else* writes a message, and in that situation no action of the member is executed at all. Therefore the Realtime socket calls a Server Action which drops the tag belonging to that member, and this is exactly what makes the caching of an inbox safe rather than stale.
 
-**The blast-radius rule.** Mutations used to answer every write with a fistful of `revalidatePath` calls, so editing a room threw away the member's chats and profile too. Now a write invalidates only what it changed, and `cache-invalidation.test.ts` fails if that regresses.
+**The rule regarding the scope of invalidation.** Mutations used to respond to every write with a large number of `revalidatePath` calls, and consequently editing a room also discarded the chats and the profile of the member. At present a write invalidates only what it actually modified, and `cache-invalidation.test.ts` fails if this behavior regresses.
 
 ### 5.2 Measured result
 
-Returning to an already-visited tab, on production, warm cache:
+The following figures describe returning to a tab which was already visited, measured on production with a warm cache:
 
 | Tab | Before | After |
 |---|---|---|
@@ -135,73 +138,74 @@ Returning to an already-visited tab, on production, warm cache:
 | Profile | ~370 ms, skeleton | **69 ms, no skeleton** |
 | Listings | ~850 ms, skeleton | ~375 ms, ~300 ms skeleton |
 
-Three of four tabs make **zero server requests** on return.
+Three of the four tabs make **zero server requests** when the member returns to them.
 
-The technical reason is worth being able to explain: Next's App Shell prerender advances through cached reads and **stops at the first uncached one**. Every page began with an uncached `auth.getUser()` — a network round-trip to Supabase — which kept everything behind it out of the shell no matter how well cached it was. Caching that identity read is what removed ~300 ms from each tab.
+The technical reason is worth being able to explain. The App Shell prerender of Next.js advances through cached reads and **stops at the first uncached read**. Every page began with an uncached `auth.getUser()` call, which is a network round-trip to Supabase, and this kept everything positioned behind it outside the shell regardless of how well that content was cached. Caching this identity read is therefore what removed approximately 300 ms from each tab.
 
-Listings is the remaining case. It makes no server request either; its residual is ~60 ms of client render, stretched by the page-slide animation. That is an animation-timing issue, not a data one.
+Listings is the remaining case. It likewise makes no server request, and its residual cost is approximately 60 ms of client rendering, which is extended by the page-slide animation. This is therefore an issue of animation timing and not an issue of data.
 
 ### 5.3 Payload discipline
 
-- **Pagination everywhere it matters** — Listings 20/page in SQL, History `LIMIT 30`, deck capped at 60.
-- **Column selection** — the pins endpoint selects 8 columns, not `*`.
-- **Images** — `next/image` with correct `sizes`, so a 128 px thumbnail is not a 1200 px file. Only the first three covers are `priority`; the swipe deck warms exactly **one** card ahead, not the whole deck.
-- **Code splitting** — MapLibre is a dynamic import behind a button press.
-- **Photos are compressed in the browser** before upload.
+- **Pagination is applied everywhere that it matters:** Listings uses 20 rows per page in SQL, History uses `LIMIT 30`, and the deck is capped at 60.
+- **Column selection:** the pins endpoint selects 8 columns and not `*`.
+- **Images:** `next/image` is used with correct `sizes` values, so that a thumbnail of 128 pixels is not delivered as a file of 1200 pixels. Only the first three cover images are marked as `priority`, and the swipe deck warms exactly **one** card in advance rather than the entire deck.
+- **Code splitting:** MapLibre is a dynamic import placed behind a button press.
+- **Photographs are compressed inside the browser** before they are uploaded.
 
 ---
 
-## 6. Client / server separation
+## 6. Separation between client and server
 
 | Runs on the server | Runs in the browser |
 |---|---|
-| Every database read (Server Components) | Interaction state — dialogs, the current card, filter drafts |
-| Every database write (Server Actions) | Optimistic message rendering |
-| All scoring and ranking | Map rendering (MapLibre/WebGL) |
-| All authorisation | Image compression before upload |
-| Secrets — service-role key, SMTP, Gemini | Realtime subscription |
+| Every database read (Server Components) | Interaction state, such as dialogs, the current card and filter drafts |
+| Every database write (Server Actions) | Optimistic rendering of messages |
+| All scoring and ranking | Map rendering (MapLibre and WebGL) |
+| All authorization | Image compression prior to upload |
+| Secrets, namely the service-role key, SMTP and Gemini | The Realtime subscription |
 
-**No credential capable of bypassing RLS ever reaches the browser.** The client holds the anon key only, which is designed to be public and is powerless without a session. The service-role key exists solely in server-side environment variables.
+**No credential which is capable of bypassing RLS ever reaches the browser.** The client holds the anon key only. That key is designed to be public and is powerless without a session. The service-role key exists exclusively inside server-side environment variables.
 
-Two boundary details that are enforced rather than assumed:
-- `lib/supabase/public.ts` is a **cookie-free** client used only for the shared cache. A session-bearing client there would make the shared entry member-specific — a cross-user leak — so it is `server-only` and documented as such.
-- `lib/swipe.ts` (client-safe) and `lib/swipe-deck.ts` (`server-only`) are split precisely because the cookie-reading client must not enter a browser bundle.
+Two boundary details are enforced rather than merely assumed:
+
+- The module `lib/supabase/public.ts` is a **cookie-free** client which is used only for the shared cache. A client which carried a session in that position would make the shared cache entry member-specific, which would constitute a cross-user leak. For this reason the module is marked `server-only` and documented accordingly.
+- The modules `lib/swipe.ts`, which is client-safe, and `lib/swipe-deck.ts`, which is `server-only`, are separated precisely because the cookie-reading client must never enter a browser bundle.
 
 ---
 
 ## 7. Current limitations
 
-Stated honestly; each is a real ceiling.
+These are stated honestly, and each of them represents a genuine ceiling.
 
-1. **Deck scoring is application-side.** Fine at ~824 rooms; the wrong shape at 50,000.
-2. **`count: 'exact'`** on the Listings query counts every matching row on a cache miss.
-3. **Realtime connection limits.** The first hard ceiling on the free tier.
-4. **No rate limiting except on auth email.** `auth_mail_throttle` protects the mail path; message sending and listing creation are protected only by RLS.
-5. **Photos are checked by an external model on the upload path**, which adds latency and depends on a third party's availability.
-6. **No background jobs.** Everything happens in the request. Notification emails are sent inline.
-7. **Single region.** eu-central-1 for the database; fine for an Israel-focused product, poor for anyone else.
-8. **No CDN caching of the pins payload.** 150 KB is fetched per visitor who opens the map.
-9. **Storage is unbounded.** Nothing prunes photos of removed listings.
-10. **No observability.** No metrics, no tracing, no slow-query alerting. Problems would be discovered by a person noticing.
+1. **Deck scoring is performed on the application side.** This is acceptable with approximately 824 rooms, but it is the wrong architecture at 50,000 rooms.
+2. **The option `count: 'exact'`** on the Listings query counts every matching row whenever the cache misses.
+3. **Realtime connection limits** constitute the first hard ceiling on the free tier.
+4. **There is no rate limiting except on authentication email.** The table `auth_mail_throttle` protects the mail path, whereas message sending and listing creation are protected only by RLS.
+5. **Photographs are checked by an external model on the upload path**, which adds latency and creates a dependency on the availability of a third party.
+6. **There are no background jobs.** Everything happens inside the request, and notification emails are sent inline.
+7. **There is a single region.** The database is located in eu-central-1, which is appropriate for a product focused on Israel but poor for users elsewhere.
+8. **There is no CDN caching of the pins payload.** The 150 KB payload is fetched separately for every visitor who opens the map.
+9. **Storage is unbounded.** Nothing prunes the photographs belonging to removed listings.
+10. **There is no observability.** There are no metrics, no tracing and no slow-query alerting, and therefore problems would be discovered only when a person happened to notice them.
 
 ---
 
 ## 8. What a larger version would change
 
-In the order the pain would actually arrive.
+The following list is ordered according to the sequence in which the pain would actually arrive.
 
-**First — measure.** Nothing here is worth doing before there is a slow-query log and a p95 latency number per route. Every item below is a hypothesis until then.
+**The first step is to measure.** Nothing on this list is worth implementing before a slow-query log exists and a p95 latency figure is available per route. Until then, every item below remains a hypothesis.
 
-1. **Move deck filtering fully into SQL.** Compute the weighted score as a SQL expression (or a materialised per-member candidate table refreshed on profile change), so Postgres returns 60 ranked rows instead of Node scoring hundreds. This is the single change that unlocks an order of magnitude.
-2. **Estimated counts.** Swap `count: 'exact'` for a planner estimate above a threshold, keeping exact counts for small result sets.
-3. **Cursor pagination.** `range()` offsets degrade deep into a list; keyset pagination on `(created_at, id)` does not.
-4. **Move notification email to a queue.** It should not be on the request path.
-5. **Rate limiting** on message send, listing creation and report submission.
-6. **Cache the pins payload at the CDN edge** with a tag-based purge — it is identical for everyone.
-7. **Realtime plan:** move to a paid tier, or replace always-on sockets with polling for the inbox and reserve sockets for open threads.
-8. **Add observability** — Vercel Analytics, Supabase slow-query logs, an error tracker.
-9. **Storage lifecycle** — delete photos when a listing is hard-removed.
-10. **Read replicas / multi-region** only if the product ever leaves one country. Listed last on purpose: it is the change people reach for first and need last.
+1. **Move deck filtering entirely into SQL.** The weighted score would be computed as a SQL expression, or alternatively as a materialized per-member candidate table which is refreshed whenever the profile changes, so that Postgres returns 60 ranked rows instead of Node scoring hundreds of candidates. This is the single change which unlocks an order of magnitude of growth.
+2. **Estimated counts.** Replace `count: 'exact'` with a planner estimate above a certain threshold, while retaining exact counts for small result sets.
+3. **Cursor-based pagination.** The offsets used by `range()` degrade deep inside a long list, whereas keyset pagination on `(created_at, id)` does not.
+4. **Move notification email onto a queue.** It should not remain on the request path.
+5. **Rate limiting** on message sending, listing creation and report submission.
+6. **Cache the pins payload at the CDN edge**, together with a tag-based purge, since that payload is identical for every user.
+7. **A plan for Realtime:** either move to a paid tier, or replace always-on sockets with polling for the inbox while reserving sockets for threads which are actually open.
+8. **Add observability**, namely Vercel Analytics, Supabase slow-query logs and an error tracker.
+9. **A storage lifecycle**, meaning that photographs are deleted when a listing is hard-removed.
+10. **Read replicas and multiple regions**, but only if the product ever expands beyond a single country. This item is listed last deliberately, because it is the change which people tend to reach for first and to require last.
 
 ---
 

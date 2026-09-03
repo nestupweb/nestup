@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+@page {
+  size: A4;
+  margin: 20mm 18mm 18mm;
+}
+
+:root {
+  --ink: #201d1a;
+  --muted: #5c5751;
+  --accent: #2e7d5e;
+  --hairline: #e2ddd4;
+  --rail: #f2efe8;
+  --paper: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 10.5pt;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---- cover ------------------------------------------------------------ */
+.cover {
+  page-break-after: always;
+  height: 245mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cover .project {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 46pt;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0 0 6mm;
+}
+.cover .doctitle {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 22pt;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0 0 3mm;
+}
+.cover .sub { font-size: 12pt; color: var(--muted); max-width: 120mm; margin: 0 0 14mm; }
+.cover .rule { border: 0; border-top: 2px solid var(--accent); width: 26mm; margin: 0 0 14mm; }
+.cover .meta { font-size: 9.5pt; color: var(--muted); line-height: 1.9; }
+.cover .meta strong { color: var(--ink); font-weight: 600; }
+
+/* ---- headings --------------------------------------------------------- */
+h1, h2, h3, h4 {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  page-break-after: avoid;
+}
+/* The document's own H1 duplicates the cover, so it is dropped. */
+body > h1:first-of-type { display: none; }
+h2 {
+  font-size: 16pt;
+  font-weight: 600;
+  margin: 11mm 0 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px solid var(--hairline);
+}
+h3 { font-size: 12pt; font-weight: 600; margin: 7mm 0 2mm; }
+h4 { font-size: 10.5pt; font-weight: 600; margin: 5mm 0 1.5mm; color: var(--muted); }
+
+p { margin: 0 0 3.2mm; orphans: 3; widows: 3; }
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+ul, ol { margin: 0 0 3.2mm; padding-left: 6mm; }
+li { margin-bottom: 1.4mm; }
+
+a { color: var(--accent); text-decoration: none; }
+
+blockquote {
+  margin: 4mm 0;
+  padding: 2mm 0 2mm 5mm;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+hr { border: 0; border-top: 1px solid var(--hairline); margin: 8mm 0; }
+
+/* ---- code ------------------------------------------------------------- */
+code {
+  font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  font-size: 0.87em;
+  background: var(--rail);
+  padding: 0.1em 0.35em;
+  border-radius: 2pt;
+}
+pre {
+  background: var(--rail);
+  border: 1px solid var(--hairline);
+  border-radius: 3pt;
+  padding: 3mm 4mm;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  font-size: 8.5pt;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---- tables ----------------------------------------------------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 5mm;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+thead { display: table-header-group; }
+th {
+  text-align: left;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8pt;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+}
+td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+  vertical-align: top;
+}
+tr { page-break-inside: avoid; }
+
+/* Keep a heading with the block that follows it. */
+h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
+</style></head><body>
+<section class="cover">
+  <p class="doctitle">Security</p>
+  <h1 class="project">NestUp</h1>
+  <hr class="rule">
+  <p class="sub">Authentication, authorization, secrets, and remaining risks</p>
+  <div class="meta">
+    <strong>Internet Technologies — Become a Full-Stack Engineer</strong><br>
+    RUNI CS 2026 · Final project<br><br>
+    Live product &nbsp;<strong>nestup-kappa.vercel.app</strong><br>
+    Repository &nbsp;<strong>github.com/nestupweb/nestup</strong>
+  </div>
+</section>
+<h1>NestUp — Basic Security</h1>
+<p><strong>Posture:</strong> 21 tables, <strong>RLS enabled on every one of them</strong>, 72 policies · authorization enforced in Postgres and not in application code</p>
+<hr />
+<h2>1. The governing principle</h2>
+<p>Nearly every decision described in this document follows from a single principle:</p>
+<blockquote>
+<p><strong>The application is not trusted to decide who may see what. Postgres is.</strong></p>
+</blockquote>
+<p>Row Level Security means that the database itself refuses a query for rows which the caller is not permitted to read. Consequently, a bug in a page, in a Server Action or in a cache cannot expose the data of another member, because such a leak would first have to pass the database, and the database neither knows nor cares which line of TypeScript issued the query.</p>
+<p>This principle matters more in this product than in most others, because NestUp holds telephone numbers, home addresses, private messages, and the times at which people have arranged to meet strangers.</p>
+<hr />
+<h2>2. Authentication</h2>
+<p><strong>The mechanism is Supabase Auth, using email and password.</strong></p>
+<ul>
+<li><strong>Email confirmation is mandatory.</strong> This is a deliberate decision, which was maintained despite the temptation to remove it during development. In a product in which people eventually meet in real life, it is the least expensive barrier that exists against disposable accounts. Registration creates the row and mails a six-digit code, and the session is <strong>withheld until that code is entered</strong>. The test <code>tests/unit/signup-confirmation.test.ts</code> exists specifically in order to prevent this behavior from regressing.</li>
+<li><strong>Passwords are never handled by us.</strong> Supabase Auth hashes them and stores them, and the application never sees, logs or stores a password.</li>
+<li><strong>Sessions are httpOnly cookies</strong>, managed by <code>@supabase/ssr</code> and refreshed by the edge proxy on every request.</li>
+<li><strong>Password recovery</strong> is performed through an emailed link which leads to <code>/auth/confirm?type=recovery</code> and then to <code>/reset-password</code>.</li>
+<li><strong>Changing an email address or a password requires re-authentication</strong> using the current password.</li>
+<li><strong>Authentication email is rate-limited</strong> by the <code>auth_mail_throttle</code> table, so that the endpoint cannot be used in order to spam an address.</li>
+</ul>
+<h3>Signing out is a security operation and is treated as one</h3>
+<p>Signing out posts to <code>/auth/signout</code>, which is a Route Handler that terminates the session and answers with <strong>HTTP 303</strong>.</p>
+<p>The 303 status is the essential point. A <code>redirect()</code> issued from a Server Action performs a <em>soft</em> navigation, meaning that the React client survives it, and so does everything held in memory. This includes the <code>"use cache: private"</code> entries of that browser, namely the deck, the inbox and the profile tabs, as well as the cache of already-rendered pages maintained by the router. As a result the member was shown a signed-out page while his or her own data remained sitting behind it, one press of the back button away, and <strong>the next person who signed in on that computer inherited the tab in exactly that state.</strong></p>
+<p>A 303 status forces a genuine document navigation, which tears the client down and rebuilds it empty. Nothing in <code>next/cache</code> is able to reach into the browser memory belonging to another session; only a reload can accomplish this.</p>
+<p>The handler is <strong>POST-only</strong>, so that no third-party page is able to sign a member out by means of an <code>&lt;img&gt;</code> tag. Two tests maintain this property: <code>signout-clears-cache.test.ts</code> asserts both the 303 status and the absence of a GET handler, and <code>member-actions.test.tsx</code> asserts that the button posts to the route rather than calling an action. A refactor back into an action would appear to be a harmless tidying-up operation and would silently restore the leak.</p>
+<p><strong>This was verified on production:</strong> after signing out, the JavaScript context is destroyed, <code>/swipe</code> redirects to <code>/login</code>, the back button cannot restore a signed-in page, and a second member who signs in using the same tab sees only his or her own profile.</p>
+<hr />
+<h2>3. Authorization</h2>
+<p>There are four layers, and each of them assumes that the layers above it may fail.</p>
+<h3>Layer 1 — the edge proxy (<code>proxy.ts</code>)</h3>
+<p>This layer runs before any page renders. It refreshes the session and redirects unauthenticated requests away from <code>/swipe</code>, <code>/matches</code>, <code>/listing</code>, <code>/profile</code>, <code>/chat</code> and <code>/browse/[id]/chat</code>.</p>
+<p>It deliberately covers <strong>page routes only</strong>, because an API caller must receive a JSON 401 response and not an HTML redirect to a login page. API routes therefore verify authorization inside the handler itself.</p>
+<h3>Layer 2 — the page</h3>
+<p>Every signed-in page calls a gate, either <code>requireUser()</code> or <code>requireCachedProfile()</code>, which redirects to <code>/login</code> when there is no session and to <code>/login?error=suspended</code> when the account is suspended.</p>
+<h3>Layer 3 — the Server Action</h3>
+<p>Every mutation begins with <code>requireUser()</code>, which is <strong>uncached and is executed on every write</strong>. Section 8 explains why this distinction is drawn deliberately.</p>
+<h3>Layer 4 — Row Level Security</h3>
+<p>This is the layer which actually matters. It consists of 72 policies distributed across 21 tables. The following are examples of the shapes which are used:</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>How it is expressed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A member may edit only his or her own profile</td>
+<td><code>using (user_id = auth.uid())</code></td>
+</tr>
+<tr>
+<td>Private details are accessible to the owner only</td>
+<td>A separate <code>profile_details</code> table with an owner-only policy, together with a <code>public_profile_details()</code> function which returns only those fields that the owner chose to expose</td>
+</tr>
+<tr>
+<td>Only participants may read the messages of a conversation</td>
+<td>The policy joins through <code>conversations</code> and <code>listing_residents</code></td>
+</tr>
+<tr>
+<td>A blocked member disappears in both directions</td>
+<td>The helper <code>blocked_user_ids()</code> is used inside the policies</td>
+</tr>
+<tr>
+<td>The household of a room may edit its listing</td>
+<td><code>can_manage_listing()</code>, which admits the owner <strong>or</strong> a confirmed resident</td>
+</tr>
+<tr>
+<td>Chats survive a deleted room</td>
+<td>A second <code>listings</code> SELECT policy operating through <code>linked_to_listing()</code>, so that the history remains readable to the people who discussed that room</td>
+</tr>
+</tbody>
+</table>
+<h3>The pattern of having no write policy at all</h3>
+<p>Three tables have <strong>no insert, update or delete policy whatsoever</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Written only by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>suspensions</code></td>
+<td><code>apply_report_suspension()</code></td>
+</tr>
+<tr>
+<td><code>listing_invites</code></td>
+<td><code>invite_listing_roommates()</code>, <code>respond_to_listing_invite()</code></td>
+</tr>
+<tr>
+<td><code>app_config</code></td>
+<td>SECURITY DEFINER functions only</td>
+</tr>
+</tbody>
+</table>
+<p>This is the strongest pattern in the schema and is worth being able to explain. When a table must only ever be written in one specific manner, the correct approach is to <strong>give it no write policy at all and exactly one <code>SECURITY DEFINER</code> function</strong>. Under this arrangement there is no path whatsoever which leads to an incorrect write, as opposed to a policy which attempts to enumerate every possible incorrect write and might fail to include one of them.</p>
+<p>The concrete consequence is that <strong>a member cannot remove his or her own suspension.</strong> This is true not because a policy forbids it, but because no route to that write exists in the first place.</p>
+<h3>Ownership which cannot be reassigned</h3>
+<p>A trigger named <code>listings_owner_is_permanent</code> refuses any ordinary <code>UPDATE</code> of <code>listings.owner_id</code>. The single legitimate case, which is the transfer of a shared listing to a roommate when an account is deleted, occurs inside <code>delete_own_account()</code>. That function sets a transaction-local GUC which nothing else in the schema sets. Therefore the listing survives its creator, and nevertheless there remains no way to steal one.</p>
+<hr />
+<h2>4. What requires a session</h2>
+<table>
+<thead>
+<tr>
+<th>Public</th>
+<th>Requires a session</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/browse</code>, which is the room list</td>
+<td>The swipe deck</td>
+</tr>
+<tr>
+<td>The page of a room, together with its photographs</td>
+<td>Chat, and the initiation of a conversation</td>
+</tr>
+<tr>
+<td>The map</td>
+<td>Creating or editing a listing</td>
+</tr>
+<tr>
+<td>Registration, login and password reset</td>
+<td>The profile, and viewing the profile of another member</td>
+</tr>
+<tr>
+<td></td>
+<td>Hearts, viewing history and scheduling a viewing</td>
+</tr>
+<tr>
+<td></td>
+<td>Settings, reporting and blocking</td>
+</tr>
+<tr>
+<td></td>
+<td>Anything under <code>/api/*</code> which touches member data</td>
+</tr>
+</tbody>
+</table>
+<p>Browsing is open intentionally, because a marketplace which demands registration before it will display any supply cannot build the liquidity which it requires. Everything which reads or writes data belonging to a <em>person</em> requires a session.</p>
+<hr />
+<h2>5. Preventing access to the data of another member</h2>
+<p>Beyond RLS itself, there are three specific mechanisms.</p>
+<p><strong>Per-member cache keys.</strong> Every private cache entry is keyed and tagged using the identifier of the member, in the forms <code>deck:&lt;userId&gt;</code>, <code>profile:&lt;userId&gt;</code>, <code>saved:&lt;userId&gt;</code> and <code>chat:&lt;userId&gt;</code>. The test <code>cache-invalidation.test.ts</code> asserts that every per-member tag carries the identifier of the acting member, because a tag which omitted it would become <strong>a single shared cache key for the entire application</strong>, which is precisely the form that a cross-user leak takes.</p>
+<p><strong>Private caches never reach a shared store.</strong> Results produced under <code>"use cache: private"</code> live only in the memory of the requesting browser. The shared <code>"use cache"</code> mechanism is used for exactly one purpose, namely the public room list, and it operates through a deliberately <strong>cookie-free</strong> Supabase client, defined in <code>lib/supabase/public.ts</code> and marked <code>server-only</code>, so that its output cannot become member-specific.</p>
+<p><strong>Field-level control over exposure.</strong> The function <code>public_profile_details()</code> returns only those fields which a member chose to make visible, and contact details are hidden by default. The separation between <code>profiles</code>, which is readable by members, and <code>profile_details</code>, which is accessible to the owner only, means that a newly added private column is private <em>by default</em> rather than being private because somebody remembered to make it so.</p>
+<p><strong>Storage.</strong> Chat photographs reside in a private bucket and are served as short-lived signed URLs. Furthermore, a photograph path must be located under the prefix of its own conversation, and this is verified on the server side.</p>
+<hr />
+<h2>6. Input validation</h2>
+<p>There are three layers, which are described in full in the <a href="02-technical-design.md#9-input-validation">Technical Design</a> document:</p>
+<ol>
+<li><strong>Client side</strong>, which exists for convenience only and is assumed to be bypassable.</li>
+<li><strong>Server side</strong>, using six Zod schemas. The Server Action parses the input before touching the database, and the TypeScript types are inferred from the schemas so that the two cannot drift apart.</li>
+<li><strong>Database level</strong>, using <code>CHECK</code> constraints, enums, foreign keys and unique indexes.</li>
+</ol>
+<p>The following specifics are relevant to security:</p>
+<ul>
+<li><strong>SQL injection is structurally absent.</strong> All access is performed through PostgREST or through parameterized RPC calls. No SQL which is built through string concatenation exists anywhere in the codebase.</li>
+<li><strong>XSS.</strong> React escapes output by default, and there is no use of <code>dangerouslySetInnerHTML</code> anywhere in the product.</li>
+<li><strong>Open redirects.</strong> The function <code>sanitizeNextPath()</code> guards every <code>?next=</code> parameter, so that an emailed parameter such as <code>?next=https://evil.example</code> cannot bounce a member off the site after login. This is covered by <code>redirect.test.ts</code>.</li>
+<li><strong>Uploads.</strong> The type and the size are checked on both sides, and a chat image path must belong to its own conversation.</li>
+<li><strong>Photo content.</strong> An image is stored <strong>only if</strong> an AI check agrees that it shows what its slot claims that it shows. Therefore a bedroom slot cannot contain a picture of a car.</li>
+<li><strong>URL parameters</strong> are parsed with <code>.catch()</code> fallbacks, so that hostile query strings produce default values rather than errors or unfiltered results.</li>
+</ul>
+<hr />
+<h2>7. Protecting API calls and secrets</h2>
+<h3>API routes</h3>
+<p>Route Handlers authenticate inside the handler itself and return a JSON 401 response rather than performing a redirect. Every query beneath them still executes under RLS, and therefore an authenticated caller who experiments with the identifier of another member receives an empty result rather than data.</p>
+<p>The route <code>/api/places</code> exists specifically <strong>so that the browser never calls Overpass directly</strong>. Consequently the upstream call, together with any key or quota which may apply to it in the future, remains on the server side.</p>
+<h3>Secrets</h3>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Where it lives</th>
+<th>Does it reach the browser?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+<td>Environment variable and build argument</td>
+<td>Yes, and it is designed to be public</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+<td>Environment variable and build argument</td>
+<td>Yes. It is public by design, it is powerless without a session, and it is governed by RLS</td>
+</tr>
+<tr>
+<td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+<td>Vercel <strong>sensitive</strong> production environment variable</td>
+<td><strong>Never</strong></td>
+</tr>
+<tr>
+<td><code>GEMINI_API_KEY</code></td>
+<td>Vercel sensitive environment variable</td>
+<td><strong>Never</strong></td>
+</tr>
+<tr>
+<td><code>SMTP_*</code> credentials</td>
+<td>Vercel sensitive environment variables</td>
+<td><strong>Never</strong></td>
+</tr>
+<tr>
+<td><code>GOOGLE_CLIENT_SECRET</code></td>
+<td>Vercel sensitive environment variable</td>
+<td><strong>Never</strong></td>
+</tr>
+<tr>
+<td><code>SUPABASE_ACCESS_TOKEN</code></td>
+<td>Local machine only, for the auth-config script</td>
+<td><strong>Never</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The following rules are actively followed rather than merely assumed:</p>
+<ul>
+<li><strong>The pattern <code>.env*.local</code> is gitignored</strong>, and no environment file is tracked. The file <code>.env.example</code> documents the <em>names</em> of the variables and contains no values.</li>
+<li><strong>The service-role key is never passed as a build argument.</strong> Build arguments are baked into the build output, whereas runtime secrets belong in runtime environment variables. This distinction is written into the deployment notes, because getting it wrong produces no visible symptom.</li>
+<li><strong>The fact that the anon key is public is not a weakness.</strong> It identifies the project and grants nothing on its own, and every table which it is able to reach has RLS enabled.</li>
+<li><strong>A Stop hook commits automatically after every working session</strong>, which turns "never place a secret inside a tracked file" into a standing rule rather than a habit.</li>
+</ul>
+<hr />
+<h2>8. A deliberate trade-off, disclosed</h2>
+<p>The identity read, meaning <code>auth.getUser()</code> together with the suspension lookup, is <strong>cached per browser for the purpose of rendering</strong>, using a window of 300 seconds.</p>
+<p><strong>The reason:</strong> the App Shell prerender advances through cached reads and stops at the first uncached read. That single round-trip was positioned at the top of every page and therefore kept everything behind it outside the prefetch, which cost approximately 300 ms of loading skeleton on every navigation between tabs.</p>
+<p><strong>What this costs:</strong> a suspension which is applied in the middle of a session now takes effect within the cache window rather than on the very next page load. The check itself is <strong>not removed</strong>, since <code>suspensions</code> is still read and both gates still redirect on the basis of it. It simply refreshes at most once per window. This was raised with the product owner and was accepted explicitly.</p>
+<p><strong>What it does not cost, by design:</strong></p>
+<ul>
+<li>The <strong>edge proxy still calls <code>auth.getUser()</code> without caching on every request</strong> to a protected route. That is the real gate, and it remains untouched. An expired or revoked session cannot reach these pages at all.</li>
+<li><strong>Every Server Action still uses the uncached <code>requireUser()</code>.</strong> A cached identity is never what authorizes a write. The test <code>cached-session-boundary.test.ts</code> fails if any action inside <code>app/actions/</code> calls a cached reader. Both spellings compile and both appear to work, and therefore only a test is capable of enforcing this boundary.</li>
+<li><strong>RLS is entirely unaffected.</strong> Every query still executes on the cookie-bearing client, and therefore Postgres decides what is returned regardless of what the cache believes.</li>
+</ul>
+<p>Disclosing this trade-off is itself the point. A security document which lists only strengths is not a security document.</p>
+<hr />
+<h2>9. Remaining risks</h2>
+<p>These are ordered according to how much they would actually matter.</p>
+<ol>
+<li><strong>There is no identity verification.</strong> Only email confirmation is performed. Anybody is able to create an account using a working address, and members subsequently meet in person. This is the largest real-world risk in the product, and it cannot be solved by code alone, since it requires identity verification together with a policy describing what happens when that verification fails.</li>
+<li><strong>Suspension latency</strong>, of up to five minutes, as described in §8.</li>
+<li><strong>There is no rate limiting on most writes.</strong> Only authentication email is throttled. Message sending, listing creation and report submission are protected by RLS but not by any volume limit, and therefore a determined authenticated member could send spam.</li>
+<li><strong>There is no CSRF token on the sign-out form.</strong> This is mitigated by the handler being POST-only and by the session cookies using <code>SameSite=Lax</code>, which means that they do not travel on a cross-site POST. The severity is low, since the worst possible outcome is being signed out, but it is nevertheless a gap.</li>
+<li><strong>Photo moderation relies on a single model.</strong> The Gemini check is a check of the content <em>type</em> and not a safety check. It confirms that a bedroom photograph shows a bedroom, but it is not a general filter against abuse.</li>
+<li><strong>There is no audit log.</strong> No record exists of who read what, and therefore the scope of a breach could not be determined after the fact.</li>
+<li><strong>Message content is not encrypted at rest</strong> beyond the disk encryption provided by Supabase. Anybody who has access to the database is able to read the chats.</li>
+<li><strong>There is no two-factor authentication.</strong></li>
+<li><strong>Reports are not acted upon automatically.</strong> The function <code>apply_report_suspension()</code> exists, but nothing calls it upon reaching a threshold. A moderator would have to act, and there is no moderator.</li>
+<li><strong>There is dependency risk.</strong> No automated vulnerability scanning is performed in CI.</li>
+</ol>
+<hr />
+<h2>10. What a hardened version would add</h2>
+<p>The following list is presented in order of priority:</p>
+<ol>
+<li><strong>Rate limiting</strong> on writes, applied per member and per IP address, at the edge.</li>
+<li><strong>A real moderation queue</strong>, in which reports are surfaced to a human being, with <code>apply_report_suspension()</code> connected to a threshold.</li>
+<li><strong>Two-factor authentication</strong>, at least as an option, for accounts which share contact details.</li>
+<li><strong>An audit log</strong> covering reads of sensitive fields, so that the scope of a breach can be determined.</li>
+<li><strong>CSRF tokens</strong> on form posts which change state, rather than relying on SameSite alone.</li>
+<li><strong>Automated dependency scanning</strong>, meaning Dependabot together with <code>npm audit</code> in CI.</li>
+<li><strong>A Content Security Policy</strong>, which is currently absent and which would provide hardening against injected script even though React escapes output by default.</li>
+<li><strong>Shorter session lifetimes</strong>, combined with silent refresh.</li>
+<li><strong>A tested backup and restore procedure.</strong> Supabase performs backups, but nobody has ever restored one, and an untested backup is a hope rather than a plan.</li>
+<li><strong>RLS policy tests</strong> which execute real queries as two different members against a dedicated test project. This is the one layer which the unit suite is unable to reach at present.</li>
+</ol>
+<hr />
+</body></html>

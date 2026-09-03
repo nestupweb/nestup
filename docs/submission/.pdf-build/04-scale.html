@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Scale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+@page {
+  size: A4;
+  margin: 20mm 18mm 18mm;
+}
+
+:root {
+  --ink: #201d1a;
+  --muted: #5c5751;
+  --accent: #2e7d5e;
+  --hairline: #e2ddd4;
+  --rail: #f2efe8;
+  --paper: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 10.5pt;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---- cover ------------------------------------------------------------ */
+.cover {
+  page-break-after: always;
+  height: 245mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cover .project {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 46pt;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0 0 6mm;
+}
+.cover .doctitle {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  font-size: 22pt;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0 0 3mm;
+}
+.cover .sub { font-size: 12pt; color: var(--muted); max-width: 120mm; margin: 0 0 14mm; }
+.cover .rule { border: 0; border-top: 2px solid var(--accent); width: 26mm; margin: 0 0 14mm; }
+.cover .meta { font-size: 9.5pt; color: var(--muted); line-height: 1.9; }
+.cover .meta strong { color: var(--ink); font-weight: 600; }
+
+/* ---- headings --------------------------------------------------------- */
+h1, h2, h3, h4 {
+  font-family: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  page-break-after: avoid;
+}
+/* The document's own H1 duplicates the cover, so it is dropped. */
+body > h1:first-of-type { display: none; }
+h2 {
+  font-size: 16pt;
+  font-weight: 600;
+  margin: 11mm 0 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px solid var(--hairline);
+}
+h3 { font-size: 12pt; font-weight: 600; margin: 7mm 0 2mm; }
+h4 { font-size: 10.5pt; font-weight: 600; margin: 5mm 0 1.5mm; color: var(--muted); }
+
+p { margin: 0 0 3.2mm; orphans: 3; widows: 3; }
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+ul, ol { margin: 0 0 3.2mm; padding-left: 6mm; }
+li { margin-bottom: 1.4mm; }
+
+a { color: var(--accent); text-decoration: none; }
+
+blockquote {
+  margin: 4mm 0;
+  padding: 2mm 0 2mm 5mm;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+hr { border: 0; border-top: 1px solid var(--hairline); margin: 8mm 0; }
+
+/* ---- code ------------------------------------------------------------- */
+code {
+  font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  font-size: 0.87em;
+  background: var(--rail);
+  padding: 0.1em 0.35em;
+  border-radius: 2pt;
+}
+pre {
+  background: var(--rail);
+  border: 1px solid var(--hairline);
+  border-radius: 3pt;
+  padding: 3mm 4mm;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  font-size: 8.5pt;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---- tables ----------------------------------------------------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 5mm;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+thead { display: table-header-group; }
+th {
+  text-align: left;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8pt;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+}
+td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 2mm 3mm 2mm 0;
+  vertical-align: top;
+}
+tr { page-break-inside: avoid; }
+
+/* Keep a heading with the block that follows it. */
+h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
+</style></head><body>
+<section class="cover">
+  <p class="doctitle">Scale</p>
+  <h1 class="project">NestUp</h1>
+  <hr class="rule">
+  <p class="sub">Heavy queries, indexes, caching, measured results, and limits</p>
+  <div class="meta">
+    <strong>Internet Technologies — Become a Full-Stack Engineer</strong><br>
+    RUNI CS 2026 · Final project<br><br>
+    Live product &nbsp;<strong>nestup-kappa.vercel.app</strong><br>
+    Repository &nbsp;<strong>github.com/nestupweb/nestup</strong>
+  </div>
+</section>
+<h1>NestUp — Basic Scale</h1>
+<p><strong>Current production data:</strong> 845 profiles · 824 listings · 1,290 household memberships · 883 listing views · 29 conversations
+<strong>Database:</strong> Postgres 17, Supabase (eu-central-1) · <strong>Hosting:</strong> Vercel serverless</p>
+<hr />
+<h2>1. Where the product stands today</h2>
+<p>This should be stated first, because it changes what the honest answers below actually are. The dataset is not a toy dataset. The seed contains 838 accounts and 824 live rooms distributed across 124 cities, which is approximately the size of the first city of a real product. Therefore the queries described in this document are executed against realistic row counts and not against three test records, and all of the measurements presented here were taken from the live deployment.</p>
+<hr />
+<h2>2. What happens as users arrive</h2>
+<h3>Tens of concurrent users</h3>
+<p>There is no problem in this range, and no change is required. Vercel executes each request inside its own serverless invocation, and consequently concurrency is handled by the platform rather than by a process pool. The database remains well inside the pooled connection limits of Supabase. The heaviest read, which is the Listings index, is a <strong>shared cache entry</strong> that is served identically to every user.</p>
+<h3>Hundreds of concurrent users</h3>
+<p>This range is still acceptable, although there is one reservation which is worth naming explicitly.</p>
+<p>The following aspects hold up well:</p>
+<ul>
+<li><strong>The public room list scales with the amount of content and not with the amount of traffic.</strong> The function <code>queryListings</code> is a shared <code>"use cache"</code> entry keyed on the filter set, and therefore a thousand people who open Listings with the default filters cause <strong>one</strong> database query rather than a thousand.</li>
+<li><strong>Per-member data never reaches a shared store.</strong> Decks, profile tabs, saved identifiers and inboxes are all declared as <code>"use cache: private"</code> and are held inside the browser of each individual member. They therefore cost nothing on the server and cannot contend with one another.</li>
+<li><strong>Pages send HTML rather than producing a waterfall of client-side fetches.</strong></li>
+</ul>
+<p>The following aspects would show strain first:</p>
+<ul>
+<li><strong>Realtime connections.</strong> Every open chat holds a WebSocket. The free tier of Supabase limits the number of concurrent connections, and this is the first ceiling which the product would reach, before CPU, before storage and before query time.</li>
+<li><strong>Deck construction.</strong> This is discussed in §3. It is the single genuinely expensive read, and it cannot be shared between members.</li>
+</ul>
+<h3>Thousands of concurrent users</h3>
+<p>This range requires the work described in §8. Principally, the deck must cease to perform its scoring in application code, and Realtime requires a concrete plan.</p>
+<hr />
+<h2>3. Heavy queries, and what was done about them</h2>
+<h3>3.1 The swipe deck, which is by far the most expensive</h3>
+<p>Building the deck of a single member originally required <strong>approximately 9 round-trips arranged in 3 dependent waves</strong>: first the candidate rooms, then the owners and the residents, and finally the blocked identifiers and the attention history. Every one of these queries is scoped to one specific member, and therefore nothing can be shared between members.</p>
+<p>Three mechanisms keep this acceptable:</p>
+<ol>
+<li><strong>The hard filters are executed in SQL, before any scoring takes place.</strong> The city filter, <code>is_active</code>, <code>removed_at is null</code> and the exclusion of already-swiped rooms are all evaluated inside Postgres. Only the surviving rows are scored. The naive alternative would be to score all 824 rooms inside Node for every single deck view.</li>
+<li><strong>A cap on the deck size</strong>, namely <code>DECK_SIZE = 60</code>.</li>
+<li><strong>The entire result is cached per member</strong> through <code>getCachedDeck</code>, tagged as <code>deck:&lt;userId&gt;</code>, and it is invalidated only when the member swipes or modifies a room belonging to that member.</li>
+</ol>
+<p><strong>An honest limitation:</strong> the scoring itself is JavaScript executed over the filtered candidate set. This is acceptable with 824 rooms in a single city, but it is not acceptable with 50,000 rooms, and §8 describes what would replace it.</p>
+<h3>3.2 The Listings index</h3>
+<p>This query is <code>select * from listings where is_active</code>, combined with the filters, together with <code>count: 'exact'</code> in order to support pagination.</p>
+<ul>
+<li>It is backed by <code>listings_browse_idx on (city, rent, available_from) where is_active</code>, which is a <strong>partial</strong> index and therefore covers only those rows which are actually capable of appearing in the result.</li>
+<li>It is paginated at 20 rows per page, and the page is applied inside SQL through <code>range()</code> and never inside JavaScript.</li>
+<li>It is stored in the shared cache, and consequently repeated traffic is free.</li>
+</ul>
+<p><strong>An honest limitation:</strong> the option <code>count: 'exact'</code> causes Postgres to count every matching row on every uncached query, and this degrades as the table grows. The standard remedy is an estimated count. It was deferred because at the present size, the fact that "824 rooms available" is exactly correct is worth more than the milliseconds which would be saved.</p>
+<h3>3.3 The map, which loads all pins at once</h3>
+<p>The endpoint <code>/api/listings/pins</code> returns <strong>every</strong> placed room, which is approximately 824 rooms and about 150 KB. This is a deliberate product decision, since the map is intended to display everything rather than the current filter.</p>
+<p>The cost is contained by paying it only when it is genuinely required:</p>
+<ul>
+<li>The endpoint selects <strong>only</strong> the columns <code>id, lat, lng, rent, title, city, neighborhood, photo_urls[0]</code>, and it does not perform <code>select *</code>.</li>
+<li><strong>No map is rendered until an icon is pressed.</strong> Both MapLibre and the pin payload are loaded on the first opening of the map and are then retained for the remainder of the visit. The majority of visits never open a map and therefore never pay this cost at all.</li>
+</ul>
+<h3>3.4 The chat inbox</h3>
+<p>The function <code>my_conversations()</code> is a single SQL function which returns every thread together with its last message, its unread count and the identity of the other party. It therefore requires one round-trip rather than one query per conversation.</p>
+<p>It is backed by <code>messages_conversation_idx (conversation_id, created_at)</code>.</p>
+<h3>3.5 Household size and gender</h3>
+<p>These values are required on every row of the browse list and on every deck candidate. Computing them per row would transform a single query into hundreds of queries, and therefore they are <strong>denormalized onto <code>listings</code></strong> and maintained by triggers over <code>listing_residents</code>. This is the classic trade of write cost in exchange for read benefit, and in this case it is oriented in the correct direction, since rooms are read far more frequently than households change.</p>
+<hr />
+<h2>4. Indexes</h2>
+<p>There are <strong>20 indexes</strong>, and each one of them is placed against a query which actually exists. The following are the indexes which carry the product:</p>
+<table>
+<thead>
+<tr>
+<th>Index</th>
+<th>What it serves</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>listings_browse_idx (city, rent, available_from) WHERE is_active</code></td>
+<td>The Listings index and the hard filter of every deck. It is partial, and therefore inactive rooms are not present in it</td>
+</tr>
+<tr>
+<td><code>one_active_listing_per_owner (owner_id) WHERE is_active</code></td>
+<td><strong>Unique.</strong> It enforces the rule of "one person, one home" as a constraint rather than as a check</td>
+</tr>
+<tr>
+<td><code>swipes_by_seeker_idx (seeker_id)</code></td>
+<td>The exclusion of already-swiped rooms, which is read on every deck build</td>
+</tr>
+<tr>
+<td><code>swipes_likes_by_listing_idx (listing_id) WHERE direction = 'like'</code></td>
+<td>Interest counts per room. It is partial, since skips constitute the majority and are never counted</td>
+</tr>
+<tr>
+<td><code>messages_conversation_idx (conversation_id, created_at)</code></td>
+<td>Thread history and last-message lookups</td>
+</tr>
+<tr>
+<td><code>messages_client_id_uniq</code></td>
+<td><strong>Unique.</strong> It implements the idempotent retry, and it is the reason that a resend cannot post a message twice</td>
+</tr>
+<tr>
+<td><code>listing_views_recent_idx (user_id, viewed_at DESC)</code></td>
+<td>The History section of the profile, with <code>LIMIT 30</code>. The <code>DESC</code> direction matches the ordering of the query</td>
+</tr>
+<tr>
+<td><code>viewings_by_conversation_idx (conversation_id, created_at)</code></td>
+<td>Viewings inside a thread</td>
+</tr>
+<tr>
+<td><code>saved_listings_by_listing_idx (listing_id)</code></td>
+<td>Save counts</td>
+</tr>
+<tr>
+<td><code>blocks_blocked_idx (blocked_id)</code></td>
+<td>The function <code>blocked_user_ids()</code>, which is called on every deck build</td>
+</tr>
+<tr>
+<td><code>listing_invites_pending_idx (invitee_id) WHERE status = 'pending'</code></td>
+<td>Pending invitations. It is partial, since invitations which have already been answered are of no further use</td>
+</tr>
+<tr>
+<td><code>profiles_full_name_trgm_idx</code></td>
+<td>A <strong>trigram</strong> index for searching roommates by name, because a <code>LIKE '%name%'</code> pattern cannot use a B-tree</td>
+</tr>
+<tr>
+<td><code>listings_household_size_idx</code>, <code>listings_household_gender_idx</code>, <code>listings_wanted_gender_idx</code></td>
+<td>The denormalized filter columns</td>
+</tr>
+</tbody>
+</table>
+<p>The pattern which is worth pointing out is that <strong>six of these indexes are partial or expression indexes.</strong> A partial index on <code>WHERE is_active</code> is smaller and remains resident in cache, precisely because it never contains the rows which the query would be unable to return in any case.</p>
+<hr />
+<h2>5. Avoiding unnecessary loading</h2>
+<p>This is the area in which most of the recent engineering effort was invested, and the result is measurable.</p>
+<h3>5.1 Server-side caching</h3>
+<p>There are five cached reads, each of which is tagged so that a write invalidates exactly what it modified:</p>
+<table>
+<thead>
+<tr>
+<th>Read</th>
+<th>Cache</th>
+<th>Tag</th>
+<th>Invalidated by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>queryListings</code></td>
+<td><strong>shared</strong></td>
+<td><code>listings</code></td>
+<td>Publishing, editing, pausing or removing a room</td>
+</tr>
+<tr>
+<td><code>getSavedListingIds</code></td>
+<td>private</td>
+<td><code>saved:&lt;id&gt;</code></td>
+<td>Adding a room to the liked list</td>
+</tr>
+<tr>
+<td><code>getProfileTabData</code></td>
+<td>private</td>
+<td><code>profile:&lt;id&gt;</code></td>
+<td>Changes to the profile, the listing, the hearts or the invitations</td>
+</tr>
+<tr>
+<td><code>getCachedDeck</code></td>
+<td>private</td>
+<td><code>deck:&lt;id&gt;</code></td>
+<td>Swiping, and changes to a room owned by the member</td>
+</tr>
+<tr>
+<td><code>getCachedInbox</code></td>
+<td>private</td>
+<td><code>chat:&lt;id&gt;</code></td>
+<td>Sending, reading or deleting a chat, <strong>and also a message written by the other side, through Realtime</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The last row of this table is the interesting one. The inbox of a member changes when <em>somebody else</em> writes a message, and in that situation no action of the member is executed at all. Therefore the Realtime socket calls a Server Action which drops the tag belonging to that member, and this is exactly what makes the caching of an inbox safe rather than stale.</p>
+<p><strong>The rule regarding the scope of invalidation.</strong> Mutations used to respond to every write with a large number of <code>revalidatePath</code> calls, and consequently editing a room also discarded the chats and the profile of the member. At present a write invalidates only what it actually modified, and <code>cache-invalidation.test.ts</code> fails if this behavior regresses.</p>
+<h3>5.2 Measured result</h3>
+<p>The following figures describe returning to a tab which was already visited, measured on production with a warm cache:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Swipe</td>
+<td>860 ms, skeleton</td>
+<td><strong>69 ms, no skeleton</strong></td>
+</tr>
+<tr>
+<td>Chat</td>
+<td>1,900 ms, skeleton</td>
+<td><strong>71 ms, no skeleton</strong></td>
+</tr>
+<tr>
+<td>Profile</td>
+<td>~370 ms, skeleton</td>
+<td><strong>69 ms, no skeleton</strong></td>
+</tr>
+<tr>
+<td>Listings</td>
+<td>~850 ms, skeleton</td>
+<td>~375 ms, ~300 ms skeleton</td>
+</tr>
+</tbody>
+</table>
+<p>Three of the four tabs make <strong>zero server requests</strong> when the member returns to them.</p>
+<p>The technical reason is worth being able to explain. The App Shell prerender of Next.js advances through cached reads and <strong>stops at the first uncached read</strong>. Every page began with an uncached <code>auth.getUser()</code> call, which is a network round-trip to Supabase, and this kept everything positioned behind it outside the shell regardless of how well that content was cached. Caching this identity read is therefore what removed approximately 300 ms from each tab.</p>
+<p>Listings is the remaining case. It likewise makes no server request, and its residual cost is approximately 60 ms of client rendering, which is extended by the page-slide animation. This is therefore an issue of animation timing and not an issue of data.</p>
+<h3>5.3 Payload discipline</h3>
+<ul>
+<li><strong>Pagination is applied everywhere that it matters:</strong> Listings uses 20 rows per page in SQL, History uses <code>LIMIT 30</code>, and the deck is capped at 60.</li>
+<li><strong>Column selection:</strong> the pins endpoint selects 8 columns and not <code>*</code>.</li>
+<li><strong>Images:</strong> <code>next/image</code> is used with correct <code>sizes</code> values, so that a thumbnail of 128 pixels is not delivered as a file of 1200 pixels. Only the first three cover images are marked as <code>priority</code>, and the swipe deck warms exactly <strong>one</strong> card in advance rather than the entire deck.</li>
+<li><strong>Code splitting:</strong> MapLibre is a dynamic import placed behind a button press.</li>
+<li><strong>Photographs are compressed inside the browser</strong> before they are uploaded.</li>
+</ul>
+<hr />
+<h2>6. Separation between client and server</h2>
+<table>
+<thead>
+<tr>
+<th>Runs on the server</th>
+<th>Runs in the browser</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Every database read (Server Components)</td>
+<td>Interaction state, such as dialogs, the current card and filter drafts</td>
+</tr>
+<tr>
+<td>Every database write (Server Actions)</td>
+<td>Optimistic rendering of messages</td>
+</tr>
+<tr>
+<td>All scoring and ranking</td>
+<td>Map rendering (MapLibre and WebGL)</td>
+</tr>
+<tr>
+<td>All authorization</td>
+<td>Image compression prior to upload</td>
+</tr>
+<tr>
+<td>Secrets, namely the service-role key, SMTP and Gemini</td>
+<td>The Realtime subscription</td>
+</tr>
+</tbody>
+</table>
+<p><strong>No credential which is capable of bypassing RLS ever reaches the browser.</strong> The client holds the anon key only. That key is designed to be public and is powerless without a session. The service-role key exists exclusively inside server-side environment variables.</p>
+<p>Two boundary details are enforced rather than merely assumed:</p>
+<ul>
+<li>The module <code>lib/supabase/public.ts</code> is a <strong>cookie-free</strong> client which is used only for the shared cache. A client which carried a session in that position would make the shared cache entry member-specific, which would constitute a cross-user leak. For this reason the module is marked <code>server-only</code> and documented accordingly.</li>
+<li>The modules <code>lib/swipe.ts</code>, which is client-safe, and <code>lib/swipe-deck.ts</code>, which is <code>server-only</code>, are separated precisely because the cookie-reading client must never enter a browser bundle.</li>
+</ul>
+<hr />
+<h2>7. Current limitations</h2>
+<p>These are stated honestly, and each of them represents a genuine ceiling.</p>
+<ol>
+<li><strong>Deck scoring is performed on the application side.</strong> This is acceptable with approximately 824 rooms, but it is the wrong architecture at 50,000 rooms.</li>
+<li><strong>The option <code>count: 'exact'</code></strong> on the Listings query counts every matching row whenever the cache misses.</li>
+<li><strong>Realtime connection limits</strong> constitute the first hard ceiling on the free tier.</li>
+<li><strong>There is no rate limiting except on authentication email.</strong> The table <code>auth_mail_throttle</code> protects the mail path, whereas message sending and listing creation are protected only by RLS.</li>
+<li><strong>Photographs are checked by an external model on the upload path</strong>, which adds latency and creates a dependency on the availability of a third party.</li>
+<li><strong>There are no background jobs.</strong> Everything happens inside the request, and notification emails are sent inline.</li>
+<li><strong>There is a single region.</strong> The database is located in eu-central-1, which is appropriate for a product focused on Israel but poor for users elsewhere.</li>
+<li><strong>There is no CDN caching of the pins payload.</strong> The 150 KB payload is fetched separately for every visitor who opens the map.</li>
+<li><strong>Storage is unbounded.</strong> Nothing prunes the photographs belonging to removed listings.</li>
+<li><strong>There is no observability.</strong> There are no metrics, no tracing and no slow-query alerting, and therefore problems would be discovered only when a person happened to notice them.</li>
+</ol>
+<hr />
+<h2>8. What a larger version would change</h2>
+<p>The following list is ordered according to the sequence in which the pain would actually arrive.</p>
+<p><strong>The first step is to measure.</strong> Nothing on this list is worth implementing before a slow-query log exists and a p95 latency figure is available per route. Until then, every item below remains a hypothesis.</p>
+<ol>
+<li><strong>Move deck filtering entirely into SQL.</strong> The weighted score would be computed as a SQL expression, or alternatively as a materialized per-member candidate table which is refreshed whenever the profile changes, so that Postgres returns 60 ranked rows instead of Node scoring hundreds of candidates. This is the single change which unlocks an order of magnitude of growth.</li>
+<li><strong>Estimated counts.</strong> Replace <code>count: 'exact'</code> with a planner estimate above a certain threshold, while retaining exact counts for small result sets.</li>
+<li><strong>Cursor-based pagination.</strong> The offsets used by <code>range()</code> degrade deep inside a long list, whereas keyset pagination on <code>(created_at, id)</code> does not.</li>
+<li><strong>Move notification email onto a queue.</strong> It should not remain on the request path.</li>
+<li><strong>Rate limiting</strong> on message sending, listing creation and report submission.</li>
+<li><strong>Cache the pins payload at the CDN edge</strong>, together with a tag-based purge, since that payload is identical for every user.</li>
+<li><strong>A plan for Realtime:</strong> either move to a paid tier, or replace always-on sockets with polling for the inbox while reserving sockets for threads which are actually open.</li>
+<li><strong>Add observability</strong>, namely Vercel Analytics, Supabase slow-query logs and an error tracker.</li>
+<li><strong>A storage lifecycle</strong>, meaning that photographs are deleted when a listing is hard-removed.</li>
+<li><strong>Read replicas and multiple regions</strong>, but only if the product ever expands beyond a single country. This item is listed last deliberately, because it is the change which people tend to reach for first and to require last.</li>
+</ol>
+<hr />
+</body></html>
