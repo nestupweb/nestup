@@ -6,11 +6,13 @@ import { describeSlots, normalizeSlots } from "@/lib/availability";
 import { ListingGallery } from "@/components/listings/ListingGallery";
 import { MessageOwner } from "@/components/listings/MessageOwner";
 import { SaveButton } from "@/components/listings/SaveButton";
+import { ScorePill } from "@/components/ui/ScorePill";
 import { DetailIcon, type DetailIconName } from "@/components/listings/DetailIcon";
 import { RoomMapButton } from "@/components/map/RoomMapButton";
 import { pointOf } from "@/lib/geo";
 import { locationNote } from "@/lib/location";
 import { queryNearbyListingPins } from "@/lib/listings";
+import { lifestyleScore, socialScore } from "@/lib/compatibility";
 import type { Listing, Profile } from "@/lib/types";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -40,6 +42,10 @@ export default async function ListingDetailPage({
   let saved = false;
   let introTemplate = "";
   let hasProfile = false;
+  // The seeker's own profile, kept for the match scores below. It costs
+  // nothing extra: this row was already being fetched to answer `hasProfile`,
+  // so widening that `select` to `*` is the whole change.
+  let me: Profile | null = null;
   if (user) {
     const [{ data: savedRow }, , { data: detailsRow }, { data: meRow }] = await Promise.all([
       supabase.from("saved_listings").select("listing_id").eq("user_id", user.id).eq("listing_id", listing.id).maybeSingle(),
@@ -50,11 +56,12 @@ export default async function ListingDetailPage({
           { onConflict: "user_id,listing_id" }
         ),
       supabase.from("profile_details").select("intro_template").eq("user_id", user.id).maybeSingle(),
-      supabase.from("profiles").select("user_id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
     ]);
     saved = Boolean(savedRow);
     introTemplate = (detailsRow as { intro_template: string } | null)?.intro_template ?? "";
-    hasProfile = Boolean(meRow);
+    me = (meRow as Profile | null) ?? null;
+    hasProfile = Boolean(me);
   }
 
   // RLS: this returns null for anonymous visitors — by design.
@@ -85,6 +92,26 @@ export default async function ListingDetailPage({
   // on a map at all, and only ever the rooms around it (user request,
   // 2026-08-28: compare this one against what else is going, on one map).
   const nearby = place ? await queryNearbyListingPins(place, listing.id) : [];
+
+  /**
+   * The same two numbers the swipe deck and the Listings row show, from the
+   * same functions — a room must not score differently depending on which page
+   * a member is looking at it from.
+   *
+   * Null on exactly the same conditions as the Listings card: nobody signed in,
+   * no profile filled in yet, the member's own room, or an owner profile RLS
+   * did not return. Browse is public, so "no score" is ordinary here.
+   *
+   * No cached reader is involved on this route — it is `instant = false` and
+   * fully dynamic, and both profiles are already loaded above.
+   */
+  const score =
+    me && owner && listing.owner_id !== me.user_id
+      ? {
+          lifestyle: lifestyleScore(me, listing, owner, "seeker"),
+          social: socialScore(me, owner),
+        }
+      : null;
 
   const features = FEATURES.filter((f) => listing[f.key]);
   const viewingHours = describeSlots(normalizeSlots(listing.viewing_slots));
@@ -134,6 +161,18 @@ export default async function ListingDetailPage({
           <dd className="font-semibold text-ink">{leaseTermLabel(listing.lease_term ?? "flexible")}</dd>
         </div>
       </dl>
+
+      {/* Compatibility, directly under the key facts and above the fold —
+          the deck puts it top-left on the card for the same reason. The full
+          "Lifestyle match" / "Social match" labels are used here rather than
+          the Listings row's shortened pair, because this page is one column
+          wide and has the room the row did not. */}
+      {score ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <ScorePill value={score.lifestyle} label="Lifestyle match" tone="surface" />
+          <ScorePill value={score.social} label="Social match" tone="surface" />
+        </div>
+      ) : null}
 
       <div className="mt-10 space-y-9">
         <section className="border-t border-hairline pt-7">

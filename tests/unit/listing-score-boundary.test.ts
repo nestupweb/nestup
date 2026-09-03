@@ -55,6 +55,36 @@ test("the score context is tagged so signing in and editing a profile both re-sc
   expect(ctx).toContain("cacheTag(profileTag(user.id))");
 });
 
+test("the room page scores from the same functions, with the same guards", () => {
+  // Three surfaces now show a compatibility score — the deck, the Listings row
+  // and the room page. They must agree, so all three go through
+  // `lifestyleScore` / `socialScore` rather than any of them growing its own
+  // arithmetic, and all three withhold the score on the same conditions.
+  const page = readFileSync(
+    new URL("../../app/(public)/browse/[id]/page.tsx", import.meta.url),
+    "utf8"
+  );
+  expect(page).toContain("lifestyleScore(me, listing, owner, \"seeker\")");
+  expect(page).toContain("socialScore(me, owner)");
+  // Guarded on all three: signed in with a profile, an owner RLS returned, and
+  // not the member's own room.
+  expect(page).toMatch(/me && owner && listing\.owner_id !== me\.user_id/);
+  expect(page).toContain('from "@/components/ui/ScorePill"');
+});
+
+test("the room page reuses the profile row it already fetched", () => {
+  // `hasProfile` was answered by a `select("user_id")` on the member's own row.
+  // Scoring needs the whole profile, and widening that select is the entire
+  // cost — a second query for a row already in flight would be pure waste on a
+  // route that is fully dynamic and pays for every round-trip.
+  const page = readFileSync(
+    new URL("../../app/(public)/browse/[id]/page.tsx", import.meta.url),
+    "utf8"
+  );
+  expect(page).not.toContain('.select("user_id").eq("user_id", user.id)');
+  expect(page).toContain('supabase.from("profiles").select("*").eq("user_id", user.id)');
+});
+
 test("swipe and Listings render the same score pill", () => {
   // The two pages exist so a member can recognise a room from the deck in the
   // list. That only works if the number is spelled the same way in both, so
