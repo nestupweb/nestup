@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getCachedSession } from "@/lib/auth";
 import { listingFiltersSchema } from "@/lib/validation/filters";
-import { getSavedListingIds, queryListings } from "@/lib/listings";
+import { getListingScoreContext, getSavedListingIds, queryListings } from "@/lib/listings";
+import { lifestyleScore, socialScore } from "@/lib/compatibility";
 import { FilterBar } from "@/components/listings/FilterBar";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SortMenu } from "@/components/listings/SortMenu";
@@ -102,6 +103,41 @@ async function Results({ searchParams }: { searchParams: Promise<Record<string, 
   ]);
   // Signed-in hearts come from the account (Profile › Liked); visitors use localStorage.
   const savedIds = session ? await getSavedListingIds(session.id) : new Set<string>();
+
+  // Match scores, the same two numbers the swipe deck shows. Only the people
+  // are fetched here — `queryListings` above stays shared and score-free (see
+  // `getListingScoreContext`), and the score itself is computed below from the
+  // room the shared cache returned and the profile the private one did.
+  //
+  // Owner ids are deduplicated and sorted so the cache key is stable: two
+  // members whose page happens to hold the same rooms in a different order
+  // would otherwise miss a warm entry apiece.
+  const ownerIds = session
+    ? [...new Set(listings.map((l) => l.owner_id))].sort()
+    : [];
+  const { seeker, owners } = await getListingScoreContext(ownerIds);
+
+  /**
+   * Null wherever a score would be meaningless rather than merely low: nobody
+   * signed in, a profile that has not been filled in yet, the member's own
+   * room, or an owner whose profile did not come back. Browse is public, so
+   * "no score" is the ordinary case here, not an error.
+   *
+   * Unlike the deck there is no `MIN_DECK_SCORE` gate — Browse is where the
+   * lower-scoring rooms are meant to stay reachable, so a weak score is shown
+   * as a weak score rather than hiding the room.
+   */
+  const scoreFor = (l: (typeof listings)[number]) => {
+    if (!seeker) return null;
+    if (l.owner_id === seeker.user_id) return null;
+    const owner = owners[l.owner_id];
+    if (!owner) return null;
+    return {
+      lifestyle: lifestyleScore(seeker, l, owner, "seeker"),
+      social: socialScore(seeker, owner),
+    };
+  };
+
   const lastPage = Math.max(1, Math.ceil(total / filters.page_size));
 
   // Defaults are left out so the URL stays readable: /browse?page=2, not
@@ -172,6 +208,7 @@ async function Results({ searchParams }: { searchParams: Promise<Record<string, 
                   listing={l}
                   signedIn={Boolean(session)}
                   saved={savedIds.has(l.id)}
+                  score={scoreFor(l)}
                   priority={i < 3}
                 />
               ))}

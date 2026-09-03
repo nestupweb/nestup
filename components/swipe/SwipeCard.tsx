@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { NoPhoto } from "@/components/listings/NoPhoto";
 import { SwipePanel } from "@/components/swipe/SwipePanel";
-import { scoreLabel } from "@/lib/compatibility";
+import { ScorePill } from "@/components/ui/ScorePill";
 import { photoRoomLabel } from "@/lib/constants";
 import { orderPhotos } from "@/lib/photos";
 import type { DeckEntry } from "@/lib/swipe";
@@ -206,26 +206,6 @@ export function SwipeCard({
       {/* ===== Information panel ===== */}
       <SwipePanel entry={entry} seeker={seeker} page={page} onPageChange={goToPage} />
     </article>
-  );
-}
-
-function ScorePill({ value, label }: { value: number | null; label: string }) {
-  const text =
-    value === null
-      ? `${label} unavailable — add interests to your profile to see it`
-      : `${label} ${value} out of 100, ${scoreLabel(value)}`;
-  return (
-    <div
-      role="img"
-      aria-label={text}
-      title={text}
-      className="flex items-center gap-2.5 rounded-full bg-black/45 py-1 pl-1 pr-3.5 text-white ring-1 ring-white/15 backdrop-blur-md"
-    >
-      <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-white/15 px-1.5 text-[16px] font-semibold tabular-nums">
-        {value === null ? "—" : value}
-      </span>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/90">{label}</span>
-    </div>
   );
 }
 

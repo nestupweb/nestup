@@ -1,9 +1,9 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
-import { LISTINGS_TAG, savedTag } from "@/lib/cache-tags";
+import { LISTINGS_TAG, SESSION_TAG, profileTag, savedTag } from "@/lib/cache-tags";
 import type { ListingFilters } from "@/lib/validation/filters";
-import type { Listing } from "@/lib/types";
+import type { Listing, Profile } from "@/lib/types";
 
 /** Minimal query surface we drive — lets unit tests fake the builder. */
 export interface FilterableQuery {
@@ -233,4 +233,66 @@ export async function getSavedListingIds(userId: string): Promise<Set<string>> {
   const supabase = await createClient();
   const { data } = await supabase.from("saved_listings").select("listing_id").eq("user_id", userId);
   return new Set(((data as { listing_id: string }[] | null) ?? []).map((r) => r.listing_id));
+}
+
+/**
+ * The two profiles a Listings row needs before it can show a match score: the
+ * member looking, and the owner of each room on the page.
+ *
+ * Why this is a separate read rather than part of `queryListings`. That query
+ * is the app's only SHARED cache and runs on the cookie-free client precisely
+ * so its output cannot become member-specific. A compatibility score is the
+ * most member-specific value in the product, so putting one in there would turn
+ * one shared entry into one member's data served to everybody — the exact
+ * cross-user leak that client exists to prevent. The room list stays shared and
+ * the people stay private, and the score is computed from the two at render.
+ *
+ * Private, and flattened the same way `getCachedOwnProfile` is: it reads the
+ * session itself instead of awaiting another private cache, because a private
+ * cache whose first act is to await another one does not reach the route's App
+ * Shell — which is what put a ~280ms skeleton back on Profile when it did.
+ *
+ * `profiles` is readable by authenticated members only (migration 0001), so
+ * this genuinely has to be the cookie-bearing client; the anon one returns
+ * nothing here.
+ *
+ * Tagged on both the session and the member's profile, so signing in and
+ * editing your own Daily-life answers each re-score the list. `LISTINGS_TAG`
+ * is deliberately absent: this holds people, not rooms, and a room being
+ * published should not throw away the profiles.
+ */
+export async function getListingScoreContext(
+  ownerIds: string[]
+): Promise<{ seeker: Profile | null; owners: Record<string, Profile> }> {
+  "use cache: private";
+  cacheTag(SESSION_TAG);
+  // stale: 300 for the same reason as every other read on this route — under
+  // five minutes Next keeps the value out of the App Shell, and Listings would
+  // start paying for this behind a skeleton again.
+  cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
+
+  const empty = { seeker: null, owners: {} };
+  if (ownerIds.length === 0) return empty;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return empty;
+
+  cacheTag(profileTag(user.id));
+
+  // One query, not two: the member's own row comes back in the same `in` as the
+  // owners, and is picked out afterwards. A member who owns a room on the page
+  // is therefore fetched once rather than twice.
+  const ids = [...new Set([user.id, ...ownerIds])];
+  const { data } = await supabase.from("profiles").select("*").in("user_id", ids);
+
+  const owners: Record<string, Profile> = {};
+  let seeker: Profile | null = null;
+  for (const p of ((data as Profile[] | null) ?? [])) {
+    if (p.user_id === user.id) seeker = p;
+    if (ownerIds.includes(p.user_id)) owners[p.user_id] = p;
+  }
+  return { seeker, owners };
 }

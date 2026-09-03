@@ -3,17 +3,26 @@ import Image from "next/image";
 import { FEATURES, propertyTypeLabel } from "@/lib/constants";
 import { NoPhoto } from "@/components/listings/NoPhoto";
 import { SaveButton } from "@/components/listings/SaveButton";
+import { ScorePill } from "@/components/ui/ScorePill";
 import type { Listing } from "@/lib/types";
 
 export function ListingCard({
   listing,
   signedIn = false,
   saved = false,
+  score = null,
   priority = false,
 }: {
   listing: Listing;
   signedIn?: boolean;
   saved?: boolean;
+  /**
+   * The member's compatibility with this room, or null when there is nothing
+   * honest to show — signed out, profile not filled in, or their own room.
+   * Computed in `app/(public)/browse/page.tsx`; the same two numbers the swipe
+   * deck puts on its card.
+   */
+  score?: { lifestyle: number; social: number | null } | null;
   /**
    * Fetch this cover immediately instead of waiting for the lazy-load
    * threshold. Set by the results list for the handful of cards that are
@@ -73,6 +82,17 @@ export function ListingCard({
               {listing.neighborhood ? ` · ${listing.neighborhood}` : ""}
             </p>
             <p className="mt-2 text-xs text-muted">{meta}</p>
+            {/* Labels are shortened from the deck's "Lifestyle match" / "Social
+                match": the row's text column is only ~230px wide on a phone and
+                the full pair will not sit side by side. The aria-label still
+                reads the whole sentence, so nothing is lost to a screen
+                reader. */}
+            {score ? (
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                <ScorePill value={score.lifestyle} label="Lifestyle" tone="surface" />
+                <ScorePill value={score.social} label="Social" tone="surface" />
+              </div>
+            ) : null}
             {chips.length > 0 ? (
               <div className="mt-3 hidden flex-wrap gap-1.5 md:flex">
                 {chips.map((c) => (

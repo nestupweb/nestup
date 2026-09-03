@@ -44,11 +44,11 @@ test("every cacheLife stale window is long enough to ride in the App Shell", () 
   // Guards the list above: a file renamed or a directive dropped would other-
   // wise make this pass by finding nothing at all.
   //
-  // Five: `queryListings` and `getSavedListingIds` (lib/listings.ts), plus the
-  // profile tabs, the swipe deck and the chat inbox. This number is meant to be
-  // edited when a cached read is added — the point is that adding one is a
-  // deliberate act, not that five is special.
-  expect(found.length).toBe(5);
+  // Six: `queryListings`, `getSavedListingIds` and `getListingScoreContext`
+  // (lib/listings.ts), plus the profile tabs, the swipe deck and the chat
+  // inbox. This number is meant to be edited when a cached read is added — the
+  // point is that adding one is a deliberate act, not that six is special.
+  expect(found.length).toBe(6);
 
   for (const { file, stale } of found) {
     expect(stale, `${file} caches with stale: ${stale}`).toBeGreaterThanOrEqual(APP_SHELL_MIN_STALE);
