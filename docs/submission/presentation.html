@@ -1,0 +1,792 @@
+<title>NestUp Project Defence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* ---------------------------------------------------------------
+     Palette lifted from the product's own app/globals.css.
+     Editorial (light, green) and Noir (dark, gold) are NestUp's two
+     real themes — the deck ships both because the app does.
+     --------------------------------------------------------------- */
+  :root {
+    --paper:    #faf7f2;
+    --ink:      #201d1a;
+    --surface:  #ffffff;
+    --accent:   #2e7d5e;
+    --accent-contrast: #faf7f2;
+    --hairline: rgba(32, 29, 26, 0.12);
+    --muted:    rgba(32, 29, 26, 0.66);
+    --danger:   #a3402f;
+    --rail:     rgba(46, 125, 94, 0.10);
+
+    --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+    --body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --pad: clamp(1.75rem, 4.5vw, 5rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:    #191613;
+      --ink:      #f5efe6;
+      --surface:  #201c18;
+      --accent:   #c9a468;
+      --accent-contrast: #191613;
+      --hairline: rgba(255, 255, 255, 0.13);
+      --muted:    rgba(245, 239, 230, 0.58);
+      --danger:   #d98873;
+      --rail:     rgba(201, 164, 104, 0.12);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:    #191613;
+    --ink:      #f5efe6;
+    --surface:  #201c18;
+    --accent:   #c9a468;
+    --accent-contrast: #191613;
+    --hairline: rgba(255, 255, 255, 0.13);
+    --muted:    rgba(245, 239, 230, 0.58);
+    --danger:   #d98873;
+    --rail:     rgba(201, 164, 104, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------------------------------------------------------------
+     Deck mechanics
+     --------------------------------------------------------------- */
+  .deck { position: relative; }
+
+  .slide {
+    display: none;
+    min-height: 100dvh;
+    padding: var(--pad) var(--pad) calc(var(--pad) * 0.9);
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(1rem, 2vh, 1.75rem);
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+  .slide.is-active { display: flex; animation: rise 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide.is-active { animation: none; }
+  }
+
+  /* ---------------------------------------------------------------
+     Type scale
+     --------------------------------------------------------------- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: clamp(0.62rem, 0.95vw, 0.78rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2.9rem, 8vw, 6.5rem);
+    line-height: 0.94;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(1.75rem, 4.2vw, 3.4rem);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(1.05rem, 1.9vw, 1.4rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.35em;
+  }
+
+  p, li { font-size: clamp(0.95rem, 1.35vw, 1.15rem); line-height: 1.55; margin: 0; }
+  .lede { font-size: clamp(1.05rem, 1.75vw, 1.5rem); line-height: 1.45; max-width: 34ch; color: var(--muted); }
+  .prose { max-width: 62ch; }
+  strong { font-weight: 600; color: var(--ink); }
+  em { font-style: normal; color: var(--accent); font-weight: 500; }
+
+  /* ---------------------------------------------------------------
+     Layout primitives
+     --------------------------------------------------------------- */
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: start;
+  }
+  .split.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  @media (max-width: 860px) {
+    .split, .split.even { grid-template-columns: 1fr; gap: 1.5rem; }
+  }
+
+  .stack { display: flex; flex-direction: column; gap: clamp(0.75rem, 1.6vh, 1.25rem); }
+  .stack.tight { gap: 0.5rem; }
+
+  ul.clean { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+  ul.clean li { padding-left: 1.15rem; position: relative; }
+  ul.clean li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0.62em;
+    width: 0.4rem; height: 0.4rem;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: clamp(0.9rem, 1.7vw, 1.35rem);
+  }
+  .cards { display: grid; gap: 0.75rem; }
+  .cards.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 760px) { .cards.two, .cards.three { grid-template-columns: 1fr; } }
+
+  /* Metric rail */
+  .metrics { display: flex; flex-direction: column; gap: 0.6rem; }
+  .metric {
+    display: flex; align-items: baseline; gap: 0.7rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--rail);
+    border-radius: 10px;
+  }
+  .metric .n {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: clamp(1.1rem, 2vw, 1.6rem);
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    min-width: 4.2ch;
+  }
+  .metric .l { font-size: clamp(0.8rem, 1.1vw, 0.95rem); color: var(--muted); line-height: 1.3; }
+
+  /* Data table */
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: clamp(0.82rem, 1.15vw, 1rem); }
+  th, td { text-align: left; padding: 0.55rem 0.8rem 0.55rem 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  th {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.72em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--accent); white-space: nowrap; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--rail);
+    padding: 0.12em 0.4em;
+    border-radius: 5px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: clamp(0.66rem, 0.95vw, 0.78rem);
+    letter-spacing: 0.06em;
+    padding: 0.28em 0.6em;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--muted);
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+  /* Architecture diagram */
+  .layers { display: flex; flex-direction: column; gap: 0.5rem; }
+  .layer {
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: 0.7rem 0.95rem;
+  }
+  .layer .t { font-family: var(--mono); font-size: 0.78em; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .layer .d { font-size: clamp(0.85rem, 1.2vw, 1rem); color: var(--muted); margin-top: 0.15rem; }
+
+  .quote {
+    border-left: 3px solid var(--accent);
+    padding-left: clamp(0.9rem, 1.8vw, 1.4rem);
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.15rem, 2.3vw, 1.9rem);
+    line-height: 1.28;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .link { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+  .link:hover { opacity: 0.75; }
+
+  /* ---------------------------------------------------------------
+     Chrome: progress rail, counter, notes
+     --------------------------------------------------------------- */
+  .rail {
+    position: fixed; left: 0; bottom: 0;
+    height: 3px; width: 100%;
+    background: var(--hairline);
+    z-index: 40;
+  }
+  .rail .fill { height: 100%; background: var(--accent); width: 0; transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+  .counter {
+    position: fixed;
+    right: clamp(0.9rem, 2vw, 1.6rem);
+    bottom: clamp(0.9rem, 2vw, 1.4rem);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    z-index: 41;
+    display: flex; gap: 0.9rem; align-items: center;
+  }
+  .counter button {
+    font: inherit;
+    background: none;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--muted);
+    padding: 0.2em 0.7em;
+    cursor: pointer;
+  }
+  .counter button:hover { color: var(--accent); border-color: var(--accent); }
+  .counter button:focus-visible, .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .notes {
+    display: none;
+    border-top: 1px dashed var(--hairline);
+    margin-top: 0.4rem;
+    padding-top: 0.7rem;
+    font-size: clamp(0.82rem, 1.1vw, 0.95rem);
+    color: var(--muted);
+    max-width: 74ch;
+  }
+  .notes strong { color: var(--accent); font-weight: 500; }
+  body.show-notes .notes { display: block; }
+
+  .hint {
+    position: fixed;
+    left: clamp(0.9rem, 2vw, 1.6rem);
+    bottom: clamp(0.9rem, 2vw, 1.4rem);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    z-index: 41;
+    opacity: 0.75;
+  }
+
+  @media print {
+    .slide { display: flex !important; page-break-after: always; min-height: auto; }
+    .rail, .counter, .hint { display: none; }
+  }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1 ───────────────────────────────────────────── Title -->
+  <section class="slide">
+    <p class="eyebrow">Internet Technologies · Become a Full-Stack Engineer · RUNI CS 2026</p>
+    <h1>NestUp</h1>
+    <p class="lede" style="max-width:44ch">A room in a shared apartment isn't the thing you're choosing.<br><em>The people are.</em></p>
+    <div class="split" style="margin-top:clamp(1rem,3vh,2.5rem)">
+      <div class="tags">
+        <span class="tag">Next.js 16</span>
+        <span class="tag">TypeScript</span>
+        <span class="tag">Supabase / Postgres 17</span>
+        <span class="tag">Tailwind v4</span>
+        <span class="tag">Vercel</span>
+      </div>
+      <div class="stack tight">
+        <p style="font-size:0.95rem"><a class="link" href="https://nestup-kappa.vercel.app">nestup-kappa.vercel.app</a></p>
+        <p style="font-size:0.95rem"><a class="link" href="https://github.com/nestupweb/nestup">github.com/nestupweb/nestup</a></p>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Open with the live site, not the slides.</strong> Sign in as a seed user, swipe once, open a chat. Two minutes of product before any architecture — they need to know what it <em>is</em> before they can care how it's built. Then come back here.
+    </div>
+  </section>
+
+  <!-- 2 ───────────────────────────────────────────── Problem -->
+  <section class="slide">
+    <p class="eyebrow">Product · The problem</p>
+    <h2>Finding a flatmate isn't a search problem</h2>
+    <div class="split">
+      <div class="stack prose">
+        <p>The listings are easy to find — Facebook groups, Yad2, WhatsApp. They all index the <strong>apartment</strong>: rent, rooms, square metres, neighbourhood.</p>
+        <p>But everything that actually decides whether a shared flat works — when people sleep, how often guests come over, whether the kitchen gets cleaned, whether the flat keeps Shabbat — is missing, or buried in free text nobody can filter on.</p>
+        <p>So both sides do the filtering manually, <em>after</em> the expensive step.</p>
+      </div>
+      <div class="cards">
+        <div class="card">
+          <h3>The seeker</h3>
+          <p style="color:var(--muted)">Messages 30 listings. Gets 8 replies. Visits 4 flats. Discovers the mismatch in person — after crossing the city.</p>
+        </div>
+        <div class="card">
+          <h3>The household</h3>
+          <p style="color:var(--muted)">Fields dozens of "hi, still available?" messages. Repeats the same screening questions. Still meets people who were never going to fit.</p>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>The second, quieter problem:</strong> a conversation starts with <em>one</em> roommate — whoever posted — but the decision belongs to the whole household. Everyone else hears a summary. That's why NestUp treats the household as the counterparty, and it's the differentiator to come back to on the flows slide.
+    </div>
+  </section>
+
+  <!-- 3 ───────────────────────────────────────────── Users -->
+  <section class="slide">
+    <p class="eyebrow">Product · Users</p>
+    <h2>Two sides, one account</h2>
+    <div class="split even">
+      <div class="card">
+        <p class="eyebrow" style="color:var(--muted)">Side A</p>
+        <h3>The Seeker</h3>
+        <ul class="clean" style="margin-top:0.6rem">
+          <li>22–35: students, young professionals, relocating</li>
+          <li>Scarce resource: <strong>time and travel</strong> — each visit costs an evening</li>
+          <li>Fear: a year with people they can't live with</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow" style="color:var(--muted)">Side B</p>
+        <h3>The Household</h3>
+        <ul class="clean" style="margin-top:0.6rem">
+          <li>An existing flat with a room to fill</li>
+          <li>Scarce resource: <strong>attention</strong> — they can't interview forty people</li>
+          <li>Fear: a bad roommate they're then stuck with</li>
+        </ul>
+      </div>
+    </div>
+    <p class="prose" style="color:var(--muted)">The same person is a seeker one year and a household the next. One account does both, with no mode switch.</p>
+    <div class="notes">
+      <strong>If asked "who's the customer?":</strong> user and customer are the same person today, and the product is free — a two-sided marketplace has no value to either side until it has liquidity on both, so charging early suppresses the thing that makes it work. The side you'd build <em>toward</em> is the household: an empty room is rent someone pays out of pocket every month. That's the urgency and the willingness to pay.
+    </div>
+  </section>
+
+  <!-- 4 ───────────────────────────────────────────── Business value -->
+  <section class="slide">
+    <p class="eyebrow">Product · Business value</p>
+    <h2>What the product is actually for</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Goal</th><th>How the product serves it</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Cut wasted first meetings</strong></td><td>Compatibility scoring; a deck that only shows strong matches</td></tr>
+          <tr><td><strong>Build two-sided liquidity</strong></td><td>Public browsing with no signup wall; low-friction listing creation</td></tr>
+          <tr><td><strong>Make the household the counterparty</strong></td><td>Household-wide chat, co-posted listings, listing survives its poster</td></tr>
+          <tr><td><strong>Keep members inside the product</strong></td><td>In-app realtime chat, media, viewing scheduling</td></tr>
+          <tr><td><strong>Earn trust</strong></td><td>Real auth, per-row access control, reporting, blocking, suspension</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose" style="color:var(--muted)">If a seeker visits three flats instead of ten and still finds a home, the product has paid for itself in evenings.</p>
+    <div class="notes">
+      <strong>Monetisation, if asked:</strong> paid promotion on the household side — a listing that isn't filling pays to rank higher. It charges the side with urgency, and only when the product is demonstrably working. <em>Nothing charges anyone today</em>, and the schema and ranking function would both need to change. Say that plainly rather than implying it exists.
+    </div>
+  </section>
+
+  <!-- 5 ───────────────────────────────────────────── Flows -->
+  <section class="slide">
+    <p class="eyebrow">Product · Main flows</p>
+    <h2>Discover → match → meet</h2>
+    <div class="split even">
+      <div class="stack">
+        <h3>Seeker</h3>
+        <ul class="clean">
+          <li><strong>Browse</strong> without an account — 13 filters, sort, map</li>
+          <li><strong>Build a profile</strong> — budget, cities, dates, daily life, interests</li>
+          <li><strong>Swipe</strong> a ranked deck of strong matches only</li>
+          <li><strong>Chat</strong> with the whole household at once</li>
+          <li><strong>Schedule a viewing</strong> inside the thread</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <h3>Household</h3>
+        <ul class="clean">
+          <li><strong>List a room</strong> — geocoded address, photos, rules</li>
+          <li><strong>Tag roommates</strong> — each accepts and becomes a co-owner</li>
+          <li><strong>Receive interest</strong> in one inbox</li>
+          <li><strong>Screen</strong> with a real compatibility score</li>
+          <li><strong>Close the room</strong> — taken, paused, or removed; chats survive</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Out of scope on purpose</strong> — say this before they ask: no payments, no lease contracts, no identity verification, no native app, no learned recommender. Ranking is a deterministic scoring function: explainable, testable, debuggable. At this stage that's worth more than being marginally better.
+    </div>
+  </section>
+
+  <!-- 6 ───────────────────────────────────────────── Architecture -->
+  <section class="slide">
+    <p class="eyebrow">Architecture</p>
+    <h2>The browser is never a trusted client</h2>
+    <div class="split">
+      <div class="layers">
+        <div class="layer">
+          <div class="t">Browser</div>
+          <div class="d">Server Components render to HTML. Client Components for interaction only. Realtime socket. MapLibre, loaded on demand.</div>
+        </div>
+        <div class="layer">
+          <div class="t">Vercel — Next.js runtime</div>
+          <div class="d"><code>proxy.ts</code> edge auth gate · Server Actions for every write · Cache Components (<code>use cache</code> / <code>use cache: private</code>)</div>
+        </div>
+        <div class="layer">
+          <div class="t">Supabase — Postgres 17</div>
+          <div class="d">21 tables, RLS on every one · 36 SQL functions · Auth · Storage · Realtime</div>
+        </div>
+      </div>
+      <div class="stack">
+        <p class="quote">Every read goes through a Server Component, every write through a Server Action — and underneath both, Postgres decides what the caller may actually see.</p>
+        <p style="color:var(--muted)">Authorisation is enforced in the database, not in application code. A bug in a page, an action, or a cache <strong>cannot</strong> leak another member's data — the leak would have to get past Postgres first.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Why this stack, if asked one by one:</strong> Next.js App Router — Server Components mean a 20-room list ships HTML, not JSON plus a client fetch; Server Actions remove a hand-written API layer for every mutation. Supabase — <em>Postgres with RLS is the reason</em>; auth, storage and realtime in one product removes three integrations. Zod — one schema gives both validation and the TypeScript type, so they can't drift. MapLibre + CARTO — keyless, and the worker is self-hosted, so no map vendor key and no third-party CDN at runtime.
+    </div>
+  </section>
+
+  <!-- 7 ───────────────────────────────────────────── Database -->
+  <section class="slide">
+    <p class="eyebrow">Architecture · Data</p>
+    <h2>21 tables, and three that can't be written</h2>
+    <div class="split">
+      <div class="stack prose">
+        <p><strong>Core:</strong> <code>profiles</code> · <code>listings</code> · <code>listing_residents</code> · <code>conversations</code> · <code>messages</code> · <code>viewings</code> · <code>swipes</code></p>
+        <p><strong><code>profiles.user_id</code> is the primary key <em>and</em> a foreign key to <code>auth.users</code>.</strong> No separate profile id — so every RLS policy is a comparison against <code>auth.uid()</code> with no join, and deletion cascades correctly by construction.</p>
+        <p><strong>Two tables for one person.</strong> <code>profiles</code> is member-readable; <code>profile_details</code> (phone, contact email) is owner-only. Splitting them makes a new private column private <em>by default</em>, not by remembering.</p>
+        <p><strong>Soft deletion.</strong> A removed room must not take its conversations with it — people who talked about a room still have that history.</p>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="n">21</span><span class="l">tables, RLS on every one</span></div>
+        <div class="metric"><span class="n">72</span><span class="l">Row Level Security policies</span></div>
+        <div class="metric"><span class="n">36</span><span class="l">SQL functions</span></div>
+        <div class="metric"><span class="n">20</span><span class="l">indexes, 6 of them partial</span></div>
+        <div class="metric"><span class="n">43</span><span class="l">migrations, all applied to production</span></div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Denormalisation, if asked:</strong> <code>household_size</code> and <code>household_gender</code> live on <code>listings</code>, maintained by triggers over <code>listing_residents</code>. The browse filter and the deck both need them on every row; computing per row would turn one query into 800. Write cost for read benefit — right way round, because rooms are read far more often than households change.
+    </div>
+  </section>
+
+  <!-- 8 ───────────────────────────────────────────── RLS highlight -->
+  <section class="slide">
+    <p class="eyebrow">Security · The pattern I'd defend hardest</p>
+    <h2>No write policy at all</h2>
+    <div class="split">
+      <div class="stack prose">
+        <p>Three tables — <code>suspensions</code>, <code>listing_invites</code>, <code>app_config</code> — have <strong>no insert, update or delete policy whatsoever.</strong></p>
+        <p>They're written only by <code>SECURITY DEFINER</code> functions: <code>apply_report_suspension()</code>, <code>invite_listing_roommates()</code>, <code>respond_to_listing_invite()</code>.</p>
+        <p class="quote" style="margin-top:0.5rem">When a table must only ever be written one way, give it no write policy and one function. Then there is <em>no path</em> to a wrong write — rather than a policy trying to enumerate every wrong write and maybe missing one.</p>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>The concrete consequence</h3>
+          <p style="color:var(--muted)">A member cannot lift their own suspension. Not because a policy forbids it — because no route to that write exists.</p>
+        </div>
+        <div class="card">
+          <h3>Ownership can't be stolen either</h3>
+          <p style="color:var(--muted)">A trigger refuses any plain <code>UPDATE</code> of <code>listings.owner_id</code>. The one legitimate case — handing a shared room to a roommate when an account closes — happens inside <code>delete_own_account()</code>, which sets a transaction-local flag nothing else in the schema sets.</p>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Follow-up worth volunteering:</strong> deleting an account used to cascade the listing away — which, once listings could be co-owned, meant deleting a home out from under the roommates living in it. Now it hands the room over first, in the same transaction, and refuses to hand it to a roommate who already has a live room of their own (a unique index would reject it anyway).
+    </div>
+  </section>
+
+  <!-- 9 ───────────────────────────────────────────── Matching -->
+  <section class="slide">
+    <p class="eyebrow">Business logic</p>
+    <h2>The matching function</h2>
+    <div class="split">
+      <div class="stack">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Lifestyle component</th><th>Weight</th><th>Component</th><th>Weight</th></tr></thead>
+            <tbody>
+              <tr><td>Budget</td><td class="num">20</td><td>Sleep schedule</td><td class="num">6</td></tr>
+              <tr><td>City</td><td class="num">18</td><td>Guests</td><td class="num">6</td></tr>
+              <tr><td>Move-in date</td><td class="num">10</td><td>Noise</td><td class="num">4</td></tr>
+              <tr><td>Smoking</td><td class="num">10</td><td>Diet</td><td class="num">4</td></tr>
+              <tr><td>Cleanliness</td><td class="num">10</td><td>Shabbat</td><td class="num">4</td></tr>
+              <tr><td>Pets</td><td class="num">8</td><td><em>Social</em> = interest overlap</td><td class="num">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>A missing preference scores ~60%, not zero</h3>
+          <p style="color:var(--muted)">"I didn't say" is not "we disagree". Scoring it as a mismatch would punish incomplete profiles and make the deck reward form-filling instead of fit.</p>
+        </div>
+        <div class="card">
+          <h3>Scoring is directional</h3>
+          <p style="color:var(--muted)">Each side judges <em>their</em> preferences against <em>the other's</em> reality. Seeker→room and room→seeker are different questions.</p>
+        </div>
+        <div class="card">
+          <h3>The gate is the product decision</h3>
+          <p style="color:var(--muted)">Below a combined <strong>60</strong>, a room never enters the deck. That's why a deck can legitimately be empty — and why "no strong matches yet" had to be designed, not treated as an error.</p>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>If asked why the module is split in two:</strong> <code>lib/swipe.ts</code> is imported by client components, so it must be safe in a browser bundle; <code>lib/swipe-deck.ts</code> is <code>server-only</code> and holds the cookie-reading Supabase client. That's a real constraint, not tidiness — it was a build error first.
+    </div>
+  </section>
+
+  <!-- 10 ──────────────────────────────────────────── Performance -->
+  <section class="slide">
+    <p class="eyebrow">Scale · Measured, not asserted</p>
+    <h2>Why returning to a tab was slow</h2>
+    <div class="split">
+      <div class="stack prose">
+        <p>Next's App Shell prerender advances through cached reads and <strong>stops at the first uncached one.</strong></p>
+        <p>Every page began with an uncached <code>auth.getUser()</code> — a network round-trip to Supabase. That single call kept everything behind it out of the prefetch, <em>no matter how well cached it was.</em></p>
+        <p>Caching that identity read removed ~300 ms from each tab. Three of four tabs now make <strong>zero server requests</strong> on return.</p>
+      </div>
+      <div class="stack">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Tab</th><th>Before</th><th>After</th></tr></thead>
+            <tbody>
+              <tr><td>Swipe</td><td class="num">860 ms</td><td class="num">69 ms</td></tr>
+              <tr><td>Chat</td><td class="num">1900 ms</td><td class="num">71 ms</td></tr>
+              <tr><td>Profile</td><td class="num">370 ms</td><td class="num">69 ms</td></tr>
+              <tr><td>Listings</td><td class="num">850 ms</td><td class="num">375 ms</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="color:var(--muted);font-size:0.9rem">Warm cache, measured on production with Playwright. Skeleton gone entirely on the first three.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>The honest part — say it.</strong> Listings still flashes a skeleton. I traced it: zero server requests, no long JS tasks. With the page-slide animation suppressed the skeleton drops from 296 ms to 61 ms — so it's the view transition holding a frame that happens to contain the skeleton, not a data wait. <em>I also tried a fix that measurement disproved</em> (a second, argument-free listings query) and removed it rather than leave unjustified complexity in the busiest page.
+    </div>
+  </section>
+
+  <!-- 11 ──────────────────────────────────────────── Caching -->
+  <section class="slide">
+    <p class="eyebrow">Scale · State</p>
+    <h2>No state library. On purpose.</h2>
+    <div class="split">
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Kind of state</th><th>Where it lives</th></tr></thead>
+          <tbody>
+            <tr><td>Server data</td><td>Server Components — rendered output, not client state</td></tr>
+            <tr><td>Cached server data</td><td>Cache Components, invalidated by tag</td></tr>
+            <tr><td>Form state</td><td><code>useActionState</code> — a rejected form keeps what you typed</td></tr>
+            <tr><td>Ephemeral UI</td><td><code>useState</code></td></tr>
+            <tr><td>Filters, sort, page, tab</td><td>The URL — shareable and back-button correct</td></tr>
+            <tr><td>Realtime</td><td>A subscription that drops a cache tag; the server re-renders</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="stack">
+        <p style="color:var(--muted)">Redux or React Query would mean maintaining a second copy of the server's data with its own invalidation rules. The tag system already does that job, in one file, with the server as the single source of truth.</p>
+        <div class="card">
+          <h3>Blast radius is a tested rule</h3>
+          <p style="color:var(--muted)">Mutations used to answer every write with a fistful of <code>revalidatePath</code> calls — so editing a room threw away your chats and profile too. Now a write invalidates only what it changed, and a test fails if that regresses.</p>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>The interesting case:</strong> a member's chat inbox changes when <em>someone else</em> writes, and no action of theirs runs. The Realtime socket calls a Server Action that drops their own tag. That's what makes caching an inbox safe rather than stale — and it's why the inbox could finally be cached at all, having been deliberately left uncached before.
+    </div>
+  </section>
+
+  <!-- 12 ──────────────────────────────────────────── Testing -->
+  <section class="slide">
+    <p class="eyebrow">Testing</p>
+    <h2>What "working" means, and what I didn't test</h2>
+    <div class="split">
+      <div class="stack prose">
+        <p>The product fails in three ways, in descending cost:</p>
+        <ul class="clean">
+          <li><strong>A member sees another member's data.</strong> Unrecoverable — the trust proposition dies.</li>
+          <li><strong>A core flow silently does the wrong thing</strong> — a message that doesn't arrive, a swiped room that comes back.</li>
+          <li><strong>A screen is wrong or ugly.</strong> Embarrassing, cheap to fix.</li>
+        </ul>
+        <p>The suite is weighted to match. Access control and business rules are tested hard; presentation is tested where it encodes a <em>rule</em>, not for its appearance.</p>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="n">97</span><span class="l">test files</span></div>
+        <div class="metric"><span class="n">740</span><span class="l">tests, all passing</span></div>
+        <div class="metric"><span class="n">124</span><span class="l">cities re-measured for deck coverage on every run</span></div>
+        <div class="metric"><span class="n">21</span><span class="l">live-site assertions in Playwright</span></div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Name a gap before they find it:</strong> the unit suite mocks the Supabase client, so <em>RLS policies themselves aren't exercised by it</em> — they're covered by real-browser checks and review. The fix I'd build is a test running real queries as two different members against a test project. Also: no full end-to-end journey, email delivery mocked, and load never measured — the scale reasoning is analytical.
+    </div>
+  </section>
+
+  <!-- 13 ──────────────────────────────────────────── Security -->
+  <section class="slide">
+    <p class="eyebrow">Security</p>
+    <h2>Four layers, and one disclosed trade-off</h2>
+    <div class="split">
+      <div class="layers">
+        <div class="layer"><div class="t">1 · Edge proxy</div><div class="d">Refreshes the session, redirects unauthenticated page requests. Pages only — an API caller gets a JSON 401, not an HTML redirect.</div></div>
+        <div class="layer"><div class="t">2 · Page gate</div><div class="d">Redirects on no session, and on a suspended account.</div></div>
+        <div class="layer"><div class="t">3 · Server Action</div><div class="d">Every write begins with an <strong>uncached</strong> check.</div></div>
+        <div class="layer"><div class="t">4 · Row Level Security</div><div class="d">The one that matters. 72 policies. Assumes all three above have failed.</div></div>
+      </div>
+      <div class="stack">
+        <div class="card" style="border-left:3px solid var(--danger)">
+          <h3>The trade-off I chose</h3>
+          <p style="color:var(--muted)">Identity is cached for <em>rendering</em>, 300 s — which is what removed the ~300 ms skeleton. Cost: a suspension takes effect within that window instead of on the next page. The check isn't removed; it refreshes less often.</p>
+          <p style="color:var(--muted);margin-top:0.6rem">What it doesn't cost: the edge gate is still uncached on every request, <strong>every write still uses the uncached check</strong>, and RLS is untouched. A test fails if any action ever calls the cached reader.</p>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Signing out is a security operation.</strong> It posts to a Route Handler answering <em>303</em>, not a Server Action redirect — because a soft redirect leaves the browser's private caches and rendered pages alive, one back-button press away, and the next person to sign in on that computer inherits the tab in that state. Only a full document load empties them. Verified on the live site. POST-only, so no cross-site <code>&lt;img&gt;</code> can log someone out.
+    </div>
+  </section>
+
+  <!-- 14 ──────────────────────────────────────────── Improve -->
+  <section class="slide">
+    <p class="eyebrow">Reflection</p>
+    <h2>What I'd do with more time</h2>
+    <div class="split even">
+      <div class="stack">
+        <h3>Would fix first</h3>
+        <ul class="clean">
+          <li><strong>RLS policy tests</strong> — real queries as two members. The one layer the suite can't reach.</li>
+          <li><strong>Rate limiting on writes</strong> — only auth email is throttled today.</li>
+          <li><strong>Deck scoring into SQL</strong> — fine at 824 rooms, wrong shape at 50,000.</li>
+          <li><strong>A real moderation queue</strong> — the suspension function exists; nothing calls it on a threshold.</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <h3>Known limits, stated plainly</h3>
+        <ul class="clean">
+          <li><strong>No identity verification.</strong> Email confirmation only — and members meet in person. The largest real-world risk, and not solvable with code alone.</li>
+          <li><strong>Realtime connection caps</strong> are the first ceiling, before CPU or storage.</li>
+          <li><strong>No observability.</strong> Problems would be found by a person noticing.</li>
+          <li><strong>Backups are untested.</strong> An untested backup is a hope, not a plan.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Don't rush this slide.</strong> The assignment says the project is judged on quality of thinking, not feature count — this is where that's demonstrated. Being specific about limits reads as command of the system; a claim of full coverage reads as not having looked.
+    </div>
+  </section>
+
+  <!-- 15 ──────────────────────────────────────────── Close -->
+  <section class="slide">
+    <p class="eyebrow">NestUp</p>
+    <h2 style="max-width:20ch">Small, clear, secure, and built to be explained.</h2>
+    <div class="split">
+      <div class="stack tight">
+        <p><a class="link" href="https://nestup-kappa.vercel.app">nestup-kappa.vercel.app</a></p>
+        <p><a class="link" href="https://github.com/nestupweb/nestup">github.com/nestupweb/nestup</a></p>
+        <p style="color:var(--muted);font-size:0.92rem;margin-top:0.6rem">Product spec · Technical design · Test spec · Scale · Security — all in <code>docs/submission/</code></p>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="n">824</span><span class="l">live rooms across 124 cities</span></div>
+        <div class="metric"><span class="n">845</span><span class="l">member profiles</span></div>
+        <div class="metric"><span class="n">740</span><span class="l">tests passing</span></div>
+      </div>
+    </div>
+    <div class="notes">
+      <strong>Leave time for questions.</strong> The strongest answers to have ready: why RLS instead of checks in the app; why no state library; why the deck gate makes empty decks legitimate; and the one measurement that disproved my own hypothesis.
+    </div>
+  </section>
+
+</div>
+
+<div class="rail"><div class="fill" id="fill"></div></div>
+<div class="hint" id="hint">← → to move · N for notes</div>
+<div class="counter">
+  <button id="notesBtn" type="button" aria-pressed="false">Notes</button>
+  <span id="count">1 / 15</span>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var fill = document.getElementById('fill');
+    var count = document.getElementById('count');
+    var notesBtn = document.getElementById('notesBtn');
+    var hint = document.getElementById('hint');
+    var i = 0;
+
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
+      fill.style.width = ((i + 1) / slides.length * 100) + '%';
+      count.textContent = (i + 1) + ' / ' + slides.length;
+      try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
+      window.scrollTo(0, 0);
+    }
+
+    function toggleNotes() {
+      var on = document.body.classList.toggle('show-notes');
+      notesBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      try { localStorage.setItem('nestup-notes', on ? '1' : '0'); } catch (e) {}
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); show(0); }
+      else if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+      else if (e.key === 'n' || e.key === 'N') { toggleNotes(); }
+    });
+
+    notesBtn.addEventListener('click', toggleNotes);
+
+    // Tap the right two-thirds to advance, the left third to go back.
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('a, button')) return;
+      show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+    });
+
+    try {
+      if (localStorage.getItem('nestup-notes') === '1') { document.body.classList.add('show-notes'); notesBtn.setAttribute('aria-pressed', 'true'); }
+    } catch (e) {}
+
+    var start = parseInt((location.hash || '#1').slice(1), 10);
+    show(isNaN(start) ? 0 : start - 1);
+
+    setTimeout(function () { if (hint) hint.style.opacity = '0'; }, 4500);
+    if (hint) hint.style.transition = 'opacity 0.6s';
+  })();
+</script>
