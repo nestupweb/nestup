@@ -92,10 +92,15 @@ export function visibleConversations(rows: ConversationSummary[]): ConversationS
 }
 
 /**
- * The badge on the Chat tab. Never rejects: the layouts hand this promise
- * straight to `BottomNav` without awaiting it (so the shell paints first), and
- * an unawaited rejection would take down the whole page for a number that is
- * decoration. A failure just means no badge.
+ * The badge on the Chat tab: how many CONVERSATIONS hold unread messages, not
+ * how many messages (user, 2026-09-03). `my_unread_count` does the counting
+ * with `count(distinct c.id)` as of migration 0044 — the name is unchanged
+ * because renaming the RPC would strand any build still asking for the old one.
+ *
+ * Never rejects: the layouts hand this promise straight to `BottomNav` without
+ * awaiting it (so the shell paints first), and an unawaited rejection would
+ * take down the whole page for a number that is decoration. A failure just
+ * means no badge.
  */
 export async function getUnreadCount(): Promise<number> {
   try {

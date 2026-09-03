@@ -4,6 +4,11 @@ import { getUnreadCount } from "@/lib/chat";
  * The unread pill on the Chat tab, as its own async server component so the
  * layouts can drop it into `<BottomNav unreadSlot>` behind a `<Suspense>`.
  *
+ * The number is how many CHATS are waiting, not how many messages (user,
+ * 2026-09-03) — three messages in one thread is one person waiting, and a "3"
+ * that means one conversation reads as three. `my_unread_count` counts
+ * distinct conversations since migration 0044.
+ *
  * Why it is split out at all: both layouts used to `await getUnreadCount()`
  * before returning any markup, which held the header, the nav and the page
  * itself behind an extra `my_unread_count` round-trip on every signed-in
@@ -16,7 +21,7 @@ export async function UnreadBadge() {
 
   return (
     <span
-      aria-label={`${unread} unread`}
+      aria-label={`${unread} unread chat${unread === 1 ? "" : "s"}`}
       className="absolute right-2.5 top-1 min-w-[1.15rem] rounded-full bg-accent px-1 text-center text-[11px] font-bold leading-[1.15rem] tracking-normal text-accent-contrast"
     >
       {unread > 99 ? "99+" : unread}
