@@ -152,6 +152,15 @@ docs/submission/  Project documentation (below)
 | [Test Specification](docs/submission/03-test-spec.md) | What is tested and why, per category, plus known gaps |
 | [Scale](docs/submission/04-scale.md) | Heavy queries, indexes, caching, measured results, limits, next steps |
 | [Security](docs/submission/05-security.md) | Auth, authorisation, RLS, secrets, a disclosed trade-off, remaining risks |
+| [Presentation](docs/submission/presentation.html) | 15-slide project defence. Arrow keys to move, `N` for speaker notes |
+
+PDF versions of all five documents are in [`docs/submission/pdf/`](docs/submission/pdf/). The markdown is the source of truth — regenerate the PDFs after any edit with:
+
+```bash
+pip install markdown            # one-off, a local tool only
+python scripts/docs-to-pdf.py   # markdown → print-ready HTML
+node scripts/docs-to-pdf.mjs    # HTML → PDF via headless Chromium
+```
 
 ---
 
