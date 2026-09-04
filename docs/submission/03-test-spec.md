@@ -1,7 +1,7 @@
 # NestUp — Test Specification
 
 **Suite:** 97 test files · 740 tests · Vitest + React Testing Library (jsdom) + Playwright (real browser)
-**Run:** `npm test` — see §8 for the reason that `npx vitest` must never be used directly.
+**Run:** `npm test` — see §9 for the reason that `npx vitest` must never be used directly.
 
 ---
 
@@ -15,9 +15,9 @@ NestUp can fail in three ways which matter, presented here in descending order o
 2. **A core flow silently performs the wrong operation.** For example, a message which does not arrive, a swiped room which returns to the deck, or an edit to a listing which also erases the chats of the owner.
 3. **A screen is incorrect or unattractive.** This is embarrassing, but it is inexpensive to correct.
 
-The suite is weighted accordingly. Access control and business rules are tested rigorously, whereas presentation is tested only where it encodes an actual rule, such as a button which must be disabled, rather than for the sake of its appearance.
+The suite is weighted accordingly. Access control and business rules are tested rigorously. The interface is tested at the level of *behavior*, namely which control appears, what state it is in, where it navigates, and what it renders when the data is empty or missing, rather than at the level of pixels. Those checks are collected in §8.
 
-**The following is deliberately not tested:** every line of every component, the exact wording of the copy, the exact colors (except in cases where a rule depends on them, as in `map-basemap.test.ts`), and third-party libraries. The assignment requires that the main flows be tested and not that every line be tested. Moreover, a suite which asserts on wording eventually becomes a suite which nobody is willing to modify.
+**The following is deliberately not tested:** every line of every component, the exact wording of the copy, the exact colors (except in cases where a rule depends on them, as in `map-basemap.test.ts`), and third-party libraries. A suite which asserts on wording eventually becomes a suite which nobody is willing to modify, and a screen which is merely unattractive is caught by looking at it. What the interface must *do* is a different matter, and that is tested.
 
 ---
 
@@ -200,7 +200,52 @@ Certain properties cannot be asserted inside jsdom, because they require a real 
 
 ---
 
-## 8. How to run the suite
+## 8. Basic UI tests
+
+The interface is tested for what it does rather than for how it looks. Each of these runs in React Testing Library against real user events — clicks, typing, arrow keys, Escape — and asserts on what a member would actually see or reach.
+
+### Navigation chrome
+
+| Test file | What it defends |
+|---|---|
+| `bottom-nav.test.tsx` | The four destinations render, the current one is marked, nested routes keep their tab active, the unread badge appears inside the Chat link and nowhere else, and the bar hides itself on a small screen inside an open thread and on the auth pages |
+| `back-button.test.tsx` | The button names the page it will return to, pops the in-app trail instead of growing it, survives a reload through `sessionStorage`, and falls back to the list page when there is no history to return to |
+| `nav-direction.test.ts` | Moving right along the tab bar is forward and moving left is back, which is what drives the transition animation |
+| `same-tab-navigation.test.ts` | Every internal link stays in the same tab, which is also enforced in a real browser by `npm run check:nav` (§7) |
+| `member-actions.test.tsx` | Log out posts to the signout route rather than to a Server Action, and the settings link sits beside it |
+
+### Form controls
+
+| Test file | What it defends |
+|---|---|
+| `date-picker.test.tsx` | Typing `dd/mm/yyyy` inserts its own slashes and caps each field, impossible dates are refused, the calendar blocks days before `min` and outside the allowed weekdays, and typing cannot bypass a day which the calendar itself blocks |
+| `amount-input.test.tsx` | Thousands are grouped while typing but submitted bare, an empty field submits nothing rather than a zero, and the caret stays put when a comma appears to its left |
+| `phone-field.test.tsx` | A country is searched the way a city is, namely type, arrow and Enter, the flag and dial code follow, a stored international number pre-selects its own country, and Escape closes the list |
+| `city-combobox.test.tsx` | The chevron opens every city A–Z grouped by letter, typing filters to *every* match rather than to the first eight, and Escape closes the list |
+| `sticky-form.test.tsx`, `profile-form-sticky.test.tsx` | A rejected form keeps every value the member typed. React 19 resets forms by default, and this is therefore the guard against losing a long profile to one validation error |
+| `password-input.test.tsx` | The show and hide toggle |
+
+### Theme and appearance
+
+| Test file | What it defends |
+|---|---|
+| `theme-toggle.test.tsx` | The control is a real switch, it flips the dark theme on `<html>`, it persists to `localStorage`, and it reports the correct state when the page loads already in dark mode |
+| `map-basemap.test.ts` | Both themes resolve to the correct basemap, which is verified against a real GPU canvas by `npm run check:map` (§7) |
+
+### Empty, missing and degraded states
+
+| Test file | What it defends |
+|---|---|
+| `listing-gallery.test.tsx` | A room which has no photographs still renders |
+| `swipe-deck.test.tsx` | An exhausted deck shows its empty state rather than a blank screen |
+| `listing-match-score.test.tsx` | A Listings row shows the same two scores as the swipe deck, a social score of `null` degrades to an em dash rather than to a zero, a signed-out visitor sees no score pills at all, and a low score is shown rather than hidden |
+| `property-tile.test.tsx` | A plain tile is merely a link, whereas a liked tile carries a filled heart which toggles on tap **without** following the link underneath it |
+| `room-map-button.test.tsx`, `map-explorer.test.tsx` | The map opens on demand rather than on page load, the legend names only the categories actually present, a failed lookup offers a retry instead of an empty map, and closing is possible by button, by Escape and by backdrop, with focus returning to the trigger |
+| `.superpowers/e2e/skeleton-duration.mjs` | Measures, in a real browser, how long each loading skeleton is actually visible on screen (§7) |
+
+---
+
+## 9. How to run the suite
 
 ```bash
 npm test                              # 97 files, 740 tests
@@ -216,7 +261,7 @@ There are two environment traps, both of which were discovered through experienc
 
 ---
 
-## 9. Known gaps
+## 10. Known gaps
 
 These are stated plainly, because a test document which claims complete coverage is not credible.
 

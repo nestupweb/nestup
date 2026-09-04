@@ -161,7 +161,7 @@ h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
 </section>
 <h1>NestUp — Test Specification</h1>
 <p><strong>Suite:</strong> 97 test files · 740 tests · Vitest + React Testing Library (jsdom) + Playwright (real browser)
-<strong>Run:</strong> <code>npm test</code> — see §8 for the reason that <code>npx vitest</code> must never be used directly.</p>
+<strong>Run:</strong> <code>npm test</code> — see §9 for the reason that <code>npx vitest</code> must never be used directly.</p>
 <hr />
 <h2>1. What "working" means for this product</h2>
 <p>Before listing the tests themselves, it is worth stating explicitly what the suite is actually defending, because this determines what is tested and what is not tested.</p>
@@ -171,8 +171,8 @@ h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
 <li><strong>A core flow silently performs the wrong operation.</strong> For example, a message which does not arrive, a swiped room which returns to the deck, or an edit to a listing which also erases the chats of the owner.</li>
 <li><strong>A screen is incorrect or unattractive.</strong> This is embarrassing, but it is inexpensive to correct.</li>
 </ol>
-<p>The suite is weighted accordingly. Access control and business rules are tested rigorously, whereas presentation is tested only where it encodes an actual rule, such as a button which must be disabled, rather than for the sake of its appearance.</p>
-<p><strong>The following is deliberately not tested:</strong> every line of every component, the exact wording of the copy, the exact colors (except in cases where a rule depends on them, as in <code>map-basemap.test.ts</code>), and third-party libraries. The assignment requires that the main flows be tested and not that every line be tested. Moreover, a suite which asserts on wording eventually becomes a suite which nobody is willing to modify.</p>
+<p>The suite is weighted accordingly. Access control and business rules are tested rigorously. The interface is tested at the level of <em>behavior</em>, namely which control appears, what state it is in, where it navigates, and what it renders when the data is empty or missing, rather than at the level of pixels. Those checks are collected in §8.</p>
+<p><strong>The following is deliberately not tested:</strong> every line of every component, the exact wording of the copy, the exact colors (except in cases where a rule depends on them, as in <code>map-basemap.test.ts</code>), and third-party libraries. A suite which asserts on wording eventually becomes a suite which nobody is willing to modify, and a screen which is merely unattractive is caught by looking at it. What the interface must <em>do</em> is a different matter, and that is tested.</p>
 <hr />
 <h2>2. Feature tests — the main flows</h2>
 <h3>Authentication and onboarding</h3>
@@ -684,7 +684,130 @@ h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
 </tbody>
 </table>
 <hr />
-<h2>8. How to run the suite</h2>
+<h2>8. Basic UI tests</h2>
+<p>The interface is tested for what it does rather than for how it looks. Each of these runs in React Testing Library against real user events — clicks, typing, arrow keys, Escape — and asserts on what a member would actually see or reach.</p>
+<h3>Navigation chrome</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bottom-nav.test.tsx</code></td>
+<td>The four destinations render, the current one is marked, nested routes keep their tab active, the unread badge appears inside the Chat link and nowhere else, and the bar hides itself on a small screen inside an open thread and on the auth pages</td>
+</tr>
+<tr>
+<td><code>back-button.test.tsx</code></td>
+<td>The button names the page it will return to, pops the in-app trail instead of growing it, survives a reload through <code>sessionStorage</code>, and falls back to the list page when there is no history to return to</td>
+</tr>
+<tr>
+<td><code>nav-direction.test.ts</code></td>
+<td>Moving right along the tab bar is forward and moving left is back, which is what drives the transition animation</td>
+</tr>
+<tr>
+<td><code>same-tab-navigation.test.ts</code></td>
+<td>Every internal link stays in the same tab, which is also enforced in a real browser by <code>npm run check:nav</code> (§7)</td>
+</tr>
+<tr>
+<td><code>member-actions.test.tsx</code></td>
+<td>Log out posts to the signout route rather than to a Server Action, and the settings link sits beside it</td>
+</tr>
+</tbody>
+</table>
+<h3>Form controls</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>date-picker.test.tsx</code></td>
+<td>Typing <code>dd/mm/yyyy</code> inserts its own slashes and caps each field, impossible dates are refused, the calendar blocks days before <code>min</code> and outside the allowed weekdays, and typing cannot bypass a day which the calendar itself blocks</td>
+</tr>
+<tr>
+<td><code>amount-input.test.tsx</code></td>
+<td>Thousands are grouped while typing but submitted bare, an empty field submits nothing rather than a zero, and the caret stays put when a comma appears to its left</td>
+</tr>
+<tr>
+<td><code>phone-field.test.tsx</code></td>
+<td>A country is searched the way a city is, namely type, arrow and Enter, the flag and dial code follow, a stored international number pre-selects its own country, and Escape closes the list</td>
+</tr>
+<tr>
+<td><code>city-combobox.test.tsx</code></td>
+<td>The chevron opens every city A–Z grouped by letter, typing filters to <em>every</em> match rather than to the first eight, and Escape closes the list</td>
+</tr>
+<tr>
+<td><code>sticky-form.test.tsx</code>, <code>profile-form-sticky.test.tsx</code></td>
+<td>A rejected form keeps every value the member typed. React 19 resets forms by default, and this is therefore the guard against losing a long profile to one validation error</td>
+</tr>
+<tr>
+<td><code>password-input.test.tsx</code></td>
+<td>The show and hide toggle</td>
+</tr>
+</tbody>
+</table>
+<h3>Theme and appearance</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>theme-toggle.test.tsx</code></td>
+<td>The control is a real switch, it flips the dark theme on <code>&lt;html&gt;</code>, it persists to <code>localStorage</code>, and it reports the correct state when the page loads already in dark mode</td>
+</tr>
+<tr>
+<td><code>map-basemap.test.ts</code></td>
+<td>Both themes resolve to the correct basemap, which is verified against a real GPU canvas by <code>npm run check:map</code> (§7)</td>
+</tr>
+</tbody>
+</table>
+<h3>Empty, missing and degraded states</h3>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it defends</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>listing-gallery.test.tsx</code></td>
+<td>A room which has no photographs still renders</td>
+</tr>
+<tr>
+<td><code>swipe-deck.test.tsx</code></td>
+<td>An exhausted deck shows its empty state rather than a blank screen</td>
+</tr>
+<tr>
+<td><code>listing-match-score.test.tsx</code></td>
+<td>A Listings row shows the same two scores as the swipe deck, a social score of <code>null</code> degrades to an em dash rather than to a zero, a signed-out visitor sees no score pills at all, and a low score is shown rather than hidden</td>
+</tr>
+<tr>
+<td><code>property-tile.test.tsx</code></td>
+<td>A plain tile is merely a link, whereas a liked tile carries a filled heart which toggles on tap <strong>without</strong> following the link underneath it</td>
+</tr>
+<tr>
+<td><code>room-map-button.test.tsx</code>, <code>map-explorer.test.tsx</code></td>
+<td>The map opens on demand rather than on page load, the legend names only the categories actually present, a failed lookup offers a retry instead of an empty map, and closing is possible by button, by Escape and by backdrop, with focus returning to the trigger</td>
+</tr>
+<tr>
+<td><code>.superpowers/e2e/skeleton-duration.mjs</code></td>
+<td>Measures, in a real browser, how long each loading skeleton is actually visible on screen (§7)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>9. How to run the suite</h2>
 <pre><code class="language-bash">npm test                              # 97 files, 740 tests
 npm test -- --testTimeout=25000       # use this if userEvent tests time out (see below)
 npx tsc --noEmit                      # types
@@ -696,7 +819,7 @@ npx eslint                            # lint
 <li><strong>OneDrive synchronization starves <code>userEvent</code>.</strong> The project resides in a synchronized folder, and when OneDrive is busy, approximately half a dozen interaction tests exceed the default limit of 5 seconds. The suite should therefore be re-run with <code>--testTimeout=25000</code> before a timeout is treated as a real failure.</li>
 </ol>
 <hr />
-<h2>9. Known gaps</h2>
+<h2>10. Known gaps</h2>
 <p>These are stated plainly, because a test document which claims complete coverage is not credible.</p>
 <ul>
 <li><strong>The RLS policies are not exercised by the unit suite.</strong> The suite mocks the Supabase client, and therefore the policies themselves are covered only by the real-browser checks and by manual review. A future improvement would be a test which executes real queries as two different members against a dedicated test project.</li>
