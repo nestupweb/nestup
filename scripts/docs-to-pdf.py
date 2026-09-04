@@ -173,12 +173,15 @@ tr { page-break-inside: avoid; }
 h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
 
 /* ---- identifier columns ----------------------------------------------- */
-/* The test document lists one file name per row, and Chromium's automatic
-   table layout is free to break such a name across two lines, where it then
-   reads as two separate files. Holding the name whole also stops the column
-   from being squeezed, so the tables line up with the rest of the set.
-   Scoped to that one document on purpose: 04-scale puts whole index
-   definitions in the same column, and those are far too long to hold. */
+/* Every table in the test document has the same shape: an identifier on the
+   left and a sentence on the right. Left to itself, Chromium sizes each one
+   from its own contents, so the divider landed anywhere between 24% and 49%
+   and no two tables lined up. Pinning the column puts them all on the same
+   split as the rest of the set, and holding the identifier on one line stops
+   a file name reading as two. Scoped to this document on purpose: 04-scale
+   puts whole index definitions in that column, which are far too long. */
+body.doc-test-spec th:first-child,
+body.doc-test-spec td:first-child { width: 48%; }
 body.doc-test-spec td:first-child code { white-space: nowrap; }
 """
 
