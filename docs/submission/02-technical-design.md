@@ -191,6 +191,37 @@ There are 36 functions. The important ones are declared as `SECURITY DEFINER`, m
 
 This is the pattern which is most worth explaining: **when a table must only ever be written in one specific manner, it should be given no write policy at all and exactly one definer function.** Under this arrangement there is simply no path which leads to an incorrect write, which is a stronger guarantee than a policy that attempts to enumerate every possible incorrect write.
 
+### Third-party APIs
+
+Everything the application calls which it does not itself host. **None of them is paid**, and only three require a credential at all, which is the reason the whole project can be deployed without an account anywhere beyond Supabase and a Google API key.
+
+| API | What it is used for | Credential | Where |
+|---|---|---|---|
+| **Supabase** — Postgres, Auth, Realtime, Storage | The backbone: every query, the session, the chat socket, and the `avatars`, `listing-photos` and `chat-images` buckets | Publishable key in the browser; service-role key on the server only | Throughout, via `lib/supabase/*` |
+| **Supabase Management API** | Auth settings, the redirect allow-list, the e-mail templates and the SMTP server are **applied as code rather than clicked in a dashboard**, and are therefore reviewable and repeatable | Personal access token, held locally and never deployed | `scripts/auth-config.mjs` |
+| **Google Gemini** (`@google/genai`) | The listing-photo check: whether an image genuinely shows the apartment, and which room it shows | `GEMINI_API_KEY`, server-side only | `lib/photo-vision.ts` |
+| **Gmail SMTP** (`nodemailer`) | Sign-up codes, password reset, e-mail change, and the opt-in new-match alert | Gmail app password, server-side only | `lib/mail.ts`, `lib/auth-mail.ts` |
+| **Nominatim** (OpenStreetMap) | Turning a typed street address into a map pin | None | `lib/geocode.ts` |
+| **Overpass** (OpenStreetMap) | The cafés, restaurants, bars and shops shown near a room | None | `app/api/places/route.ts` |
+| **CARTO basemaps** | Vector map tiles, in a light and a dark style | None | `components/ui/map.tsx` |
+| **Google Calendar + OAuth 2.0** | Writing a confirmed viewing into the member's own calendar | Client id and secret | `lib/google.ts` — **built, deliberately not configured** |
+
+Two of these rows deserve a sentence of their own.
+
+**The application sends its own authentication mail.** Supabase Auth is asked to *mint* the code — `admin.generateLink()` returns the same one-time code GoTrue would have mailed, and sends nothing — after which `lib/mail.ts` sends the message itself. The reason is deliverability: GoTrue's mailer offers no plain-text part, and an HTML-only message is one of the strongest junk signals a small sender can give. Measured on production from one account minutes apart, the multipart message reached the inbox while the HTML-only one did not. The Supabase templates remain uploaded and in step, as the fallback should these calls ever fail closed.
+
+**Google Calendar is present in the code and dormant in the deployment.** The OAuth flow, the token table and the event write are all implemented, but no client credentials are set on the host, so `google_tokens` holds no rows and the chat falls back to plain "Add to Google Calendar" links. This is a deployment decision, not an unfinished feature.
+
+### Every outbound call is written to survive the service being unavailable
+
+An external API which is down must degrade the feature that uses it, and must never take a page or an action down with it.
+
+- **Gemini** is asked through a list of four models in order — three Flash models by judgement, then Flash-Lite for availability. The lite model is measurably blunter, and is still a better answer than "try again in a moment".
+- **Overpass** is asked across three mirrors, hedged: a mirror gets 3.5 seconds to itself before the next is also asked, under a 12-second overall deadline. The main instance rate-limits, and cut the project off entirely while this was being built. A success is cached for a day; a failure is cached for nothing at all, so the next request genuinely asks again.
+- **Nominatim** is keyless, and its usage policy asks for a real `User-Agent` and at most one request per second — which a listing form comfortably respects.
+- **SMTP** never throws. A failed e-mail returns `false` and is logged; publishing a room succeeds whether or not the alert goes out.
+- **With no SMTP configuration at all** the mailer becomes a no-op, which is what allows local development, CI and the test suite to run without ever reaching a mail server.
+
 ---
 
 ## 6. Core business logic

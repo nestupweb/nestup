@@ -542,6 +542,80 @@ h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
 <li><code>blocked_user_ids()</code>, <code>is_blocked()</code>, <code>is_suspended()</code> and <code>linked_to_listing()</code>, which serve as policy helpers</li>
 </ul>
 <p>This is the pattern which is most worth explaining: <strong>when a table must only ever be written in one specific manner, it should be given no write policy at all and exactly one definer function.</strong> Under this arrangement there is simply no path which leads to an incorrect write, which is a stronger guarantee than a policy that attempts to enumerate every possible incorrect write.</p>
+<h3>Third-party APIs</h3>
+<p>Everything the application calls which it does not itself host. <strong>None of them is paid</strong>, and only three require a credential at all, which is the reason the whole project can be deployed without an account anywhere beyond Supabase and a Google API key.</p>
+<table>
+<thead>
+<tr>
+<th>API</th>
+<th>What it is used for</th>
+<th>Credential</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Supabase</strong> — Postgres, Auth, Realtime, Storage</td>
+<td>The backbone: every query, the session, the chat socket, and the <code>avatars</code>, <code>listing-photos</code> and <code>chat-images</code> buckets</td>
+<td>Publishable key in the browser; service-role key on the server only</td>
+<td>Throughout, via <code>lib/supabase/*</code></td>
+</tr>
+<tr>
+<td><strong>Supabase Management API</strong></td>
+<td>Auth settings, the redirect allow-list, the e-mail templates and the SMTP server are <strong>applied as code rather than clicked in a dashboard</strong>, and are therefore reviewable and repeatable</td>
+<td>Personal access token, held locally and never deployed</td>
+<td><code>scripts/auth-config.mjs</code></td>
+</tr>
+<tr>
+<td><strong>Google Gemini</strong> (<code>@google/genai</code>)</td>
+<td>The listing-photo check: whether an image genuinely shows the apartment, and which room it shows</td>
+<td><code>GEMINI_API_KEY</code>, server-side only</td>
+<td><code>lib/photo-vision.ts</code></td>
+</tr>
+<tr>
+<td><strong>Gmail SMTP</strong> (<code>nodemailer</code>)</td>
+<td>Sign-up codes, password reset, e-mail change, and the opt-in new-match alert</td>
+<td>Gmail app password, server-side only</td>
+<td><code>lib/mail.ts</code>, <code>lib/auth-mail.ts</code></td>
+</tr>
+<tr>
+<td><strong>Nominatim</strong> (OpenStreetMap)</td>
+<td>Turning a typed street address into a map pin</td>
+<td>None</td>
+<td><code>lib/geocode.ts</code></td>
+</tr>
+<tr>
+<td><strong>Overpass</strong> (OpenStreetMap)</td>
+<td>The cafés, restaurants, bars and shops shown near a room</td>
+<td>None</td>
+<td><code>app/api/places/route.ts</code></td>
+</tr>
+<tr>
+<td><strong>CARTO basemaps</strong></td>
+<td>Vector map tiles, in a light and a dark style</td>
+<td>None</td>
+<td><code>components/ui/map.tsx</code></td>
+</tr>
+<tr>
+<td><strong>Google Calendar + OAuth 2.0</strong></td>
+<td>Writing a confirmed viewing into the member's own calendar</td>
+<td>Client id and secret</td>
+<td><code>lib/google.ts</code> — <strong>built, deliberately not configured</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Two of these rows deserve a sentence of their own.</p>
+<p><strong>The application sends its own authentication mail.</strong> Supabase Auth is asked to <em>mint</em> the code — <code>admin.generateLink()</code> returns the same one-time code GoTrue would have mailed, and sends nothing — after which <code>lib/mail.ts</code> sends the message itself. The reason is deliverability: GoTrue's mailer offers no plain-text part, and an HTML-only message is one of the strongest junk signals a small sender can give. Measured on production from one account minutes apart, the multipart message reached the inbox while the HTML-only one did not. The Supabase templates remain uploaded and in step, as the fallback should these calls ever fail closed.</p>
+<p><strong>Google Calendar is present in the code and dormant in the deployment.</strong> The OAuth flow, the token table and the event write are all implemented, but no client credentials are set on the host, so <code>google_tokens</code> holds no rows and the chat falls back to plain "Add to Google Calendar" links. This is a deployment decision, not an unfinished feature.</p>
+<h3>Every outbound call is written to survive the service being unavailable</h3>
+<p>An external API which is down must degrade the feature that uses it, and must never take a page or an action down with it.</p>
+<ul>
+<li><strong>Gemini</strong> is asked through a list of four models in order — three Flash models by judgement, then Flash-Lite for availability. The lite model is measurably blunter, and is still a better answer than "try again in a moment".</li>
+<li><strong>Overpass</strong> is asked across three mirrors, hedged: a mirror gets 3.5 seconds to itself before the next is also asked, under a 12-second overall deadline. The main instance rate-limits, and cut the project off entirely while this was being built. A success is cached for a day; a failure is cached for nothing at all, so the next request genuinely asks again.</li>
+<li><strong>Nominatim</strong> is keyless, and its usage policy asks for a real <code>User-Agent</code> and at most one request per second — which a listing form comfortably respects.</li>
+<li><strong>SMTP</strong> never throws. A failed e-mail returns <code>false</code> and is logged; publishing a room succeeds whether or not the alert goes out.</li>
+<li><strong>With no SMTP configuration at all</strong> the mailer becomes a no-op, which is what allows local development, CI and the test suite to run without ever reaching a mail server.</li>
+</ul>
 <hr />
 <h2>6. Core business logic</h2>
 <h3>6.1 Compatibility scoring (<code>lib/compatibility.ts</code>)</h3>
