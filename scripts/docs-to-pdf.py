@@ -171,6 +171,15 @@ tr { page-break-inside: avoid; }
 
 /* Keep a heading with the block that follows it. */
 h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
+
+/* ---- identifier columns ----------------------------------------------- */
+/* The test document lists one file name per row, and Chromium's automatic
+   table layout is free to break such a name across two lines, where it then
+   reads as two separate files. Holding the name whole also stops the column
+   from being squeezed, so the tables line up with the rest of the set.
+   Scoped to that one document on purpose: 04-scale puts whole index
+   definitions in the same column, and those are far too long to hold. */
+body.doc-test-spec td:first-child code { white-space: nowrap; }
 """
 
 HEAD = """<!doctype html>
@@ -179,7 +188,7 @@ HEAD = """<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<style>{css}</style></head><body>
+<style>{css}</style></head><body class="{bodyclass}">
 <section class="cover">
   <p class="doctitle">{title}</p>
   <h1 class="project">NestUp</h1>
@@ -239,7 +248,9 @@ def convert(name: str) -> Path:
     OUT.mkdir(parents=True, exist_ok=True)
     dest = OUT / (name.replace(".md", ".html"))
     dest.write_text(
-        HEAD.format(title=title, sub=sub, css=CSS) + html + "\n</body></html>",
+        HEAD.format(title=title, sub=sub, css=CSS, bodyclass=f"doc-{name[3:-3]}")
+        + html
+        + "\n</body></html>",
         encoding="utf-8",
     )
     return dest

@@ -146,7 +146,16 @@ tr { page-break-inside: avoid; }
 
 /* Keep a heading with the block that follows it. */
 h2 + p, h2 + table, h3 + p, h3 + ul, h3 + table { page-break-before: avoid; }
-</style></head><body>
+
+/* ---- identifier columns ----------------------------------------------- */
+/* The test document lists one file name per row, and Chromium's automatic
+   table layout is free to break such a name across two lines, where it then
+   reads as two separate files. Holding the name whole also stops the column
+   from being squeezed, so the tables line up with the rest of the set.
+   Scoped to that one document on purpose: 04-scale puts whole index
+   definitions in the same column, and those are far too long to hold. */
+body.doc-test-spec td:first-child code { white-space: nowrap; }
+</style></head><body class="doc-technical-design">
 <section class="cover">
   <p class="doctitle">Technical Design</p>
   <h1 class="project">NestUp</h1>
