@@ -1,6 +1,6 @@
 # NestUp — Test Specification
 
-**Suite:** 97 test files · 740 tests · Vitest + React Testing Library (jsdom) + Playwright (real browser)
+**Suite:** 107 test files · 842 tests · Vitest + React Testing Library (jsdom) + Playwright (real browser)
 **Run:** `npm test` — see §9 for the reason that `npx vitest` must never be used directly.
 
 ---
@@ -248,7 +248,7 @@ The interface is tested for what it does rather than for how it looks. Each of t
 ## 9. How to run the suite
 
 ```bash
-npm test                              # 97 files, 740 tests
+npm test                              # 107 files, 842 tests
 npm test -- --testTimeout=25000       # use this if userEvent tests time out (see below)
 npx tsc --noEmit                      # types
 npx eslint                            # lint

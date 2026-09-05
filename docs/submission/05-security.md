@@ -1,6 +1,6 @@
 # NestUp — Basic Security
 
-**Posture:** 21 tables, **RLS enabled on every one of them**, 72 policies · authorization enforced in Postgres and not in application code
+**Posture:** 21 tables, **RLS enabled on every one of them**, 57 live policies · authorization enforced in Postgres and not in application code
 
 ---
 
@@ -61,7 +61,7 @@ Every mutation begins with `requireUser()`, which is **uncached and is executed 
 
 ### Layer 4 — Row Level Security
 
-This is the layer which actually matters. It consists of 72 policies distributed across 21 tables. The following are examples of the shapes which are used:
+This is the layer which actually matters. It consists of 57 live policies distributed across 19 tables plus 7 on `storage.objects`; the two tables with none — `app_config` and `auth_mail_throttle` — have RLS on and are therefore closed to everything but a `SECURITY DEFINER` function. The following are examples of the shapes which are used:
 
 | Rule | How it is expressed |
 |---|---|

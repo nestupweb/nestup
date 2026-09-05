@@ -65,7 +65,7 @@ Final-Project/
 │   ├── api/                    # Route Handlers (JSON, or non-action side effects)
 │   ├── auth/                   # confirm (email links) · signout (303 → full reload)
 │   └── layout.tsx              # Root layout: fonts, theme, nav, view transitions
-├── components/                 # 99 components, grouped by feature
+├── components/                 # 97 components, grouped by feature
 │   ├── auth/ (8)   chat/ (10)   listings/ (15)   map/ (11)
 │   └── profile/ (24)  settings/ (8)  swipe/ (4)  ui/ (19)
 ├── lib/                        # 53 modules — domain logic, no JSX
@@ -76,9 +76,9 @@ Final-Project/
 │   ├── cache-tags.ts           #   Every cache tag in one place
 │   └── auth.ts                 #   Session helpers + cached readers
 ├── supabase/
-│   ├── migrations/             # 43 SQL migrations, all applied to production
+│   ├── migrations/             # 48 SQL migrations, all applied to production
 │   └── templates/              # Auth email templates (versioned, not clicked into a UI)
-├── tests/unit/                 # 97 files, 740 tests
+├── tests/unit/                 # 107 files, 842 tests
 ├── scripts/                    # Seeding, geocoding, real-browser checks
 └── docs/submission/            # These documents
 ```

@@ -62,7 +62,7 @@ Then fill in `.env.local` — see the table below. **Two variables are required*
 
 ### 3. Set up the database
 
-Apply the migrations in `supabase/migrations/` (0001 → 0043, in order) to your Supabase project — via the SQL editor, the Supabase CLI, or the Supabase MCP tools. They create all tables, RLS policies, functions, triggers and indexes.
+Apply the migrations in `supabase/migrations/` (0001 → 0044, in filename order) to your Supabase project — via the SQL editor, the Supabase CLI, or the Supabase MCP tools. They create all tables, RLS policies, functions, triggers and indexes.
 
 Optionally seed demo data:
 
@@ -112,7 +112,7 @@ npm run dev           # http://localhost:3000
 npm run dev              # Development server
 npm run build            # Production build
 npm start                # Serve the production build
-npm test                 # 97 files, 740 tests
+npm test                 # 107 files, 842 tests
 npm run lint             # ESLint
 npx tsc --noEmit         # Type check
 
@@ -132,18 +132,28 @@ npm run check:map        # Real-browser check: maps render in both themes
 ```
 app/            Routes. (public) · (app) · (auth) route groups,
                 14 Server Action modules, Route Handlers
-components/     99 components by feature — auth, chat, listings,
+components/     97 components by feature — auth, chat, listings,
                 map, profile, settings, swipe, ui
-lib/            53 domain modules — scoring, validation (Zod),
+lib/            66 domain modules — scoring, validation (Zod),
                 Supabase clients, cache tags
-supabase/       43 SQL migrations + auth email templates
-tests/unit/     97 test files
+supabase/       48 SQL migrations + auth email templates
+tests/unit/     107 test files
 docs/submission/  Project documentation (below)
 ```
 
 ---
 
 ## Documentation
+
+Start here:
+
+| Document | Contents |
+|---|---|
+| **[System Guide](SYSTEM_GUIDE.md)** | The whole system in one file: what it does, business value, architecture, folder structure, database, main flows, auth, permissions, matching, personalisation, AI photo check, security, scale, tests, limitations |
+| **[Local Setup](LOCAL_SETUP.md)** | Install, Supabase setup, environment variables, migrations, seed, dev/build/lint/test commands, troubleshooting |
+| **[Test Plan](TEST_PLAN.md)** | Every test category — features, invalid input, business processes, permissions, database, edge cases, UI — mapped to the file that defends it |
+
+Deeper dives:
 
 | Document | Contents |
 |---|---|
@@ -168,7 +178,7 @@ node scripts/docs-to-pdf.mjs    # HTML → PDF via headless Chromium
 
 A few decisions worth reading the code for:
 
-- **Authorisation lives in Postgres, not the app.** 72 RLS policies across 21 tables. Three tables have *no write policy at all* — they are written only by `SECURITY DEFINER` functions, so there is no path to a wrong write rather than a policy that tries to enumerate every one.
+- **Authorisation lives in Postgres, not the app.** 57 RLS policies across 21 tables. Three tables have *no write policy at all* — they are written only by `SECURITY DEFINER` functions, so there is no path to a wrong write rather than a policy that tries to enumerate every one.
 - **Caching with a blast radius.** Every cached read carries a tag (`deck:<id>`, `chat:<id>`, …) and every mutation invalidates only what it changed. A test fails if that regresses. Returning to Swipe, Chat or Profile makes **zero server requests** and shows no loading skeleton.
 - **Signing out is a 303 from a Route Handler**, not a Server Action redirect — because only a full document load empties the browser-held private caches.
 - **A shared listing outlives its creator.** Deleting an account hands the room to a roommate inside the same transaction, rather than deleting a home out from under the people living in it.
