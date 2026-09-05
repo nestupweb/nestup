@@ -1,4 +1,4 @@
--- Additional flatmates shown under "Who lives here" (beyond the listing owner).
+-- Additional roommates shown under "Who lives here" (beyond the listing owner).
 create table public.listing_residents (
   listing_id uuid not null references public.listings(id) on delete cascade,
   resident_id uuid not null references public.profiles(user_id) on delete cascade,

@@ -1,4 +1,4 @@
--- Daily life, two columns: how I live vs. what I want in flatmates. The
+-- Daily life, two columns: how I live vs. what I want in roommates. The
 -- "mine" side already had smoker / has_pet / cleanliness / sleep_schedule /
 -- guests_freq; this adds noise and diet, plus the "want" side for every row
 -- (smoking and pets already had ok_with_smoker / ok_with_pets). All feed
@@ -10,7 +10,7 @@ alter table public.profiles
     check (noise_level in ('quiet', 'moderate', 'lively')),
   add column if not exists diet text not null default 'none'
     check (diet in ('none', 'kosher', 'vegetarian', 'vegan', 'halal', 'gluten_free', 'other')),
-  -- tidiness I expect of flatmates, 1 = anything goes … 5 = spotless
+  -- tidiness I expect of roommates, 1 = anything goes … 5 = spotless
   add column if not exists pref_cleanliness smallint not null default 1
     check (pref_cleanliness between 1 and 5),
   add column if not exists pref_sleep text not null default 'any'
